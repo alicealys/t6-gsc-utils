@@ -13,7 +13,7 @@ init() {
   
   file = fopen(path, "a+");
   
-  text = fread(file); // fread reads the entire file, you can also use fgets(file, n) to read the first `n` chars
+  text = fread(file); // fread reads the entire file, you can also use fgets(file, n) to read the first n chars
   
   fclose(file);
   printf(text);
