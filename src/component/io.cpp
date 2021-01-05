@@ -47,22 +47,20 @@ namespace io
             }
         });
 
-        function::add("fgets", 3, 3, []()
+        function::add("fgets", 2, 2, []()
         {
-            const auto n = game::get<int>(0);
-            const auto handle = game::get_ptr<FILE*>(1);
+            const auto handle = game::get_ptr<FILE*>(0);
+            const auto n = game::get<int>(1);
 
             if (handle)
             {
-                fseek(handle, 0, SEEK_END);
-                const auto length = ftell(handle);
+                char* buffer = (char*)calloc(n, sizeof(char));
 
-                fseek(handle, 0, SEEK_SET);
-                char* buffer = (char*)calloc(length, sizeof(char));
+                fgets(buffer, n, handle);
 
-                const auto str = fgets(buffer, n, handle);
+                game::add(buffer);
 
-                game::add(str);
+                free(buffer);
             }
             else
             {
@@ -153,8 +151,6 @@ namespace io
                 char* buffer = (char*)calloc(length, sizeof(char));
 
                 fread(buffer, sizeof(char), length, handle);
-
-                buffer[length] = '\0';
 
                 game::add(buffer);
 
