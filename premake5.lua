@@ -41,7 +41,7 @@ workspace "plutonium-gsc"
 		flags { "MultiProcessorCompile", "No64BitChecks" }
 		optimize "Debug"
 
-	project "gsc-helper"
+	project "gsc-utils"
 		kind "SharedLib"
 		language "C++"
 		
