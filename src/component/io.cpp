@@ -2,8 +2,8 @@
 
 namespace io
 {
-	void init()
-	{
+    void init()
+    {
         function::add("printf", 1, 2, []()
         {
             const auto str = game::get<const char*>(0);
@@ -163,5 +163,5 @@ namespace io
                 game::add("");
             }
         });
-	}
+    }
 }
