@@ -62,14 +62,22 @@ namespace chat
 		{
 			__asm
 			{
+				push eax
+
+				xor eax, eax
+
 				mov al, hidden
 
 				cmp al, 0
 				jne hide
 
+				pop eax
+
 				push g_say_to
 				retn
 			hide:
+				pop eax
+
 				retn
 			}
 		}
