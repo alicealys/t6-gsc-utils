@@ -2,13 +2,51 @@
 
 namespace io
 {
+    namespace
+    {
+
+        void replace(std::string& str, const std::string& from, const std::string& to) {
+            size_t start_pos = str.find(from);
+
+            if (start_pos == std::string::npos)
+            {
+                return;
+            }
+
+            str.replace(start_pos, from.length(), to);
+        }
+    }
+
     void init()
     {
         function::add("printf", 1, 2, []()
         {
-            const auto str = game::get<const char*>(0);
+            auto fmt = game::get<std::string>(0);
+            const auto num = game::Scr_GetNumParam(game::SCRIPTINSTANCE_SERVER);
 
-            printf("%s\n", str);
+            for (auto i = 1; i < num; i++)
+            {
+                const auto arg = game::get<const char*>(i);
+
+                replace(fmt, "%s", arg);
+            }
+
+            printf("%s\n", fmt.data());
+        });
+
+        function::add("va", 1, 2, []()
+        {
+            auto fmt = game::get<std::string>(0);
+            const auto num = game::Scr_GetNumParam(game::SCRIPTINSTANCE_SERVER);
+
+            for (auto i = 1; i < num; i++)
+            {
+                const auto arg = game::get<const char*>(i);
+
+                replace(fmt, "%s", arg);
+            }
+
+            game::add(fmt.data());
         });
 
         function::add("fopen", 2, 2, []()
