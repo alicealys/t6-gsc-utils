@@ -19,6 +19,8 @@ namespace game
 
 	extern void* (__cdecl* Cbuf_AddText)(int, const char*);
 
+	extern char* (__cdecl* I_CleanStr)(char*);
+
 	extern void* (__cdecl* Player_GetMethod)(const char**, int*, int*);
 
 	extern void(__cdecl* Scr_AddEntity)(scriptInstance_t inst, gentity_s* entity);

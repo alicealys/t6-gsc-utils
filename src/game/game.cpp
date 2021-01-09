@@ -10,6 +10,8 @@ namespace game
 
 	void* (__cdecl* Cbuf_AddText)(int, const char*);
 
+	char* (__cdecl* I_CleanStr)(char*);
+
 	void* (__cdecl* Player_GetMethod)(const char**, int*, int*);
 
 	void(__cdecl* Scr_AddEntity)(scriptInstance_t, gentity_s*);
@@ -55,6 +57,8 @@ namespace game
 		levelEntityId = reinterpret_cast<unsigned int*>(SELECT(0x2E1A51C, 0x2DEA81C));
 
 		Cbuf_AddText = (decltype(Cbuf_AddText))SELECT(0x5C6F10, 0x6B9D20);
+
+		I_CleanStr = (decltype(I_CleanStr))SELECT(0x44F2B0, 0x483F40);
 
 		Player_GetMethod = (decltype(Player_GetMethod))SELECT(0x432480, 0x6F2DB0);
 

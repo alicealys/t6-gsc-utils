@@ -9,7 +9,7 @@ namespace chat
 		int g_say_to;
 		int pre_say;
 
-		const char* evaluate_say(const char* text, game::gentity_s* ent)
+		char* evaluate_say(char* text, game::gentity_s* ent)
 		{
 			hidden = false;
 
@@ -29,36 +29,34 @@ namespace chat
 			return text;
 		}
 
-		void pre_say_stub()
+		__declspec(naked) void pre_say_stub()
 		{
 			__asm
 			{
-				mov eax, edi
+				mov eax, [esp + 0xE4 + 0x10]
+
 				push eax
+				pushad
 
-				mov ecx, esi
-				push ecx
-
+				push[esp + 0xE4 + 0x28]
+				push eax
 				call evaluate_say
+				add esp, 0x8
 
-				mov edx, eax
-
-				pop ecx
+				mov[esp + 0x20], eax
+				popad
 				pop eax
 
-				add esp, 0x10
-				mov eax, ebx
-				dec eax
-				mov eax, [edi]
+				mov[esp + 0xE4 + 0x10], eax
 
-				push edx
+				call game::I_CleanStr
 
 				push pre_say
 				retn
 			}
 		}
 
-		void post_say_stub()
+		__declspec(naked) void post_say_stub()
 		{
 			__asm
 			{
@@ -86,9 +84,9 @@ namespace chat
 	void init()
 	{
 		g_say_to = SELECT(0x82BB50, 0x82A3D0);
-		pre_say = SELECT(0x6A7AC3, 0x493E73);
+		pre_say = SELECT(0x6A7AB3, 0x493E63);
 
-		utils::hook::jump(SELECT(0x6A7ABA, 0x493E6A), pre_say_stub);
+		utils::hook::jump(SELECT(0x6A7AAE, 0x493E5E), pre_say_stub);
 		utils::hook::call(SELECT(0x6A7B5F, 0x493F0F), post_say_stub);
 		utils::hook::call(SELECT(0x6A7B9B, 0x493F4B), post_say_stub);
 
