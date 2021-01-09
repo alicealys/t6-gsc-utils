@@ -16,12 +16,12 @@ init() {
   text = fread(file); // fread reads the entire file, you can also use fgets(file, n) to read the first n chars
   
   fclose(file);
+  
   /*
     printf also works similarly to C/C++ but only has %s
     eg. printf("%s, %s", 1, "2") -> "1, 2"
         printf(va("%s, %s", 1, "2")) -> "1, 2"
   */
-  
   printf(text);
   
   // you can also use fgetc and feof if you desire
