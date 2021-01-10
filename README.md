@@ -68,3 +68,28 @@ onPlayerMessage() {
 }
 
 ```
+
+Full function/method list
+
+* I/O:
+  * fopen
+  * fclose
+  * fremove
+  * fgetc
+  * fgets
+  * feof
+  * fputs
+  * fprintf
+  * fread
+* Chat:
+  * tell
+  * say
+* Time:
+  * time
+  * date
+* Misc:
+  * printf
+  * va
+  * cmdexecute
+  * sendservercommand
+  * memset
