@@ -69,7 +69,7 @@ onPlayerMessage() {
 
 ```
 
-Full function/method list
+# Full function/method list
 
 * I/O:
   * fopen
