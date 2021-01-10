@@ -68,6 +68,15 @@ namespace io
             game::add(fmt.data());
         });
 
+        function::add("fremove", 1, 1, []()
+        {
+            const auto path = game::get<const char*>(0);
+
+            const auto result = std::remove(path);
+
+            game::add(result);
+        });
+
         function::add("fopen", 2, 2, []()
         {
             const auto* path = game::get<const char*>(0);
