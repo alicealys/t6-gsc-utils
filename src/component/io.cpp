@@ -4,7 +4,6 @@ namespace io
 {
     namespace
     {
-
         void replace(std::string& str, const std::string& from, const std::string& to) {
             size_t start_pos = str.find(from);
 
@@ -19,6 +18,26 @@ namespace io
 
     void init()
     {
+        function::add("date", 1, 1, []()
+        {
+            const auto fmt = game::get<const char*>(0);
+
+            const auto t = std::time(0);
+            char buffer[256];
+
+            std::strftime(buffer, 256, fmt, std::localtime(&t));
+
+            game::add(buffer);
+        });
+
+        function::add("time", 0, 0, []()
+        {
+            const auto now = std::chrono::system_clock::now().time_since_epoch();
+            const auto count = std::chrono::duration_cast<std::chrono::seconds>(now).count();
+
+            game::Scr_AddInt(game::SCRIPTINSTANCE_SERVER, count);
+        });
+
         function::add("printf", 1, 2, []()
         {
             auto fmt = game::get<std::string>(0);
