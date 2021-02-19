@@ -17,7 +17,11 @@ namespace game
 
 	extern unsigned int* levelEntityId;
 
-	extern void* (__cdecl* Cbuf_AddText)(int, const char*);
+	extern void (__cdecl* Cbuf_AddText)(int, const char*);
+	extern void (__cdecl* Cmd_AddCommandInternal)(const char*, void(), cmd_function_t*);
+	extern const char* (__cdecl* Cmd_Argv)(int);
+
+	extern const dvar_t* (__cdecl* Dvar_FindVar)(const char*);
 
 	extern char* (__cdecl* I_CleanStr)(char*);
 
@@ -34,6 +38,8 @@ namespace game
 	extern void(__cdecl* RemoveRefToObject)(scriptInstance_t inst, unsigned int id);
 
 	extern unsigned int(__cdecl* Scr_NotifyId)(scriptInstance_t inst, int localClientNum, unsigned int id, unsigned int stringValue, unsigned int paramcount);
+	extern unsigned int(__cdecl* Scr_Notify)(gentity_s* ent, unsigned int stringValue, unsigned int paramcount);
+	extern unsigned int(__cdecl* Scr_NotifyNum)(int entnum, unsigned int classnum, unsigned int stringValue, unsigned int paramcount);
 
 	extern unsigned int(__cdecl* SL_GetString)(const char* str, unsigned int user);
 
@@ -45,7 +51,19 @@ namespace game
 	extern const char* (__cdecl* Scr_GetString)(scriptInstance_t inst, int index);
 	extern void(__cdecl* Scr_GetVector)(scriptInstance_t inst, int index, float* out);
 
-	extern void* (__cdecl* SV_GameSendServerCommand)(int, int, const char*);
+	extern void (__cdecl* SV_GameSendServerCommand)(int, int, const char*);
+
+	inline int Cmd_Argc()
+	{
+		auto count = 0;
+
+		for (auto i = 0; strcmp(game::Cmd_Argv(i), "") != 0; i++)
+		{
+			count++;
+		}
+
+		return count;
+	}
 
 	void add(int);
 	void add(float);

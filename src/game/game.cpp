@@ -8,7 +8,11 @@ namespace game
 
 	unsigned int* levelEntityId;
 
-	void* (__cdecl* Cbuf_AddText)(int, const char*);
+	void (__cdecl* Cbuf_AddText)(int, const char*);
+	void(__cdecl* Cmd_AddCommandInternal)(const char*, void(), cmd_function_t*);
+	const char* (__cdecl* Cmd_Argv)(int);
+
+	const dvar_t* (__cdecl* Dvar_FindVar)(const char*);
 
 	char* (__cdecl* I_CleanStr)(char*);
 
@@ -25,6 +29,8 @@ namespace game
 	void(__cdecl* RemoveRefToObject)(scriptInstance_t, unsigned int);
 
 	unsigned int(__cdecl* Scr_NotifyId)(scriptInstance_t, int, unsigned int, unsigned int, unsigned int);
+	unsigned int(__cdecl* Scr_Notify)(gentity_s* ent, unsigned int stringValue, unsigned int paramcount);
+	unsigned int(__cdecl* Scr_NotifyNum)(int entnum, unsigned int classnum, unsigned int stringValue, unsigned int paramcount);
 
 	unsigned int(__cdecl* SL_GetString)(const char*, unsigned int);
 
@@ -36,7 +42,7 @@ namespace game
 	const char* (__cdecl* Scr_GetString)(scriptInstance_t, int);
 	void(__cdecl* Scr_GetVector)(scriptInstance_t, int, float*);
 
-	void* (__cdecl* SV_GameSendServerCommand)(int clientNum, int type, const char* cmd);
+	void (__cdecl* SV_GameSendServerCommand)(int clientNum, int type, const char* cmd);
 
 	bool is_mp()
 	{
@@ -57,6 +63,10 @@ namespace game
 		levelEntityId = reinterpret_cast<unsigned int*>(SELECT(0x2E1A51C, 0x2DEA81C));
 
 		Cbuf_AddText = (decltype(Cbuf_AddText))SELECT(0x5C6F10, 0x6B9D20);
+		Cmd_AddCommandInternal = (decltype(Cmd_AddCommandInternal))SELECT(0x5B3070, 0x4DC2A0);
+		Cmd_Argv = (decltype(Cmd_Argv))SELECT(0x5608F0, 0x6B3D40);
+
+		Dvar_FindVar = (decltype(Dvar_FindVar))SELECT(0x563A70, 0x673C80);
 
 		I_CleanStr = (decltype(I_CleanStr))SELECT(0x44F2B0, 0x483F40);
 
@@ -73,6 +83,8 @@ namespace game
 		RemoveRefToObject = (decltype(RemoveRefToObject))SELECT(0x6FB1B0, 0x550DC0);
 
 		Scr_NotifyId = (decltype(Scr_NotifyId))SELECT(0x4FDC10, 0x4BC0D0);
+		Scr_Notify = (decltype(Scr_Notify))SELECT(0x644AB0, 0x495420);
+		Scr_NotifyNum = (decltype(Scr_NotifyNum))SELECT(0x578690, 0x664770);
 
 		SL_GetString = (decltype(SL_GetString))SELECT(0x602C40, 0x4601E0);
 
