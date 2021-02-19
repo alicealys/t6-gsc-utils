@@ -4,7 +4,14 @@ Adds some useful stuff to gsc, based on Matrix's [t6-gsc-helper](https://github.
 * Adds chat notifies (eg. `level waittill("say", player, message)`)
 * Adds a bunch of IO functions (`fopen`, `fread`, `fputs`...)
 * Some other useful functions like `printf`, `cmdexecute`, `say` ...
+* Adds `notifynum` and `notifylevel` commands
 
+# Commands
+| Name | Description | Arguments | Example |
+| --- | --- | --- | --- |
+| notifynum | Notifies a player | clientnum, notifyname, ... | `notifynum 0 test argument1 argument2` |
+| notifylevel | Notifies the level | notifyname, ... | `notifylevel test argument1 argument2` |
+# Examples
 IO functions work basically exactly the same as they do in C/C++
 ```c
 init() {
