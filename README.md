@@ -71,25 +71,23 @@ onPlayerMessage() {
 
 # Full function/method list
 
-* I/O:
-  * fopen
-  * fclose
-  * fremove
-  * fgetc
-  * fgets
-  * feof
-  * fputs
-  * fprintf
-  * fread
-* Chat:
-  * tell
-  * say
-* Time:
-  * time
-  * date
-* Misc:
-  * printf
-  * va
-  * cmdexecute
-  * sendservercommand
-  * memset
+| Name | Description | Type | Call on | Arguments | Return |
+| --- | --- | --- | --- | --- | -- |
+| fopen | Opens a file of given name with given mode, returns a file stream | function | - | *string* path, *string* mode | *FILE\** stream | 
+| fclose | Closes a file stream | function | - | *FILE\** stream | *void* |
+| fremove | Deletes a file | function | - | *string* path | *void* |
+| fgetc | Returns the character currently pointed by the internal file position indicator of the given stream | function | - | *FILE\** stream | *void* |
+| fgets | Reads file until *length* characters are read | function | - | *FILE\** stream, int length | *string* text |
+| feof | Returns true if a stream's internal position reaches the end | function | - | *FILE\** stream | *bool* eof |
+| fputs | Writes a string to a stream | function | - | *string* text, *FILE\** stream | *void* |
+| fprintf | Writes a string to a stream | function | - | *string* text, *FILE\** stream | *void* |
+| fread | Reads entire file | function | - | *FILE\** stream | *string* text |
+| tell | Prints string to a player's chat | method | *player* | *string* message | *void* |
+| say | Prints string to a all player's chat | function | - | *string* message | *void* |
+| time | Returns seconds since epoch | function | - |  | *int* seconds |
+| date | Formats a date based on the given format | function | - | *string* format | *string* date |
+| printf | Formats and prints a string to the console | function | - | *string* format, ... | *void* |
+| va | Formats a string | function | - | *string* format, ... | *string* str |
+| cmdexecute | Executes a command | function | - | *string* command | *void* |
+| sendservercommand | Executes SV_GameSendServerCommand | function | - | *int* clientNum, *string* command | *void* |
+| memset | Sets specified address' value | function | - | *int* address, *int* value | *void* |
