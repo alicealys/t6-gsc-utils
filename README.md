@@ -104,8 +104,8 @@ init() {
 | pclose | Closes a popen stream | function | - | *FILE\** stream |
 | system | Executes a shell command and returns the result | function | - | *string* command | *string* result |
 | curl | Sends an http request to the given url, returns an object which is notified "done" when the request is done | function | - | *string* url | *object* request |
-| say | Prints string to a all player's chat | function | - | *string* message | *void* |
-| tell | Prints string to a player's chat | method | *player* | *string* message | *void* |
+| say | Prints a message to a all players' chat | function | - | *string* message | *void* |
+| tell | Prints a message to a player's chat | method | *player* | *string* message | *void* |
 | time | Returns seconds since epoch | function | - |  | *int* seconds |
 | date | Formats a date based on the given format | function | - | *string* format | *string* date |
 | printf | Formats and prints a string to the console | function | - | *string* format, ... | *void* |
