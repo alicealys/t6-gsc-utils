@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <functional>
 #include <regex>
+#include <queue>
 
 using namespace std::literals;
 
@@ -33,6 +34,8 @@ using namespace std::literals;
 #include "gsc/functions.hpp"
 #include "gsc/methods.hpp"
 
+#include "component/http.hpp"
+#include "component/scheduler.hpp"
 #include "component/chat.hpp"
 #include "component/io.hpp"
 #include "component/command.hpp"
