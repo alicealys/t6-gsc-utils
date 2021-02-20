@@ -3,7 +3,7 @@ Adds some useful stuff to gsc, based on Matrix's [t6-gsc-helper](https://github.
 # Features
 * Adds chat notifies (eg. `level waittill("say", player, message)`)
 * Adds a bunch of IO functions (`fopen`, `fread`, `fputs`...)
-* Some other useful functions like `printf`, `cmdexecute`, `say` ...
+* Some other useful functions like `printf`, `cmdexecute`, `say`, `curl`, `system` ...
 * Adds `notifynum` and `notifylevel` commands
 
 # Commands
@@ -76,6 +76,17 @@ onPlayerMessage() {
 
 ```
 
+cURL example
+
+```c
+init() {
+  // The request is sent from a separate thread so it won't freeze the server
+  request = curl("https://example.com");
+  request waittill("done", result);
+  printf(result);
+}
+```
+
 # Full function/method list
 
 | Name | Description | Type | Call on | Arguments | Return |
@@ -89,8 +100,12 @@ onPlayerMessage() {
 | fputs | Writes a string to a stream | function | - | *string* text, *FILE\** stream | *void* |
 | fprintf | Writes a string to a stream | function | - | *string* text, *FILE\** stream | *void* |
 | fread | Reads entire file | function | - | *FILE\** stream | *string* text |
-| tell | Prints string to a player's chat | method | *player* | *string* message | *void* |
+| popen | Executes shell a command | function | - | *string* command | *FILE\** stream |
+| pclose | Closes a popen stream | function | - | *FILE\** stream |
+| system | Executes a shell command and returns the result | function | - | *string* command | *string* result |
+| curl | Sends an http request to the given url, returns an object which is notified "done" when the request is done | function | - | *string* url | *object* request |
 | say | Prints string to a all player's chat | function | - | *string* message | *void* |
+| tell | Prints string to a player's chat | method | *player* | *string* message | *void* |
 | time | Returns seconds since epoch | function | - |  | *int* seconds |
 | date | Formats a date based on the given format | function | - | *string* format | *string* date |
 | printf | Formats and prints a string to the console | function | - | *string* format, ... | *void* |
