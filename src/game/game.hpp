@@ -1,6 +1,6 @@
 #pragma once
 
-#define SELECT(mp, zm) (game::is_mp() ? mp : zm)
+#define SELECT(mp, zm) (game::environment::t6mp() ? mp : zm)
 
 namespace game
 {
@@ -13,57 +13,48 @@ namespace game
 
 	extern gamemode current;
 
-	extern gentity_s* g_entities;
-
-	extern unsigned int* levelEntityId;
-
-	extern void (__cdecl* Cbuf_AddText)(int, const char*);
-	extern void (__cdecl* Cmd_AddCommandInternal)(const char*, void(), cmd_function_t*);
-	extern const char* (__cdecl* Cmd_Argv)(int);
-
-	extern const dvar_t* (__cdecl* Dvar_FindVar)(const char*);
-
-	extern char* (__cdecl* I_CleanStr)(char*);
-
-	extern void* (__cdecl* Player_GetMethod)(const char**, int*, int*);
-
-	extern void(__cdecl* Scr_AddEntity)(scriptInstance_t inst, gentity_s* entity);
-	extern void(__cdecl* Scr_AddFloat)(scriptInstance_t inst, float value);
-	extern void(__cdecl* Scr_AddInt)(scriptInstance_t inst, int value);
-	extern void(__cdecl* Scr_AddString)(scriptInstance_t inst, const char* value);
-	extern void(__cdecl* Scr_AddVector)(scriptInstance_t inst, float* value);
-	extern void(__cdecl* Scr_AddObject)(scriptInstance_t inst, unsigned int id);
-
-	extern unsigned int(__cdecl* AllocObject)(scriptInstance_t inst);
-	extern void(__cdecl* RemoveRefToObject)(scriptInstance_t inst, unsigned int id);
-
-	extern unsigned int(__cdecl* Scr_NotifyId)(scriptInstance_t inst, int localClientNum, unsigned int id, unsigned int stringValue, unsigned int paramcount);
-	extern unsigned int(__cdecl* Scr_Notify)(gentity_s* ent, unsigned int stringValue, unsigned int paramcount);
-	extern unsigned int(__cdecl* Scr_NotifyNum)(int entnum, unsigned int classnum, unsigned int stringValue, unsigned int paramcount);
-
-	extern unsigned int(__cdecl* SL_GetString)(const char* str, unsigned int user);
-
-	extern int(__cdecl* Scr_GetNumParam)(scriptInstance_t inst);
-	extern void* (__cdecl* Scr_GetCommonFunction)(const char**, int*, int*, int*);
-	extern gentity_s* (__cdecl* Scr_GetEntity)(scriptInstance_t inst, int index);
-	extern float(__cdecl* Scr_GetFloat)(scriptInstance_t inst, int index);
-	extern int(__cdecl* Scr_GetInt)(scriptInstance_t inst, int index);
-	extern const char* (__cdecl* Scr_GetString)(scriptInstance_t inst, int index);
-	extern void(__cdecl* Scr_GetVector)(scriptInstance_t inst, int index, float* out);
-
-	extern void (__cdecl* SV_GameSendServerCommand)(int, int, const char*);
-
-	inline int Cmd_Argc()
+	namespace environment
 	{
-		auto count = 0;
+		bool t6mp();
+		bool t6zm();
+	}
 
-		for (auto i = 0; strcmp(game::Cmd_Argv(i), "") != 0; i++)
+	template <typename T>
+	class symbol
+	{
+	public:
+		symbol(const size_t t6mp, const size_t t6zm)
+			: t6mp_(reinterpret_cast<T*>(t6mp))
+			, t6zm_(reinterpret_cast<T*>(t6zm))
 		{
-			count++;
 		}
 
-		return count;
-	}
+		T* get() const
+		{
+			if (environment::t6mp())
+			{
+				return t6mp_;
+			}
+
+			return t6zm_;
+		}
+
+		operator T* () const
+		{
+			return this->get();
+		}
+
+		T* operator->() const
+		{
+			return this->get();
+		}
+
+	private:
+		T* t6mp_;
+		T* t6zm_;
+	};
+
+	void init();
 
 	void add(int);
 	void add(float);
@@ -80,7 +71,7 @@ namespace game
 		return reinterpret_cast<T>(game::Scr_GetInt(SCRIPTINSTANCE_SERVER, index));
 	}
 
-	bool is_mp();
-	bool is_zm();
-	void init();
+	int Cmd_Argc();
 }
+
+#include "symbols.hpp"
