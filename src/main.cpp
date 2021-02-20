@@ -7,6 +7,8 @@ BOOL APIENTRY DllMain(HMODULE module_, DWORD ul_reason_for_call, LPVOID reserved
 		game::init();
 		gsc::setup();
 
+		http::init();
+		scheduler::init();
 		command::init();
 		chat::init();
 		io::init();

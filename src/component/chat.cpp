@@ -29,6 +29,11 @@ namespace chat
 			return text;
 		}
 
+		char* clean_str(const char* str)
+		{
+			return game::I_CleanStr(str);
+		}
+
 		__declspec(naked) void pre_say_stub()
 		{
 			__asm
@@ -49,7 +54,7 @@ namespace chat
 
 				mov[esp + 0xE4 + 0x10], eax
 
-				call game::I_CleanStr
+				call clean_str
 
 				push pre_say
 				retn

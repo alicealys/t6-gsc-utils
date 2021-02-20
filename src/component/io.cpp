@@ -14,56 +14,34 @@ namespace io
 
             str.replace(start_pos, from.length(), to);
         }
+    }
 
-        std::string execute_command(const char* cmd)
+    std::string execute_command(const std::string& cmd)
+    {
+        const auto handle = _popen(cmd.data(), "r");
+        char* buffer = (char*)calloc(256, sizeof(char));
+        std::string result;
+
+        if (!handle)
         {
-            const auto handle = _popen(cmd, "r");
-            char* buffer = (char*)calloc(256, sizeof(char));
-            std::string result;
-
-            if (!handle)
-            {
-                return "";
-            }
-
-            while (!feof(handle))
-            {
-                if (fgets(buffer, 256, handle))
-                {
-                    result += buffer;
-                }
-            }
-
-            _pclose(handle);
-
-            return result;
+            return "";
         }
+
+        while (!feof(handle))
+        {
+            if (fgets(buffer, 256, handle))
+            {
+                result += buffer;
+            }
+        }
+
+        _pclose(handle);
+
+        return result;
     }
 
     void init()
     {
-        function::add("curl", 1, 2, []()
-        {
-            const auto url = game::get<std::string>(0);
-
-            const auto id = game::AllocObject(game::SCRIPTINSTANCE_SERVER);
-
-            game::Scr_AddObject(game::SCRIPTINSTANCE_SERVER, id);
-            game::RemoveRefToObject(game::SCRIPTINSTANCE_SERVER, id);
-
-            std::thread([url, id]()
-            {
-                std::string command("curl -s " + url);
-
-                const auto result = execute_command(command.data());
-
-                const auto name = game::SL_GetString("done", 0);
-
-                game::add(result.data());
-                game::Scr_NotifyId(game::SCRIPTINSTANCE_SERVER, 0, id, name, 1);
-            }).detach();
-        });
-
         function::add("system", 1, 1, []()
         {
             const auto cmd = game::get<const char*>(0);
