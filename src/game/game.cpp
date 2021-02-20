@@ -44,11 +44,6 @@ namespace game
 		game::Scr_AddString(SCRIPTINSTANCE_SERVER, value);
 	}
 
-	void add(std::string& value)
-	{
-		game::Scr_AddString(SCRIPTINSTANCE_SERVER, value.data());
-	}
-
 	void add(gentity_s* value)
 	{
 		game::Scr_AddEntity(SCRIPTINSTANCE_SERVER, value);
