@@ -42,6 +42,40 @@ namespace io
 
     void init()
     {
+        function::add("regexreplace", 3, 3, []()
+        {
+            const auto str = game::get<std::string>(0);
+            const auto expr = game::get<std::string>(1);
+            const auto replace = game::get<std::string>(2);
+
+            const auto regex = std::regex(expr);
+
+            const auto result = std::regex_replace(str, regex, replace);
+
+            game::add(result.data());
+        });
+
+        function::add("regexmatch", 2, 2, []()
+        {
+            const auto str = game::get<std::string>(0);
+            const auto expr = game::get<std::string>(1);
+
+            const auto regex = std::regex(expr);
+
+            std::smatch match;
+            const auto result = std::regex_match(str, match, regex);
+
+            game::add((int)match.size());
+        });
+
+        function::add("cleanstr", 1, 1, []()
+        {
+            const auto str = game::get<const char*>(0);
+            const auto result = game::I_CleanStr(str);
+
+            game::add(result);
+        });
+
         function::add("system", 1, 1, []()
         {
             const auto cmd = game::get<const char*>(0);
