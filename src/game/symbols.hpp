@@ -10,6 +10,8 @@ namespace game
 	WEAK symbol<void(const char* cmdName, void(), cmd_function_t* allocedCmd)> Cmd_AddCommandInternal{0x5B3070, 0x4DC2A0};
 	WEAK symbol<const char*(int index)> Cmd_Argv{0x5608F0, 0x6B3D40};
 
+	WEAK symbol<void(int clientNum)> ClientUserInfoChanged{0x4ED6A0, 0x427DC0};
+
 	WEAK symbol<const dvar_t*(const char*)> Dvar_FindVar{0x563A70, 0x673C80};
 
 	WEAK symbol<char*(const char*)> I_CleanStr{0x44F2B0, 0x483F40};
