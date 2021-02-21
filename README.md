@@ -103,6 +103,9 @@ init() {
 | popen | Executes shell a command | function | - | *string* command | *FILE\** stream |
 | pclose | Closes a popen stream | function | - | *FILE\** stream | *void* |
 | system | Executes a shell command and returns the result | function | - | *string* command | *string* result |
+| regexreplace | Replaces a sub string in a string based on a regex expression | function | - | *string* what, *string* expression, *string* with | *string* result |
+| regexmatch | Checks if a string matches a regex expression |  function | - | *string* str, *string* expression | *int* matches |
+| cleanstr | Cleans a string from color codes | function | - | *string* str | *string* cleaned |
 | curl | Sends an http request to the given url, returns an object which is notified "done" when the request is done | function | - | *string* url | *object* request |
 | say | Prints a message to a all players' chat | function | - | *string* message | *void* |
 | tell | Prints a message to a player's chat | method | *player* | *string* message | *void* |
