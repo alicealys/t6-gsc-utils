@@ -12,6 +12,8 @@ namespace chat
 		int post_get_name;
 		int post_get_clantag;
 
+		int client_index;
+
 		std::string names[18];
 		std::string clantags[18];
 
@@ -113,30 +115,26 @@ namespace chat
 			return names[clientNum].data();
 		}
 
-		__declspec(naked) void info_value_for_name()
+		void sv_get_user_info_stub(int index, char* buffer, int bufferSize)
 		{
-			__asm
-			{
-				push ebx;
-				call get_name;
-				pop ebx;
+			client_index = index;
 
-				push post_get_name;
-				retn;
-			}
+			reinterpret_cast<void (*)(int, char*, 
+				int)>(SELECT(0x68BB90, 0x4C10F0))(index, buffer, bufferSize);
 		}
 
-		__declspec(naked) void info_value_for_clantag()
+		const char* info_value_for_name(const char* s, const char* key)
 		{
-			__asm
-			{
-				push ebx;
-				call get_clantag;
-				pop ebx;
+			const auto name = get_name(client_index, s, key);
+			
+			return name;
+		}
 
-				push post_get_clantag;
-				retn;
-			}
+		const char* info_value_for_clantag(const char* s, const char* key)
+		{
+			const auto name = get_clantag(client_index, s, key);
+
+			return name;
 		}
 
 		void client_disconnect_stub(int clientNum)
@@ -160,8 +158,8 @@ namespace chat
 		utils::hook::call(SELECT(0x6A7B5F, 0x493F0F), post_say_stub);
 		utils::hook::call(SELECT(0x6A7B9B, 0x493F4B), post_say_stub);
 
-		utils::hook::jump(SELECT(0x4ED794, 0x427EB4), info_value_for_name);
-		utils::hook::jump(SELECT(0x4ED7BD, 0x427EDD), info_value_for_clantag);
+		utils::hook::call(SELECT(0x4ED794, 0x427EB4), info_value_for_name);
+		utils::hook::call(SELECT(0x4ED7BD, 0x427EDD), info_value_for_clantag);
 
 		utils::hook::call(SELECT(0x4D8888, 0x5304C8), client_disconnect_stub);
 

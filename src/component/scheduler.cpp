@@ -44,9 +44,12 @@ namespace scheduler
 		{
 			__asm
 			{
-				call execute;
-				push glass_update;
-				retn;
+				pushad
+				call execute
+				popad
+
+				push glass_update
+				retn
 			}
 		}
 	}
