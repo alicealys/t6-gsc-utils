@@ -74,7 +74,7 @@ namespace command
 
 			const auto argc = params.size();
 
-			for (auto i = 2; i < argc; i++)
+			for (auto i = argc - 1; i > 1; i--)
 			{
 				const auto arg = params[i];
 				game::add(arg);
@@ -108,7 +108,7 @@ namespace command
 
 			const auto argc = params.size();
 
-			for (auto i = 3; i < argc; i++)
+			for (auto i = argc - 1; i > 2; i--)
 			{
 				const auto arg = params[i];
 				game::add(arg);
