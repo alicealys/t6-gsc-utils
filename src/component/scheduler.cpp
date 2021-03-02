@@ -7,36 +7,18 @@ namespace scheduler
 		int glass_update;
 		std::mutex mutex;
 
-		struct task_t
-		{
-			int index;
-			std::function<bool()> callback;
-			std::chrono::milliseconds interval{};
-			std::chrono::high_resolution_clock::time_point last_call{};
-		};
-
-		std::vector<task_t> tasks;
+		std::queue<std::function<void()>> tasks;
 
 		void execute()
 		{
-			for (auto &task : tasks)
+			while (!tasks.empty())
 			{
+				const auto task = tasks.front();
+
 				const auto now = std::chrono::high_resolution_clock::now();
-				const auto diff = now - task.last_call;
 
-				if (diff < task.interval)
-				{
-					continue;
-				}
-
-				task.last_call = now;
-
-				const auto res = task.callback();
-
-				if (res)
-				{
-					tasks.erase(tasks.begin() + task.index);
-				}
+				task();
+				tasks.pop();
 			}
 		}
 
@@ -54,35 +36,9 @@ namespace scheduler
 		}
 	}
 
-	void schedule(const std::function<bool()>& callback, const std::chrono::milliseconds delay)
+	void once(const std::function<void()>& callback)
 	{
-		std::lock_guard _(mutex);
-
-		task_t task;
-		task.index = tasks.size();
-		task.callback = callback;
-		task.interval = delay;
-		task.last_call = std::chrono::high_resolution_clock::now();
-
-		tasks.push_back(task);
-	}
-
-	void loop(const std::function<void()>& callback, const std::chrono::milliseconds delay)
-	{
-		schedule([callback]()
-		{
-			callback();
-			return false;
-		}, delay);
-	}
-
-	void once(const std::function<void()>& callback, const std::chrono::milliseconds delay)
-	{
-		schedule([callback]()
-		{
-			callback();
-			return true;
-		}, delay);
+		tasks.push(callback);
 	}
 
 	void init()
