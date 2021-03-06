@@ -161,6 +161,8 @@ namespace chat
 		utils::hook::call(SELECT(0x4ED794, 0x427EB4), info_value_for_name);
 		utils::hook::call(SELECT(0x4ED7BD, 0x427EDD), info_value_for_clantag);
 
+		utils::hook::call(SELECT(0x4ED6D0, 0x427DF0), sv_get_user_info_stub);
+
 		utils::hook::call(SELECT(0x4D8888, 0x5304C8), client_disconnect_stub);
 
 		method::add("resetname", 0, 0, [](game::scr_entref_t ent)
