@@ -68,7 +68,10 @@ namespace game
 	template <typename T>
 	T get_ptr(int index)
 	{
-		return reinterpret_cast<T>(game::Scr_GetInt(SCRIPTINSTANCE_SERVER, index));
+		const auto value = reinterpret_cast<int (*)(unsigned int, unsigned int)>(SELECT(0x45D840, 
+			0x49A060))(0, index);
+
+		return reinterpret_cast<T>(value);
 	}
 
 	int Cmd_Argc();
