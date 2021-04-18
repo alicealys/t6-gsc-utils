@@ -24,6 +24,8 @@ using namespace std::literals;
 #pragma warning(disable: 26812)
 #pragma warning(disable: 28182)
 
+#include <MinHook.h>
+
 #include "utils/hook.hpp"
 #include "utils/memory.hpp"
 #include "utils/string.hpp"

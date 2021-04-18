@@ -4,14 +4,16 @@ namespace gsc
 {
     namespace
     {
+        utils::hook::detour scr_get_common_function_hook;
+        utils::hook::detour player_get_method_hook;
+
         void (*scr_get_common_function(const char** pName, int* type, int* min_args, int* max_args))()
         {
             auto func = function::find(*pName);
 
             if (func == nullptr)
             {
-                auto value = game::Scr_GetCommonFunction(pName, type, min_args, max_args);
-                return reinterpret_cast<void(__cdecl*)()>(value);
+                return scr_get_common_function_hook.invoke<void(__cdecl*)()>(pName, type, min_args, max_args);
             }
 
             *pName = func->actionString;
@@ -28,8 +30,7 @@ namespace gsc
 
             if (method == nullptr)
             {
-                auto value = game::Player_GetMethod(pName, min_args, max_args);
-                return reinterpret_cast<void(__cdecl*)(game::scr_entref_t)>(value);
+                return player_get_method_hook.invoke<void(__cdecl*)(game::scr_entref_t)>(pName, min_args, max_args);
             }
 
             *pName = method->actionString;
@@ -42,7 +43,7 @@ namespace gsc
 
     void setup()
     {
-        utils::hook::call(SELECT(0x4B580D, 0x4AD09D), scr_get_common_function);
-        utils::hook::call(SELECT(0x59D0AE, 0x48613E), player_get_method);
+        scr_get_common_function_hook.create(SELECT(0x691110, 0x4EB070), scr_get_common_function);
+        player_get_method_hook.create(SELECT(0x432480, 0x6F2DB0), player_get_method);
     }
 }
