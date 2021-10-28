@@ -41,6 +41,8 @@ namespace game
 	WEAK symbol<int(scriptInstance_t inst, int index)> Scr_GetInt{0x45D840, 0x49A060};
 	WEAK symbol<const char*(scriptInstance_t inst, int index)> Scr_GetString{0x67C6A0, 0x488110};
 	WEAK symbol<void(scriptInstance_t inst, int index, float* out)> Scr_GetVector{0x4CBCC0, 0x4BB100};
+	WEAK symbol<int(scriptInstance_t inst, const char* filename, 
+		const char* name, unsigned int* checksum, bool errorIfMissing)> Scr_GetFunctionHandle{0x416D30, 0x53E5A0};
 
 	WEAK symbol<void(int clientNum, int type, const char* command)> SV_GameSendServerCommand{0x45D7D0, 0x40D450};
 

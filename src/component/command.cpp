@@ -117,5 +117,11 @@ namespace command
 			const auto name = game::SL_GetString(params[2], 0);
 			game::Scr_NotifyNum(client, 0, name, argc - 3);
 		});
+
+		function::add("executecommand", 1, 1, []()
+		{
+			const auto cmd = game::get<const char*>(0);
+			game::Cbuf_AddText(0, utils::string::va("%s\n", cmd));
+		});
 	}
 }
