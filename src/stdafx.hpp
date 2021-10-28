@@ -41,5 +41,6 @@ using namespace std::literals;
 #include "component/chat.hpp"
 #include "component/io.hpp"
 #include "component/command.hpp"
+#include "component/gsc_functions.hpp"
 
 #include "gsc/gsc.hpp"
