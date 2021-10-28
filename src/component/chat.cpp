@@ -4,11 +4,6 @@ namespace chat
 {
 	namespace
 	{
-		auto hidden = true;
-
-		int g_say_to;
-		int pre_say;
-
 		int post_get_name;
 		int post_get_clantag;
 
@@ -16,82 +11,6 @@ namespace chat
 
 		std::string names[18];
 		std::string clantags[18];
-
-		char* evaluate_say(char* text, game::gentity_s* ent)
-		{
-			hidden = false;
-
-			const auto name = game::SL_GetString("say", 0);
-
-			game::add(text);
-			game::add(ent);
-
-			game::Scr_NotifyId(game::SCRIPTINSTANCE_SERVER, 0, *game::levelEntityId, name, 2);
-
-			if (text[0] == '/')
-			{
-				hidden = true;
-				++text;
-			}
-
-			return text;
-		}
-
-		char* clean_str(const char* str)
-		{
-			return game::I_CleanStr(str);
-		}
-
-		__declspec(naked) void pre_say_stub()
-		{
-			__asm
-			{
-				mov eax, [esp + 0xE4 + 0x10]
-
-				push eax
-				pushad
-
-				push[esp + 0xE4 + 0x28]
-				push eax
-				call evaluate_say
-				add esp, 0x8
-
-				mov[esp + 0x20], eax
-				popad
-				pop eax
-
-				mov[esp + 0xE4 + 0x10], eax
-
-				call clean_str
-
-				push pre_say
-				retn
-			}
-		}
-
-		__declspec(naked) void post_say_stub()
-		{
-			__asm
-			{
-				push eax
-
-				xor eax, eax
-
-				mov al, hidden
-
-				cmp al, 0
-				jne hide
-
-				pop eax
-
-				push g_say_to
-				retn
-			hide:
-				pop eax
-
-				retn
-			}
-		}
 
 		const char* get_clantag(int clientNum, const char* s, const char* key)
 		{
@@ -148,15 +67,8 @@ namespace chat
 
 	void init()
 	{
-		g_say_to = SELECT(0x82BB50, 0x82A3D0);
-		pre_say = SELECT(0x6A7AB3, 0x493E63);
-
 		post_get_name = SELECT(0x4ED799, 0x427EB9);
 		post_get_clantag = SELECT(0x4ED7C2, 0x427EE2);
-
-		utils::hook::jump(SELECT(0x6A7AAE, 0x493E5E), pre_say_stub);
-		utils::hook::call(SELECT(0x6A7B5F, 0x493F0F), post_say_stub);
-		utils::hook::call(SELECT(0x6A7B9B, 0x493F4B), post_say_stub);
 
 		utils::hook::call(SELECT(0x4ED794, 0x427EB4), info_value_for_name);
 		utils::hook::call(SELECT(0x4ED7BD, 0x427EDD), info_value_for_clantag);
