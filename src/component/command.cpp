@@ -121,7 +121,7 @@ namespace command
 		function::add("executecommand", 1, 1, []()
 		{
 			const auto cmd = game::get<const char*>(0);
-			game::Cbuf_AddText(0, utils::string::va("%s\n", cmd));
+			game::Cbuf_InsertText(0, cmd);
 		});
 	}
 }
