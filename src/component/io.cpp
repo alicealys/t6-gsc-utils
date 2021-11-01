@@ -137,7 +137,7 @@ namespace io
             printf("%s\n", fmt.data());
         });
 
-        function::add("va", 1, 2, []()
+        function::add("va", 1, 512, []()
         {
             auto fmt = game::get<std::string>(0);
             const auto num = game::Scr_GetNumParam(game::SCRIPTINSTANCE_SERVER);
