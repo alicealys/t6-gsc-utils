@@ -149,7 +149,7 @@ namespace chat
 		{
 			const auto cmd = game::get<const char*>(0);
 
-			game::Cbuf_AddText(0, cmd);
+			game::Cbuf_InsertText(0, cmd);
 		});
 
 		function::add("sendservercommand", 2, 2, []()
