@@ -26,21 +26,16 @@ using namespace std::literals;
 
 #include <MinHook.h>
 
-#include "utils/hook.hpp"
+#include <gsl/gsl>
+#include <MinHook.h>
+
 #include "utils/memory.hpp"
 #include "utils/string.hpp"
+#include "utils/hook.hpp"
+#include "utils/concurrent_list.hpp"
+#include "utils/io.hpp"
+#include "utils/concurrency.hpp"
+#include "utils/http.hpp"
 
 #include "game/structs.hpp"
 #include "game/game.hpp"
-
-#include "gsc/functions.hpp"
-#include "gsc/methods.hpp"
-
-#include "component/http.hpp"
-#include "component/scheduler.hpp"
-#include "component/chat.hpp"
-#include "component/io.hpp"
-#include "component/command.hpp"
-#include "component/gsc_functions.hpp"
-
-#include "gsc/gsc.hpp"

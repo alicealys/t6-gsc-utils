@@ -1,5 +1,3 @@
-// iw6x-client
-
 #include "stdafx.hpp"
 
 namespace utils::string
@@ -35,7 +33,7 @@ namespace utils::string
 	{
 		std::transform(text.begin(), text.end(), text.begin(), [](const char input)
 		{
-			return CHAR(tolower(input));
+			return static_cast<char>(tolower(input));
 		});
 
 		return text;
@@ -45,7 +43,7 @@ namespace utils::string
 	{
 		std::transform(text.begin(), text.end(), text.begin(), [](const char input)
 		{
-			return CHAR(toupper(input));
+			return static_cast<char>(toupper(input));
 		});
 
 		return text;
@@ -54,6 +52,12 @@ namespace utils::string
 	bool starts_with(const std::string& text, const std::string& substring)
 	{
 		return text.find(substring) == 0;
+	}
+
+	bool ends_with(const std::string& text, const std::string& substring)
+	{
+		if (substring.size() > text.size()) return false;
+		return std::equal(substring.rbegin(), substring.rend(), text.rbegin());
 	}
 
 	std::string dump_hex(const std::string& data, const std::string& separator)
@@ -71,29 +75,6 @@ namespace utils::string
 		}
 
 		return result;
-	}
-
-	std::string get_clipboard_data()
-	{
-		if (OpenClipboard(0))
-		{
-			std::string data;
-
-			const auto clipboard_data = GetClipboardData(1u);
-			if (clipboard_data)
-			{
-				const auto cliptext = static_cast<char*>(GlobalLock(clipboard_data));
-				if (cliptext)
-				{
-					data.append(cliptext);
-					GlobalUnlock(clipboard_data);
-				}
-			}
-			CloseClipboard();
-
-			return data;
-		}
-		return {};
 	}
 
 	void strip(const char* in, char* out, int max)
@@ -120,5 +101,51 @@ namespace utils::string
 			++in;
 		}
 		*out = '\0';
+	}
+
+#pragma warning(push)
+#pragma warning(disable: 4100)
+	std::string convert(const std::wstring& wstr)
+	{
+		std::string result;
+		result.reserve(wstr.size());
+
+		for (const auto& chr : wstr)
+		{
+			result.push_back(static_cast<char>(chr));
+		}
+
+		return result;
+	}
+
+	std::wstring convert(const std::string& str)
+	{
+		std::wstring result;
+		result.reserve(str.size());
+
+		for (const auto& chr : str)
+		{
+			result.push_back(static_cast<wchar_t>(chr));
+		}
+
+		return result;
+	}
+#pragma warning(pop)
+
+	std::string replace(std::string str, const std::string& from, const std::string& to)
+	{
+		if (from.empty())
+		{
+			return str;
+		}
+
+		size_t start_pos = 0;
+		while ((start_pos = str.find(from, start_pos)) != std::string::npos)
+		{
+			str.replace(start_pos, from.length(), to);
+			start_pos += to.length();
+		}
+
+		return str;
 	}
 }
