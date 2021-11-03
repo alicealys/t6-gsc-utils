@@ -1,4 +1,8 @@
-#include "stdafx.hpp"
+#include <stdafx.hpp>
+#include "loader/component_loader.hpp"
+#include "io.hpp"
+#include "gsc/functions.hpp"
+#include "scheduler.hpp"
 
 namespace http
 {
@@ -58,28 +62,34 @@ namespace http
 		request_queue.push(r);
 	}
 
-	void init()
+	class component final : public component_interface
 	{
-		start_thread();
-
-		function::add("curl", 1, 1, []()
+	public:
+		void post_unpack() override
 		{
-			const auto url = game::get<std::string>(0);
+			start_thread();
 
-			const auto id = game::AllocObject(game::SCRIPTINSTANCE_SERVER);
-			game::Scr_AddObject(game::SCRIPTINSTANCE_SERVER, id);
-			game::RemoveRefToObject(game::SCRIPTINSTANCE_SERVER, id);
-
-			http::add_request(url, [id](const std::string& result)
+			function::add("curl", 1, 1, []()
 			{
-				const auto name = game::SL_GetString("done", 0);
+				const auto url = game::get<std::string>(0);
 
-				scheduler::once([result, name, id]()
+				const auto id = game::AllocObject(game::SCRIPTINSTANCE_SERVER);
+				game::Scr_AddObject(game::SCRIPTINSTANCE_SERVER, id);
+				game::RemoveRefToObject(game::SCRIPTINSTANCE_SERVER, id);
+
+				http::add_request(url, [id](const std::string& result)
 				{
-					game::add(result.data());
-					game::Scr_NotifyId(game::SCRIPTINSTANCE_SERVER, 0, id, name, 1);
+					const auto name = game::SL_GetString("done", 0);
+
+					scheduler::once([result, name, id]()
+					{
+						game::add(result.data());
+						game::Scr_NotifyId(game::SCRIPTINSTANCE_SERVER, 0, id, name, 1);
+					});
 				});
 			});
-		});
-	}
+		}
+	};
 }
+
+REGISTER_COMPONENT(http::component)

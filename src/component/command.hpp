@@ -15,8 +15,6 @@ namespace command
 		}
 	};
 
-	void init();
-
 	void add_raw(const char* name, void (*callback)());
 	void add(const char* name, std::function<void(params&)> callback);
 }

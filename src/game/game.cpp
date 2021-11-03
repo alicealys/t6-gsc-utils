@@ -1,4 +1,5 @@
 #include <stdafx.hpp>
+#include "loader/component_loader.hpp"
 
 namespace game
 {
@@ -15,13 +16,6 @@ namespace game
 		{
 			return current == gamemode::zombies;
 		}
-	}
-
-	void init()
-	{
-		current = reinterpret_cast<const char*>(0xC2F028) == "multiplayer"s
-			? gamemode::multiplayer 
-			: gamemode::zombies;
 	}
 
 	void add(int value)
@@ -89,4 +83,17 @@ namespace game
 
 		return count;
 	}
+
+	class component final : public component_interface
+	{
+	public:
+		void post_unpack() override
+		{
+			current = reinterpret_cast<const char*>(0xC2F028) == "multiplayer"s
+				? gamemode::multiplayer 
+				: gamemode::zombies;
+		}
+	};
 }
+
+REGISTER_COMPONENT(game::component)

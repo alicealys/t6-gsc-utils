@@ -1,4 +1,7 @@
 #include <stdafx.hpp>
+#include "loader/component_loader.hpp"
+#include "gsc/functions.hpp"
+#include "gsc/methods.hpp"
 
 namespace chat
 {
@@ -65,99 +68,105 @@ namespace chat
 		}
 	}
 
-	void init()
+	class component final : public component_interface
 	{
-		post_get_name = SELECT(0x4ED799, 0x427EB9);
-		post_get_clantag = SELECT(0x4ED7C2, 0x427EE2);
-
-		utils::hook::call(SELECT(0x4ED794, 0x427EB4), info_value_for_name);
-		utils::hook::call(SELECT(0x4ED7BD, 0x427EDD), info_value_for_clantag);
-
-		utils::hook::call(SELECT(0x4ED6D0, 0x427DF0), sv_get_user_info_stub);
-
-		utils::hook::call(SELECT(0x4D8888, 0x5304C8), client_disconnect_stub);
-
-		method::add("resetname", 0, 0, [](game::scr_entref_t ent)
+	public:
+		void post_unpack() override
 		{
-			if (ent.classnum != 0)
+			post_get_name = SELECT(0x4ED799, 0x427EB9);
+			post_get_clantag = SELECT(0x4ED7C2, 0x427EE2);
+
+			utils::hook::call(SELECT(0x4ED794, 0x427EB4), info_value_for_name);
+			utils::hook::call(SELECT(0x4ED7BD, 0x427EDD), info_value_for_clantag);
+
+			utils::hook::call(SELECT(0x4ED6D0, 0x427DF0), sv_get_user_info_stub);
+
+			utils::hook::call(SELECT(0x4D8888, 0x5304C8), client_disconnect_stub);
+
+			method::add("resetname", 0, 0, [](game::scr_entref_t ent)
 			{
-				return;
-			}
+				if (ent.classnum != 0)
+				{
+					return;
+				}
 
-			names[ent.entnum].clear();
-			game::ClientUserInfoChanged(ent.entnum);
-		});
+				names[ent.entnum].clear();
+				game::ClientUserInfoChanged(ent.entnum);
+			});
 
-		method::add("resetclantag", 0, 0, [](game::scr_entref_t ent)
-		{
-			if (ent.classnum != 0)
+			method::add("resetclantag", 0, 0, [](game::scr_entref_t ent)
 			{
-				return;
-			}
+				if (ent.classnum != 0)
+				{
+					return;
+				}
 
-			clantags[ent.entnum].clear();
-			game::ClientUserInfoChanged(ent.entnum);
-		});
+				clantags[ent.entnum].clear();
+				game::ClientUserInfoChanged(ent.entnum);
+			});
 
-		method::add("rename", 1, 1, [](game::scr_entref_t ent)
-		{
-			if (ent.classnum != 0)
+			method::add("rename", 1, 1, [](game::scr_entref_t ent)
 			{
-				return;
-			}
+				if (ent.classnum != 0)
+				{
+					return;
+				}
 
-			const auto name = game::get<std::string>(0);
-			names[ent.entnum] = name;
+				const auto name = game::get<std::string>(0);
+				names[ent.entnum] = name;
 
-			game::ClientUserInfoChanged(ent.entnum);
-		});
+				game::ClientUserInfoChanged(ent.entnum);
+			});
 
-		method::add("setclantag", 1, 1, [](game::scr_entref_t ent)
-		{
-			if (ent.classnum != 0)
+			method::add("setclantag", 1, 1, [](game::scr_entref_t ent)
 			{
-				return;
-			}
+				if (ent.classnum != 0)
+				{
+					return;
+				}
 
-			const auto clantag = game::get<std::string>(0);
-			clantags[ent.entnum] = clantag;
+				const auto clantag = game::get<std::string>(0);
+				clantags[ent.entnum] = clantag;
 
-			game::ClientUserInfoChanged(ent.entnum);
-		});
+				game::ClientUserInfoChanged(ent.entnum);
+			});
 		
-		method::add("tell", 1, 1, [](game::scr_entref_t ent)
-		{
-			if (ent.classnum != 0)
+			method::add("tell", 1, 1, [](game::scr_entref_t ent)
 			{
-				return;
-			}
+				if (ent.classnum != 0)
+				{
+					return;
+				}
 
-			const auto clientNum = ent.entnum;
-			const auto msg = game::get<const char*>(0);
+				const auto clientNum = ent.entnum;
+				const auto msg = game::get<const char*>(0);
 
-			game::SV_GameSendServerCommand(clientNum, 0, utils::string::va("j \"%s\"", msg));
-		});
+				game::SV_GameSendServerCommand(clientNum, 0, utils::string::va("j \"%s\"", msg));
+			});
 
-		function::add("say", 1, 1, []()
-		{
-			const auto msg = game::get<const char*>(0);
+			function::add("say", 1, 1, []()
+			{
+				const auto msg = game::get<const char*>(0);
 
-			game::SV_GameSendServerCommand(-1, 0, utils::string::va("j \"%s\"", msg));
-		});
+				game::SV_GameSendServerCommand(-1, 0, utils::string::va("j \"%s\"", msg));
+			});
 
-		function::add("cmdexecute", 1, 1, []()
-		{
-			const auto cmd = game::get<const char*>(0);
+			function::add("cmdexecute", 1, 1, []()
+			{
+				const auto cmd = game::get<const char*>(0);
 
-			game::Cbuf_InsertText(0, cmd);
-		});
+				game::Cbuf_InsertText(0, cmd);
+			});
 
-		function::add("sendservercommand", 2, 2, []()
-		{
-			const auto clientNum = game::get<int>(0);
-			const auto cmd = game::get<const char*>(1);
+			function::add("sendservercommand", 2, 2, []()
+			{
+				const auto clientNum = game::get<int>(0);
+				const auto cmd = game::get<const char*>(1);
 
-			game::SV_GameSendServerCommand(clientNum, 0, cmd);
-		});
-	}
+				game::SV_GameSendServerCommand(clientNum, 0, cmd);
+			});
+		}
+	};
 }
+
+REGISTER_COMPONENT(chat::component)

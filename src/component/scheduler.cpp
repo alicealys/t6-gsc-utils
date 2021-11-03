@@ -1,4 +1,5 @@
-#include "stdafx.hpp"
+#include <stdafx.hpp>
+#include "loader/component_loader.hpp"
 
 namespace scheduler
 {
@@ -41,9 +42,15 @@ namespace scheduler
 		tasks.push(callback);
 	}
 
-	void init()
+	class component final : public component_interface
 	{
-		glass_update = SELECT(0x49E910, 0x5001A0);
-		utils::hook::jump(SELECT(0x4A59F7, 0x6AA2F7), server_frame);
-	}
+	public:
+		void post_unpack() override
+		{
+			glass_update = SELECT(0x49E910, 0x5001A0);
+			utils::hook::jump(SELECT(0x4A59F7, 0x6AA2F7), server_frame);
+		}
+	};
 }
+
+REGISTER_COMPONENT(scheduler::component)

@@ -1,4 +1,7 @@
 #include <stdafx.hpp>
+#include "loader/component_loader.hpp"
+#include "functions.hpp"
+#include "methods.hpp"
 
 namespace gsc
 {
@@ -41,9 +44,15 @@ namespace gsc
         }
     }
 
-    void setup()
+    class component final : public component_interface
     {
-        scr_get_common_function_hook.create(SELECT(0x691110, 0x4EB070), scr_get_common_function);
-        player_get_method_hook.create(SELECT(0x432480, 0x6F2DB0), player_get_method);
-    }
+    public:
+        void post_unpack() override
+        {
+            scr_get_common_function_hook.create(SELECT(0x691110, 0x4EB070), scr_get_common_function);
+            player_get_method_hook.create(SELECT(0x432480, 0x6F2DB0), player_get_method);
+        }
+    };
 }
+
+REGISTER_COMPONENT(gsc::component)

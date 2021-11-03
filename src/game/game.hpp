@@ -54,8 +54,6 @@ namespace game
 		T* t6zm_;
 	};
 
-	void init();
-
 	void add(int);
 	void add(float);
 	void add(const char*);
