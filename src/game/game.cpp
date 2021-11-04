@@ -83,17 +83,4 @@ namespace game
 
 		return count;
 	}
-
-	class component final : public component_interface
-	{
-	public:
-		void post_unpack() override
-		{
-			current = reinterpret_cast<const char*>(0xC2F028) == "multiplayer"s
-				? gamemode::multiplayer 
-				: gamemode::zombies;
-		}
-	};
 }
-
-REGISTER_COMPONENT(game::component)
