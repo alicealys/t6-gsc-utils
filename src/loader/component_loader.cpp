@@ -1,4 +1,4 @@
-#include <stdinc.hpp>
+#include <stdafx.hpp>
 #include "component_loader.hpp"
 
 void component_loader::register_component(std::unique_ptr<component_interface>&& component_)
