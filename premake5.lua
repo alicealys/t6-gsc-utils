@@ -30,8 +30,8 @@ end
 
 dependencies.load()
 
-workspace "plutonium-gsc"
-	startproject "plutonium-gsc"
+workspace "t6-gsc-utils"
+	startproject "t6-gsc-utils"
 	location "./build"
 	objdir "%{wks.location}/obj"
 	targetdir "%{wks.location}/bin/%{cfg.platform}/%{cfg.buildcfg}"
@@ -73,7 +73,7 @@ workspace "plutonium-gsc"
 		flags { "MultiProcessorCompile", "No64BitChecks" }
 		optimize "Debug"
 
-	project "gsc-utils"
+	project "t6-gsc-utils"
 		kind "SharedLib"
 		language "C++"
 		
@@ -95,8 +95,8 @@ workspace "plutonium-gsc"
 			"$(ProjectDir)src"
 		}
 				
-		pchheader "stdafx.hpp"
-		pchsource "src/stdafx.cpp"
+		pchheader "stdinc.hpp"
+		pchsource "src/stdinc.cpp"
 		buildoptions { "/Zm100 -Zm100" }
 
 		flags { "UndefinedIdentifiers" }
