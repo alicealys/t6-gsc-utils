@@ -1,5 +1,11 @@
 #pragma once
-#include "stdafx.hpp"
+#include "memory.hpp"
+#include <cstdint>
+
+#ifndef ARRAYSIZE
+template <class Type, size_t n>
+size_t ARRAYSIZE(Type(&)[n]) { return n; }
+#endif
 
 namespace utils::string
 {
@@ -79,10 +85,15 @@ namespace utils::string
 	std::string to_lower(std::string text);
 	std::string to_upper(std::string text);
 	bool starts_with(const std::string& text, const std::string& substring);
+	bool ends_with(const std::string& text, const std::string& substring);
+	bool is_numeric(const std::string& text);
 
 	std::string dump_hex(const std::string& data, const std::string& separator = " ");
 
-	std::string get_clipboard_data();
-
 	void strip(const char* in, char* out, int max);
+
+	std::string convert(const std::wstring& wstr);
+	std::wstring convert(const std::string& str);
+
+	std::string replace(std::string str, const std::string& from, const std::string& to);
 }

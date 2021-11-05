@@ -1,5 +1,7 @@
 #pragma once
 
+#include "structs.hpp"
+
 #define SELECT(mp, zm) (game::environment::t6mp() ? mp : zm)
 
 namespace game
@@ -53,8 +55,6 @@ namespace game
 		T* t6mp_;
 		T* t6zm_;
 	};
-
-	void init();
 
 	void add(int);
 	void add(float);

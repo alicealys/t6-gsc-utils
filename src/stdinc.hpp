@@ -10,10 +10,18 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <algorithm>
 #include <functional>
 #include <regex>
 #include <queue>
+#include <unordered_set>
+#include <filesystem>
+#include <map>
+#include <csetjmp>
+#include <atlcomcli.h>
+
+#pragma comment(lib, "urlmon.lib")
 
 using namespace std::literals;
 
@@ -25,22 +33,3 @@ using namespace std::literals;
 #pragma warning(disable: 28182)
 
 #include <MinHook.h>
-
-#include "utils/hook.hpp"
-#include "utils/memory.hpp"
-#include "utils/string.hpp"
-
-#include "game/structs.hpp"
-#include "game/game.hpp"
-
-#include "gsc/functions.hpp"
-#include "gsc/methods.hpp"
-
-#include "component/http.hpp"
-#include "component/scheduler.hpp"
-#include "component/chat.hpp"
-#include "component/io.hpp"
-#include "component/command.hpp"
-#include "component/gsc_functions.hpp"
-
-#include "gsc/gsc.hpp"

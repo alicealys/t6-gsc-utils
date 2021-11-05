@@ -1,4 +1,13 @@
-#include "stdafx.hpp"
+#include "stdinc.hpp"
+#include "loader/component_loader.hpp"
+
+#include "game/game.hpp"
+
+#include "command.hpp"
+#include "gsc.hpp"
+
+#include <utils/string.hpp>
+#include <utils/memory.hpp>
 
 namespace command
 {
@@ -56,72 +65,78 @@ namespace command
 		handlers[command] = callback;
 	}
 
-	void init()
+	class component final : public component_interface
 	{
-		command::add("notifylevel", [](command::params& params)
+	public:
+		void post_unpack() override
 		{
-			if (params.size() < 2)
+			command::add("notifylevel", [](command::params& params)
 			{
-				printf("Usage: notifylevel <name> [...]\n");
-				return;
-			}
+				if (params.size() < 2)
+				{
+					printf("Usage: notifylevel <name> [...]\n");
+					return;
+				}
 
-			if (!(*game::levelEntityId))
+				if (!(*game::levelEntityId))
+				{
+					printf("Level not loaded\n");
+					return;
+				}
+
+				const auto argc = params.size();
+
+				for (auto i = argc - 1; i > 1; i--)
+				{
+					const auto arg = params[i];
+					game::add(arg);
+				}
+
+				const auto name = game::SL_GetString(params[1], 0);
+				game::Scr_NotifyId(game::SCRIPTINSTANCE_SERVER, 0, *game::levelEntityId, name, argc - 2);
+			});
+
+			command::add("notifynum", [](command::params& params)
 			{
-				printf("Level not loaded\n");
-				return;
-			}
+				if (params.size() < 3)
+				{
+					printf("Usage: notifynum <num> <name> [...]\n");
+					return;
+				}
 
-			const auto argc = params.size();
+				if (!(*game::levelEntityId))
+				{
+					printf("Level not loaded\n");
+					return;
+				}
 
-			for (auto i = argc - 1; i > 1; i--)
+				const auto client = atoi(params[1]);
+				const auto sv_maxclients = game::Dvar_FindVar("sv_maxclients")->current.integer;
+
+				if (client < 0 || client >= sv_maxclients)
+				{
+					return;
+				}
+
+				const auto argc = params.size();
+
+				for (auto i = argc - 1; i > 2; i--)
+				{
+					const auto arg = params[i];
+					game::add(arg);
+				}
+
+				const auto name = game::SL_GetString(params[2], 0);
+				game::Scr_NotifyNum(client, 0, name, argc - 3);
+			});
+
+			gsc::function::add("executecommand", 1, 1, []()
 			{
-				const auto arg = params[i];
-				game::add(arg);
-			}
-
-			const auto name = game::SL_GetString(params[1], 0);
-			game::Scr_NotifyId(game::SCRIPTINSTANCE_SERVER, 0, *game::levelEntityId, name, argc - 2);
-		});
-
-		command::add("notifynum", [](command::params& params)
-		{
-			if (params.size() < 3)
-			{
-				printf("Usage: notifynum <num> <name> [...]\n");
-				return;
-			}
-
-			if (!(*game::levelEntityId))
-			{
-				printf("Level not loaded\n");
-				return;
-			}
-
-			const auto client = atoi(params[1]);
-			const auto sv_maxclients = game::Dvar_FindVar("sv_maxclients")->current.integer;
-
-			if (client < 0 || client >= sv_maxclients)
-			{
-				return;
-			}
-
-			const auto argc = params.size();
-
-			for (auto i = argc - 1; i > 2; i--)
-			{
-				const auto arg = params[i];
-				game::add(arg);
-			}
-
-			const auto name = game::SL_GetString(params[2], 0);
-			game::Scr_NotifyNum(client, 0, name, argc - 3);
-		});
-
-		function::add("executecommand", 1, 1, []()
-		{
-			const auto cmd = game::get<const char*>(0);
-			game::Cbuf_InsertText(0, cmd);
-		});
-	}
+				const auto cmd = game::get<const char*>(0);
+				game::Cbuf_InsertText(0, cmd);
+			});
+		}
+	};
 }
+
+REGISTER_COMPONENT(command::component)
