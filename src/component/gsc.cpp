@@ -352,6 +352,13 @@ namespace gsc
                 printf("meow\n");
                 return {};
             });
+
+            function::add("arrayremovekey", [](const function_args& args) -> scripting::script_value
+            {
+                const auto array = args[0].as<scripting::array>();
+                const auto key = args[1].as<std::string>();
+                array.erase(key);
+            });
         }
     };
 }

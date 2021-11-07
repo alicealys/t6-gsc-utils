@@ -51,7 +51,7 @@ namespace game
 		SCRIPT_INTEGER = 7,
 		SCRIPT_FUNCTION = 8,
 		SCRIPT_END = 9,
-		SCRIPT_STRUCT = 19,
+		SCRIPT_STRUCT = 18,
 		SCRIPT_ARRAY = 21,
 	};
 
