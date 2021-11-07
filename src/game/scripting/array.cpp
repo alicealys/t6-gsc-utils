@@ -244,7 +244,6 @@ namespace scripting
 		}
 
 		const auto value = game::scr_VarGlob->childVariableValue[variable_id];
-		printf("array::get const unsigned int: %i %i\n", value.type, variable_id);
 		game::VariableValue variable;
 		variable.u = value.u.u;
 		variable.type = (game::scriptType_e)value.type;
