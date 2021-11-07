@@ -7,6 +7,9 @@
 
 namespace scripting
 {
+	class entity;
+	class array;
+
 	namespace
 	{
 		std::unordered_map<int, std::string> typenames = 
@@ -85,9 +88,6 @@ namespace scripting
 			return info.name();
 		}
 	}
-
-	class entity;
-	class array;
 
 	class script_value
 	{
