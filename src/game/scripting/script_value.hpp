@@ -95,6 +95,8 @@ namespace scripting
 		script_value() = default;
 		script_value(const game::VariableValue& value);
 
+		script_value(void* value);
+
 		script_value(int value);
 		script_value(unsigned int value);
 		script_value(bool value);
