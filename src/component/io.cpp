@@ -16,18 +16,19 @@
 
 namespace io
 {
-    namespace
-    {
-        void replace(std::string& str, const std::string& from, const std::string& to) {
-            const auto start_pos = str.find(from);
+	namespace
+	{
+		void replace(std::string& str, const std::string& from, const std::string& to) 
+		{
+			const auto start_pos = str.find(from);
 
-            if (start_pos == std::string::npos)
-            {
-			return;
-            }
+			if (start_pos == std::string::npos)
+			{
+				return;
+			}
 
-            str.replace(start_pos, from.length(), to);
-        }
+			str.replace(start_pos, from.length(), to);
+		}
 
 		void http_get()
 		{
@@ -52,39 +53,52 @@ namespace io
 				});
 			}, scheduler::pipeline::async);
 		}
-    }
+	}
 
-    std::string execute_command(const std::string& cmd)
-    {
-        const auto handle = _popen(cmd.data(), "r");
-        char* buffer = (char*)calloc(256, sizeof(char));
-        std::string result;
+	std::string execute_command(const std::string& cmd)
+	{
+		const auto handle = _popen(cmd.data(), "r");
+		char* buffer = (char*)calloc(256, sizeof(char));
+		std::string result;
 
-        if (!handle)
-        {
-            return "";
-        }
+		if (!handle)
+		{
+			return "";
+		}
 
-        while (!feof(handle))
-        {
-            if (fgets(buffer, 256, handle))
-            {
+		while (!feof(handle))
+		{
+			if (fgets(buffer, 256, handle))
+			{
 			result += buffer;
-            }
-        }
+			}
+		}
 
-        _pclose(handle);
+		_pclose(handle);
 
-        return result;
-    }
+		return result;
+	}
 
-    class component final : public component_interface
-    {
-    public:
-        void post_unpack() override
-        {
+	class component final : public component_interface
+	{
+	public:
+		void post_unpack() override
+		{
 			const auto path = game::Dvar_FindVar("fs_homepath")->current.string;
 			std::filesystem::current_path(path);
+
+			gsc::function::add("va", [](const gsc::function_args& args)
+			{
+				auto fmt = args[0].as<std::string>();
+
+				for (auto i = 1; i < args.size(); i++)
+				{
+					const auto arg = args[i].as<std::string>();
+					replace(fmt, "%s", arg);
+				}
+
+				return fmt;
+			});
 
 			gsc::function::add("jsonprint", [](const gsc::function_args& args) -> scripting::script_value
 			{
@@ -246,8 +260,8 @@ namespace io
 
 				return object;
 			});
-        }
-    };
+		}
+	};
 }
 
 REGISTER_COMPONENT(io::component)
