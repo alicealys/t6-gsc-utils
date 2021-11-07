@@ -20,6 +20,7 @@
 #include <map>
 #include <csetjmp>
 #include <atlcomcli.h>
+#include <variant>
 
 #pragma comment(lib, "urlmon.lib")
 
@@ -33,3 +34,4 @@ using namespace std::literals;
 #pragma warning(disable: 28182)
 
 #include <MinHook.h>
+#include <gsl/gsl>

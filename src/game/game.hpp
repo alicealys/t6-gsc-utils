@@ -75,6 +75,8 @@ namespace game
 	}
 
 	int Cmd_Argc();
+
+	scr_entref_t Scr_GetEntityIdRef(unsigned int entId);
 }
 
 #include "symbols.hpp"

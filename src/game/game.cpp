@@ -85,4 +85,16 @@ namespace game
 
 		return count;
 	}
+
+	scr_entref_t Scr_GetEntityIdRef(unsigned int entId)
+	{
+		scr_entref_t entref;
+
+		const auto v2 = &game::scr_VarGlob[0].objectVariableValue[entId];
+
+		entref.entnum = v2->u.f.next;
+		entref.classnum = v2->w.classnum >> 8;
+
+		return entref;
+	}
 }

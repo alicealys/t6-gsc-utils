@@ -7,8 +7,12 @@
 #include "gsc.hpp"
 #include "scheduler.hpp"
 
+#include "gsc.hpp"
+#include "json.hpp"
+
 #include <utils/hook.hpp>
 #include <utils/http.hpp>
+#include <utils/io.hpp>
 
 namespace io
 {
@@ -33,20 +37,20 @@ namespace io
 			game::Scr_AddObject(game::SCRIPTINSTANCE_SERVER, object);
 
 			scheduler::once([object, url]()
+			{
+				const auto result = utils::http::get_data(url.data());
+				scheduler::once([object, result]()
 				{
-					const auto result = utils::http::get_data(url.data());
-					scheduler::once([object, result]()
-						{
-							const auto name = game::SL_GetString("done", 0);
+					const auto name = game::SL_GetString("done", 0);
 
-							const auto value = result.has_value()
-								? result.value().substr(0, 0x5000)
-								: "";
+					const auto value = result.has_value()
+						? result.value().substr(0, 0x5000)
+						: "";
 
-							game::add(value.data());
-							game::Scr_NotifyId(game::SCRIPTINSTANCE_SERVER, 0, object, name, 1);
-						});
-				}, scheduler::pipeline::async);
+						game::add(value.data());
+						game::Scr_NotifyId(game::SCRIPTINSTANCE_SERVER, 0, object, name, 1);
+				});
+			}, scheduler::pipeline::async);
 		}
     }
 
@@ -79,270 +83,169 @@ namespace io
     public:
         void post_unpack() override
         {
-            gsc::function::add("regexreplace", 3, 3, []()
-            {
-				const auto str = game::get<std::string>(0);
-				const auto expr = game::get<std::string>(1);
-				const auto replace = game::get<std::string>(2);
+			const auto path = game::Dvar_FindVar("fs_homepath")->current.string;
+			std::filesystem::current_path(path);
 
-				const auto regex = std::regex(expr);
-
-				const auto result = std::regex_replace(str, regex, replace);
-
-				game::add(result.data());
-            });
-
-            gsc::function::add("regexmatch", 2, 2, []()
-            {
-				const auto str = game::get<std::string>(0);
-				const auto expr = game::get<std::string>(1);
-
-				const auto regex = std::regex(expr);
-
-				std::smatch match;
-				const auto result = std::regex_match(str, match, regex);
-
-				game::add((int)match.size());
-            });
-
-            gsc::function::add("cleanstr", 1, 1, []()
+			gsc::function::add("jsonprint", [](const gsc::function_args& args) -> scripting::script_value
 			{
-				const auto str = game::get<const char*>(0);
-				const auto result = game::I_CleanStr(str);
-				game::add(result);
-			});
+				std::string buffer;
 
-            gsc::function::add("system", 1, 1, []()
-			{
-				const auto cmd = game::get<const char*>(0);
-				const auto result = execute_command(cmd);
-				game::add(result.data());
-			});
-
-            gsc::function::add("popen", 2, 2, []()
-			{
-				const auto cmd = game::get<const char*>(0);
-				const auto mode = game::get<const char*>(1);
-
-				const auto handle = _popen(cmd, mode);
-				game::add(handle);
-			});
-
-            gsc::function::add("popen", 2, 2, []()
-			{
-				const auto handle = game::get_ptr<FILE*>(0);
-				_pclose(handle);
-			});
-
-            gsc::function::add("date", 1, 1, []()
-			{
-				const auto fmt = game::get<const char*>(0);
-
-				const auto t = std::time(0);
-				char buffer[256];
-
-				std::strftime(buffer, 256, fmt, std::localtime(&t));
-
-				game::add(buffer);
-			});
-
-            gsc::function::add("time", 0, 0, []()
-			{
-				const auto now = std::chrono::system_clock::now().time_since_epoch();
-				const auto count = std::chrono::duration_cast<std::chrono::seconds>(now).count();
-				game::Scr_AddInt(game::SCRIPTINSTANCE_SERVER, count);
-			});
-
-            gsc::function::add("printf", 1, 2, []()
-			{
-				auto fmt = game::get<std::string>(0);
-				const auto num = game::Scr_GetNumParam(game::SCRIPTINSTANCE_SERVER);
-
-				for (auto i = 1; i < num; i++)
+				for (const auto arg : args.get_raw())
 				{
-				    const auto arg = game::get<const char*>(i);
-
-				    replace(fmt, "%s", arg);
+					buffer.append(json::gsc_to_string(arg));
+					buffer.append("\t");
 				}
 
-				printf("%s\n", fmt.data());
+				printf("%s\n", buffer.data());
+				return {};
 			});
 
-            gsc::function::add("va", 1, 512, []()
+			gsc::function::add("fremove", [](const gsc::function_args& args)
 			{
-				auto fmt = game::get<std::string>(0);
-				const auto num = game::Scr_GetNumParam(game::SCRIPTINSTANCE_SERVER);
-
-				for (auto i = 1; i < num; i++)
-				{
-				    const auto arg = game::get<const char*>(i);
-
-				    replace(fmt, "%s", arg);
-				}
-
-				game::add(fmt.data());
+				const auto path = args[0].as<const char*>();
+				return std::remove(path);
 			});
 
-            gsc::function::add("fremove", 1, 1, []()
+			gsc::function::add("fopen", [](const gsc::function_args& args)
 			{
-				const auto path = game::get<const char*>(0);
-				const auto result = std::remove(path);
-				game::add(result);
-			});
-
-            gsc::function::add("fopen", 2, 2, []()
-			{
-				const auto* path = game::get<const char*>(0);
-				const auto* mode = game::get<const char*>(1);
+				const auto* path = args[0].as<const char*>();
+				const auto* mode = args[1].as<const char*>();
 
 				const auto handle = fopen(path, mode);
 
-				if (handle)
+				if (!handle)
 				{
-				    game::add(handle);
+					printf("fopen: Invalid path\n");
 				}
-				else
-				{
-				    printf("fopen: Invalid path\n");
-				}
+
+				return handle;
 			});
 
-            gsc::function::add("fgetc", 1, 1, []()
+			gsc::function::add("fclose", [](const gsc::function_args& args)
 			{
-				const auto handle = game::get_ptr<FILE*>(0);
-
-				if (handle)
-				{
-				    const auto c = fgetc(handle);
-				    const char str[2] = { c, '\0' };
-
-				    game::add(str);
-				}
-				else
-				{
-				    printf("fgetc: Invalid handle\n");
-
-				    game::add("");
-				}
+				const auto handle = args[0].as_ptr<FILE>();
+				return fclose(handle);
 			});
 
-            gsc::function::add("fgets", 2, 2, []()
+			gsc::function::add("fwrite", [](const gsc::function_args& args)
 			{
-				const auto handle = game::get_ptr<FILE*>(0);
-				const auto n = game::get<int>(1);
+				const auto handle = args[0].as_ptr<FILE>();
+				const auto text = args[1].as<const char*>();
 
-				if (handle)
-				{
-				    char* buffer = (char*)calloc(n, sizeof(char));
-
-				    fgets(buffer, n, handle);
-
-				    game::add(buffer);
-
-				    free(buffer);
-				}
-				else
-				{
-				    printf("fgets: Invalid handle\n");
-
-				    game::add("");
-				}
+				return fprintf(handle, text);
 			});
 
-            gsc::function::add("memset", 2, 2, []()
+			gsc::function::add("fread", [](const gsc::function_args& args)
 			{
-				const auto addr = game::get<int>(0);
-				const auto value = game::get<int>(1);
-				utils::hook::set(addr, value);
+				const auto handle = args[0].as_ptr<FILE>();
+
+				fseek(handle, 0, SEEK_END);
+				const auto length = ftell(handle);
+
+				fseek(handle, 0, SEEK_SET);
+				char* buffer = (char*)calloc(length, sizeof(char));
+
+				fread(buffer, sizeof(char), length, handle);
+
+				const std::string result = buffer;
+
+				free(buffer);
+
+				return result;
 			});
 
-            gsc::function::add("feof", 1, 1, []()
+			gsc::function::add("fileexists", [](const gsc::function_args& args)
 			{
-				const auto handle = game::get_ptr<FILE*>(0);
-
-				if (handle)
-				{
-				    game::add(feof(handle));
-				}
-				else
-				{
-				    printf("feof: Invalid handle\n");
-
-				    game::add(false);
-				}
+				const auto path = args[0].as<std::string>();
+				return utils::io::file_exists(path);
 			});
 
-            gsc::function::add("fclose", 1, 1, []()
+			gsc::function::add("writefile", [](const gsc::function_args& args)
 			{
-				const auto handle = game::get_ptr<FILE*>(0);
+				const auto path = args[0].as<std::string>();
+				const auto data = args[1].as<std::string>();
 
-				if (handle)
+				auto append = false;
+				if (args.size() > 2)
 				{
-				    fclose(handle);
+					append = args[2].as<bool>();
 				}
-				else
-				{
-				    printf("fclose: Invalid handle\n");
-				}
+
+				return utils::io::write_file(path, data, append);
 			});
 
-            gsc::function::add("fputs", 2, 2, []()
+			gsc::function::add("readfile", [](const gsc::function_args& args)
 			{
-				const auto text = game::get<const char*>(0);
-				const auto handle = game::get_ptr<FILE*>(1);
-
-				if (handle)
-				{
-				    fputs(text, handle);
-				}
-				else
-				{
-				    printf("fputs: Invalid handle\n");
-				}
+				const auto path = args[0].as<std::string>();
+				return utils::io::read_file(path);
 			});
 
-            gsc::function::add("fprintf", 2, 2, []()
+			gsc::function::add("filesize", [](const gsc::function_args& args)
 			{
-				const auto text = game::get<const char*>(0);
-				const auto handle = game::get_ptr<FILE*>(1);
-
-				if (handle)
-				{
-				    fprintf(handle, text);
-				}
-				else
-				{
-				    printf("fprintf: Invalid handle\n");
-				}
+				const auto path = args[0].as<std::string>();
+				return utils::io::file_size(path);
 			});
 
-            gsc::function::add("fread", 1, 1, []()
+			gsc::function::add("createdirectory", [](const gsc::function_args& args)
 			{
-				const auto handle = game::get_ptr<FILE*>(0);
-
-				if (handle)
-				{
-				    fseek(handle, 0, SEEK_END);
-				    const auto length = ftell(handle);
-
-				    fseek(handle, 0, SEEK_SET);
-				    char* buffer = (char*)calloc(length, sizeof(char));
-
-				    fread(buffer, sizeof(char), length, handle);
-
-				    game::add(buffer);
-
-				    free(buffer);
-				}
-				else
-				{
-				    printf("fread: Invalid handle\n");
-				    game::add("");
-				}
+				const auto path = args[0].as<std::string>();
+				return utils::io::create_directory(path);
 			});
 
-			gsc::function::add("httpget", 1, 1, http_get);
-			gsc::function::add("curl", 1, 1, http_get);
+			gsc::function::add("directoryexists", [](const gsc::function_args& args)
+			{
+				const auto path = args[0].as<std::string>();
+				return utils::io::directory_exists(path);
+			});
+
+			gsc::function::add("directoryisempty", [](const gsc::function_args& args)
+			{
+				const auto path = args[0].as<std::string>();
+				return utils::io::directory_is_empty(path);
+			});
+
+			gsc::function::add("listfiles", [](const gsc::function_args& args)
+			{
+				const auto path = args[0].as<std::string>();
+				const auto files = utils::io::list_files(path);
+
+				scripting::array array;
+				for (const auto& file : files)
+				{
+					array.push(file);
+				}
+
+				return array;
+			});
+
+			gsc::function::add("copyfolder", [](const gsc::function_args& args)
+			{
+				const auto source = args[0].as<std::string>();
+				const auto target = args[1].as<std::string>();
+				utils::io::copy_folder(source, target);
+
+				return scripting::script_value{};
+			});
+
+			gsc::function::add("httpget", [](const gsc::function_args& args) -> scripting::script_value
+			{
+				const auto url = args[0].as<std::string>();
+				const auto object = scripting::entity(scripting::make_object());
+
+				scheduler::once([object, url]()
+				{
+					const auto result = utils::http::get_data(url.data());
+					scheduler::once([object, result]()
+					{
+						const auto value = result.has_value()
+							? result.value().substr(0, 0x5000)
+							: "";
+						scripting::notify(object, "done", {value});
+					});
+				}, scheduler::pipeline::async);
+
+				return object;
+			});
         }
     };
 }

@@ -88,84 +88,94 @@ namespace chat
 
 			utils::hook::call(SELECT(0x4D8888, 0x5304C8), client_disconnect_stub);
 
-			gsc::method::add("resetname", 0, 0, [](game::scr_entref_t ent)
+			gsc::method::add("resetname", [](game::scr_entref_t ent, const gsc::function_args&) -> scripting::script_value
 			{
 				if (ent.classnum != 0)
 				{
-					return;
+					return {};
 				}
 
 				names[ent.entnum].clear();
 				game::ClientUserInfoChanged(ent.entnum);
+
+				return {};
 			});
 
-			gsc::method::add("resetclantag", 0, 0, [](game::scr_entref_t ent)
+			gsc::method::add("resetclantag", [](game::scr_entref_t ent, const gsc::function_args&) -> scripting::script_value
 			{
 				if (ent.classnum != 0)
 				{
-					return;
+					return {};
 				}
 
 				clantags[ent.entnum].clear();
 				game::ClientUserInfoChanged(ent.entnum);
+
+				return {};
 			});
 
-			gsc::method::add("rename", 1, 1, [](game::scr_entref_t ent)
+			gsc::method::add("rename", [](game::scr_entref_t ent, const gsc::function_args&) -> scripting::script_value
 			{
 				if (ent.classnum != 0)
 				{
-					return;
+					return {};
 				}
 
 				const auto name = game::get<std::string>(0);
 				names[ent.entnum] = name;
-
 				game::ClientUserInfoChanged(ent.entnum);
+
+				return {};
 			});
 
-			gsc::method::add("setclantag", 1, 1, [](game::scr_entref_t ent)
+			gsc::method::add("setclantag", [](game::scr_entref_t ent, const gsc::function_args& args) -> scripting::script_value
 			{
 				if (ent.classnum != 0)
 				{
-					return;
+					return {};
 				}
 
-				const auto clantag = game::get<std::string>(0);
+				const auto clantag = args[0].as<std::string>();
 				clantags[ent.entnum] = clantag;
-
 				game::ClientUserInfoChanged(ent.entnum);
+
+				return {};
 			});
 
-			gsc::method::add("tell", 1, 1, [](game::scr_entref_t ent)
+			gsc::method::add("tell", [](game::scr_entref_t ent, const gsc::function_args& args) -> scripting::script_value
 			{
 				if (ent.classnum != 0)
 				{
-					return;
+					return {};
 				}
 
 				const auto client = ent.entnum;
-				const auto msg = game::get<const char*>(0);
+				const auto msg = args[0].as<std::string>();
+				game::SV_GameSendServerCommand(client, 0, utils::string::va("j \"%s\"", msg.data()));
 
-				game::SV_GameSendServerCommand(client, 0, utils::string::va("j \"%s\"", msg));
+				return {};
 			});
 
-			gsc::function::add("say", 1, 1, []()
+			gsc::function::add("say", [](const gsc::function_args& args) -> scripting::script_value
 			{
-				const auto msg = game::get<const char*>(0);
-				game::SV_GameSendServerCommand(-1, 0, utils::string::va("j \"%s\"", msg));
+				const auto msg = args[0].as<std::string>();
+				game::SV_GameSendServerCommand(-1, 0, utils::string::va("j \"%s\"", msg.data()));
+				return {};
 			});
 
-			gsc::function::add("cmdexecute", 1, 1, []()
+			gsc::function::add("cmdexecute", [](const gsc::function_args& args) -> scripting::script_value
 			{
-				const auto cmd = game::get<const char*>(0);
-				game::Cbuf_InsertText(0, cmd);
+				const auto cmd = args[0].as<std::string>();
+				game::Cbuf_InsertText(0, cmd.data());
+				return {};
 			});
 
-			gsc::function::add("sendservercommand", 2, 2, []()
+			gsc::function::add("sendservercommand", [](const gsc::function_args& args) -> scripting::script_value
 			{
-				const auto clientNum = game::get<int>(0);
-				const auto cmd = game::get<const char*>(1);
-				game::SV_GameSendServerCommand(clientNum, 0, cmd);
+				const auto client = args[0].as<int>();
+				const auto cmd = args[1].as<std::string>();
+				game::SV_GameSendServerCommand(client, 0, cmd.data());
+				return {};
 			});
 		}
 	};
