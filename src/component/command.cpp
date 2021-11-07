@@ -130,10 +130,11 @@ namespace command
 				game::Scr_NotifyNum(client, 0, name, argc - 3);
 			});
 
-			gsc::function::add("executecommand", 1, 1, []()
+			gsc::function::add("executecommand", [](const gsc::function_args&) -> scripting::script_value
 			{
 				const auto cmd = game::get<const char*>(0);
 				game::Cbuf_InsertText(0, cmd);
+				return {};
 			});
 		}
 	};
