@@ -14,6 +14,15 @@ namespace scripting
 	{
 	}
 
+	script_value::script_value(void* value)
+	{
+		game::VariableValue variable{};
+		variable.type = game::SCRIPT_INTEGER;
+		variable.u.intValue = reinterpret_cast<uintptr_t>(value);
+
+		this->value_ = variable;
+	}
+
 	script_value::script_value(const int value)
 	{
 		game::VariableValue variable{};
