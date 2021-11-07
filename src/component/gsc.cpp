@@ -78,7 +78,7 @@ namespace gsc
             }
             
             *min_args = 0;
-            *max_args = 0;
+            *max_args = 512;
 
             return method;
         }
@@ -253,7 +253,7 @@ namespace gsc
     {
         void add(const std::string& name, const script_function& function)
         {
-            const auto id = functions.size();
+            const auto id = functions.size() + 1;
             functions[id] = std::make_pair(name, function);
         }
     }
@@ -262,7 +262,7 @@ namespace gsc
     {
         void add(const std::string& name, const script_method& function)
         {
-            const auto id = methods.size();
+            const auto id = methods.size() + 1;
             methods[id] = std::make_pair(name, function);
         }
     }
