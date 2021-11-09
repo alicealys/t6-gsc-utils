@@ -4,6 +4,15 @@
 
 namespace gsc
 {
+	enum classid
+	{
+		entity,
+		hudelem,
+		pathnode,
+		node,
+		count
+	};
+
 	void return_value(const scripting::script_value& value);
 	std::vector<scripting::script_value> get_arguments();
 

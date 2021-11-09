@@ -26,6 +26,18 @@ namespace gsc
         utils::hook::detour scr_get_common_function_hook;
         utils::hook::detour player_get_method_hook;
 
+        auto field_offset_start = 0xA000;
+
+        struct entity_field
+        {
+            std::string name;
+            std::function<scripting::script_value(unsigned int entnum)> getter;
+            std::function<void(unsigned int entnum, scripting::script_value)> setter;
+        };
+
+        std::vector<std::function<void()>> post_load_callbacks;
+        std::unordered_map<unsigned int, std::unordered_map<unsigned int, entity_field>> custom_fields;
+
         unsigned int find_function(const std::string& name)
         {
             for (const auto& function : functions)
@@ -247,6 +259,65 @@ namespace gsc
                 retn
             }
         }
+
+        utils::hook::detour scr_get_object_field_hook;
+        void scr_get_object_field_stub(unsigned int classnum, int entnum, unsigned int offset)
+        {
+            if (custom_fields[classnum].find(offset) == custom_fields[classnum].end())
+            {
+                return scr_get_object_field_hook.invoke<void>(classnum, entnum, offset);
+            }
+
+            const auto field = custom_fields[classnum][offset];
+
+            try
+            {
+                const auto result = field.getter(entnum);
+                return_value(result);
+            }
+            catch (const std::exception& e)
+            {
+                printf("************** Script execution error **************\n");
+                printf("Error getting field %s:\n", field.name.data());
+                printf("    %s\n", e.what());
+                printf("****************************************************\n");
+            }
+        }
+
+        utils::hook::detour scr_set_object_field_hook;
+        void scr_set_object_field_stub(unsigned int classnum, int entnum, unsigned int offset)
+        {
+            if (custom_fields[classnum].find(offset) == custom_fields[classnum].end())
+            {
+                return scr_set_object_field_hook.invoke<void>(classnum, entnum, offset);
+            }
+
+            const auto args = get_arguments();
+            const auto field = custom_fields[classnum][offset];
+
+            try
+            {
+                field.setter(entnum, args[0]);
+            }
+            catch (const std::exception& e)
+            {
+                printf("************** Script execution error **************\n");
+                printf("Error setting field %s:\n", field.name.data());
+                printf("    %s\n", e.what());
+                printf("****************************************************\n");
+            }
+        }
+
+        utils::hook::detour scr_post_load_scripts_hook;
+        void scr_post_load_scripts_stub()
+        {
+            for (const auto& callback : post_load_callbacks)
+            {
+                callback();
+            }
+
+            return scr_post_load_scripts_hook.invoke<void>();
+        }
     }
 
     namespace function
@@ -265,6 +336,22 @@ namespace gsc
             const auto id = methods.size() + 1;
             methods[id] = std::make_pair(name, function);
         }
+    }
+
+    namespace field
+    {
+		void add(const classid classnum, const std::string& name,
+			const std::function<scripting::script_value(unsigned int entnum)>& getter,
+			const std::function<void(unsigned int entnum, const scripting::script_value&)>& setter)
+		{
+            const auto offset = field_offset_start++;
+			custom_fields[classnum][offset] = {name, getter, setter};
+
+			post_load_callbacks.push_back([classnum, name, offset]()
+			{
+				game::Scr_AddClassField(game::SCRIPTINSTANCE_SERVER, classnum, name.data(), offset);
+			});
+		}
     }
 
     void return_value(const scripting::script_value& value)
@@ -334,6 +421,36 @@ namespace gsc
             utils::hook::jump(SELECT(0x8F63FF, 0x8F515F), SELECT(call_builtin_stub_mp, call_builtin_stub_zm));
             utils::hook::jump(SELECT(0x8F6492, 0x8F51F2), SELECT(call_builtin_method_stub_mp, call_builtin_method_stub_zm));
 
+            scr_get_object_field_hook.create(SELECT(0x573160, 0x4224E0), scr_get_object_field_stub);
+            scr_set_object_field_hook.create(SELECT(0x5B9820, 0x43F2A0), scr_set_object_field_stub);
+            scr_post_load_scripts_hook.create(SELECT(0x6B75B0, 0x492440), scr_post_load_scripts_stub);
+
+            field::add(classid::entity, "flags",
+				[](unsigned int entnum) -> scripting::script_value
+				{
+					const auto entity = &game::g_entities[entnum];
+					return entity->client->eflags;
+				},
+				[](unsigned int entnum, const scripting::script_value& value)
+				{
+					const auto entity = &game::g_entities[entnum];
+					entity->client->eflags = value.as<int>();
+				}
+			);
+
+            field::add(classid::entity, "clientflags",
+				[](unsigned int entnum) -> scripting::script_value
+                {
+					const auto entity = &game::g_entities[entnum];
+					return entity->client->flags;
+				},
+				[](unsigned int entnum, const scripting::script_value& value)
+				{
+					const auto entity = &game::g_entities[entnum];
+					entity->client->flags = value.as<int>();
+				}
+			);
+
             function::add("getfunction", [](const function_args&) -> scripting::script_value
             {
                 const auto filename = game::get<const char*>(0);
@@ -358,6 +475,33 @@ namespace gsc
                 const auto array = args[0].as<scripting::array>();
                 const auto key = args[1].as<std::string>();
                 array.erase(key);
+            });
+
+            function::add("xor", [](const function_args& args)
+            {
+                const auto a = args[0].as<int>();
+                const auto b = args[1].as<int>();
+                return a ^ b;
+            });
+
+            function::add("not", [](const function_args& args)
+            {
+                const auto a = args[0].as<int>();
+                return ~a;
+            });
+
+            function::add("and", [](const function_args& args)
+            {
+                const auto a = args[0].as<int>();
+                const auto b = args[1].as<int>();
+                return a & b;
+            });
+
+            function::add("or", [](const function_args& args)
+            {
+                const auto a = args[0].as<int>();
+                const auto b = args[1].as<int>();
+                return a | b;
             });
         }
     };
