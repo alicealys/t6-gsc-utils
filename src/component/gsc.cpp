@@ -278,7 +278,7 @@ namespace gsc
             catch (const std::exception& e)
             {
                 printf("************** Script execution error **************\n");
-                printf("Error getting field %s:\n", field.name.data());
+                printf("Error getting field '%s':\n", field.name.data());
                 printf("    %s\n", e.what());
                 printf("****************************************************\n");
             }
@@ -302,7 +302,7 @@ namespace gsc
             catch (const std::exception& e)
             {
                 printf("************** Script execution error **************\n");
-                printf("Error setting field %s:\n", field.name.data());
+                printf("Error setting field '%s':\n", field.name.data());
                 printf("    %s\n", e.what());
                 printf("****************************************************\n");
             }
