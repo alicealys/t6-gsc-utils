@@ -340,18 +340,18 @@ namespace gsc
 
     namespace field
     {
-		void add(const classid classnum, const std::string& name,
-			const std::function<scripting::script_value(unsigned int entnum)>& getter,
-			const std::function<void(unsigned int entnum, const scripting::script_value&)>& setter)
-		{
+        void add(const classid classnum, const std::string& name,
+            const std::function<scripting::script_value(unsigned int entnum)>& getter,
+            const std::function<void(unsigned int entnum, const scripting::script_value&)>& setter)
+        {
             const auto offset = field_offset_start++;
-			custom_fields[classnum][offset] = {name, getter, setter};
+            custom_fields[classnum][offset] = {name, getter, setter};
 
-			post_load_callbacks.push_back([classnum, name, offset]()
-			{
-				game::Scr_AddClassField(game::SCRIPTINSTANCE_SERVER, classnum, name.data(), offset);
-			});
-		}
+            post_load_callbacks.push_back([classnum, name, offset]()
+            {
+                game::Scr_AddClassField(game::SCRIPTINSTANCE_SERVER, classnum, name.data(), offset);
+            });
+        }
     }
 
     void return_value(const scripting::script_value& value)
@@ -426,30 +426,30 @@ namespace gsc
             scr_post_load_scripts_hook.create(SELECT(0x6B75B0, 0x492440), scr_post_load_scripts_stub);
 
             field::add(classid::entity, "flags",
-				[](unsigned int entnum) -> scripting::script_value
-				{
-					const auto entity = &game::g_entities[entnum];
-					return entity->client->eflags;
-				},
-				[](unsigned int entnum, const scripting::script_value& value)
-				{
-					const auto entity = &game::g_entities[entnum];
-					entity->client->eflags = value.as<int>();
-				}
-			);
+                [](unsigned int entnum) -> scripting::script_value
+                {
+                    const auto entity = &game::g_entities[entnum];
+                    return entity->client->eflags;
+                },
+                [](unsigned int entnum, const scripting::script_value& value)
+                {
+                    const auto entity = &game::g_entities[entnum];
+                    entity->client->eflags = value.as<int>();
+                }
+            );
 
             field::add(classid::entity, "clientflags",
-				[](unsigned int entnum) -> scripting::script_value
+                [](unsigned int entnum) -> scripting::script_value
                 {
-					const auto entity = &game::g_entities[entnum];
-					return entity->client->flags;
-				},
-				[](unsigned int entnum, const scripting::script_value& value)
-				{
-					const auto entity = &game::g_entities[entnum];
-					entity->client->flags = value.as<int>();
-				}
-			);
+                    const auto entity = &game::g_entities[entnum];
+                    return entity->client->flags;
+                },
+                [](unsigned int entnum, const scripting::script_value& value)
+                {
+                    const auto entity = &game::g_entities[entnum];
+                    entity->client->flags = value.as<int>();
+                }
+            );
 
             function::add("getfunction", [](const function_args&) -> scripting::script_value
             {
