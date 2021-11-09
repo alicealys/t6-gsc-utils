@@ -220,10 +220,20 @@ namespace game
 		const char* name;
 	};
 
+	struct gclient_s
+	{
+		char __pad0[0x18];
+		int eflags;
+		char __pad1[0x5668];
+		int flags;
+	};
+
 	struct gentity_s
 	{
 		int entity_num;
-		char data[0x318];
+		char __pad0[0x150];
+		gclient_s* client;
+		char __pad1[0x1C4];
 	};
 
 	struct cmd_function_t

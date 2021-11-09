@@ -62,6 +62,7 @@ namespace game
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int threadId)> Scr_GetSelf{0x4682C0, 0x6C4E60};
 	WEAK symbol<int(scriptInstance_t inst, const char* filename, 
 		const char* name, unsigned int* checksum, bool errorIfMissing)> Scr_GetFunctionHandle{0x416D30, 0x53E5A0};
+	WEAK symbol<void(scriptInstance_t inst, unsigned int classnum, char const* name, unsigned int offset)> Scr_AddClassField{0x6B7620, 0x438AD0};
 
 	WEAK symbol<void(int clientNum, int type, const char* command)> SV_GameSendServerCommand{0x45D7D0, 0x40D450};
 
