@@ -145,10 +145,7 @@ namespace scripting
 			if (string_id < 0x34BC)
 			{
 				const auto string = reinterpret_cast<const char**>(0x2D7CF28)[string_id];
-				if (string != "struct")
-				{
-					result.push_back(string);
-				}
+				result.push_back(string);
 			}
 
 			current = var.nextSibling;
@@ -166,7 +163,7 @@ namespace scripting
 	{
 		const auto string_value = game::SL_GetCanonicalString(key.data(), 0);
 		const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, this->id_, string_value);
-		if (variable_id && key != "struct")
+		if (variable_id)
 		{
 			game::RemoveVariableValue(game::SCRIPTINSTANCE_SERVER, this->id_, variable_id);
 		}
@@ -177,7 +174,7 @@ namespace scripting
 		const auto string_value = game::SL_GetCanonicalString(key.data(), 0);
 		const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, this->id_, string_value);
 
-		if (!variable_id && key != "struct")
+		if (!variable_id)
 		{
 			return {};
 		}
@@ -197,7 +194,7 @@ namespace scripting
 		const auto string_value = game::SL_GetCanonicalString(key.data(), 0);
 		const auto variable_id = this->get_value_id(key);
 
-		if (!variable_id && key != "struct")
+		if (!variable_id)
 		{
 			return;
 		}
