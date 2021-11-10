@@ -1,6 +1,8 @@
 #pragma once
 #include "game/game.hpp"
 #include "entity.hpp"
+#include "array.hpp"
+#include "object.hpp"
 #include "script_value.hpp"
 
 namespace scripting

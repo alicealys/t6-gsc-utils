@@ -379,12 +379,6 @@ namespace gsc
         return args;
     }
 
-    value_wrap::value_wrap(const scripting::script_value& value, int argument_index)
-        : value_(value)
-        , argument_index_(argument_index)
-    {
-    }
-
     function_args::function_args(std::vector<scripting::script_value> values)
         : values_(values)
     {
@@ -400,7 +394,7 @@ namespace gsc
         return this->values_;
     }
 
-    value_wrap function_args::get(const int index) const
+    scripting::value_wrap function_args::get(const int index) const
     {
         if (index >= this->values_.size())
         {
@@ -502,6 +496,51 @@ namespace gsc
                 const auto a = args[0].as<int>();
                 const auto b = args[1].as<int>();
                 return a | b;
+            });
+
+            function::add("structget", [](const function_args& args)
+            {
+                const auto obj = args[0].as<scripting::object>();
+                const auto key = args[1].as<std::string>();
+                return obj[key];
+            });
+
+            function::add("structset", [](const function_args& args) -> scripting::script_value
+            {
+                const auto obj = args[0].as<scripting::object>();
+                const auto key = args[1].as<std::string>();
+                obj[key] = args[2];
+                return {};
+            });
+
+            function::add("structremove", [](const function_args& args) -> scripting::script_value
+            {
+                const auto obj = args[0].as<scripting::object>();
+                const auto key = args[1].as<std::string>();
+                obj.erase(key);
+                return {};
+            });
+
+            function::add("_print", [](const function_args& args) -> scripting::script_value
+            {
+                const auto args_ = args.get_raw();
+
+                for (const auto& arg : args_)
+                {
+                    const auto str = arg.as<std::string>();
+                    printf("%s\t", str.data());
+                }
+
+                printf("\n");
+
+                return {};
+            });
+
+            function::add("teststruct", [](const function_args& args) -> scripting::script_value
+            {
+                const auto object = args[0].as<scripting::object>();
+                object.get_keys();
+                return {};
             });
         }
     };
