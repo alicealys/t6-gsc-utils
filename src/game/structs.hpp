@@ -49,8 +49,8 @@ namespace game
 		SCRIPT_VECTOR = 4,
 		SCRIPT_FLOAT = 6,
 		SCRIPT_INTEGER = 7,
-		SCRIPT_FUNCTION = 8,
 		SCRIPT_END = 9,
+		SCRIPT_FUNCTION = 10,
 		SCRIPT_STRUCT = 18,
 		SCRIPT_ARRAY = 21,
 	};
@@ -271,7 +271,8 @@ namespace game
 		unsigned int unsignedInt;
 		__int64 integer64;
 		unsigned __int64 unsignedInt64;
-		float value; vec4_t vector;
+		float value; 
+		vec4_t vector;
 		const char* string;
 		char color[4];
 	};

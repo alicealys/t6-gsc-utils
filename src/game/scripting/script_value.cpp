@@ -2,6 +2,7 @@
 #include "script_value.hpp"
 #include "entity.hpp"
 #include "array.hpp"
+#include "object.hpp"
 
 namespace scripting
 {
@@ -11,6 +12,11 @@ namespace scripting
 
 	script_value::script_value(const game::VariableValue& value)
 		: value_(value)
+	{
+	}
+
+	script_value::script_value(const value_wrap& value)
+		: value_(value.get_raw())
 	{
 	}
 
@@ -89,6 +95,15 @@ namespace scripting
 	}
 
 	script_value::script_value(const array& value)
+	{
+		game::VariableValue variable{};
+		variable.type = game::SCRIPT_OBJECT;
+		variable.u.pointerValue = value.get_entity_id();
+
+		this->value_ = variable;
+	}
+
+	script_value::script_value(const object& value)
 	{
 		game::VariableValue variable{};
 		variable.type = game::SCRIPT_OBJECT;
@@ -248,6 +263,30 @@ namespace scripting
 	}
 
 	/***************************************************************
+	 * Struct
+	 **************************************************************/
+
+	template <>
+	bool script_value::is<object>() const
+	{
+		if (this->get_raw().type != game::SCRIPT_OBJECT)
+		{
+			return false;
+		}
+
+		const auto id = this->get_raw().u.uintValue;
+		const auto type = game::scr_VarGlob->objectVariableValue[id].w.type & 0x7F;
+
+		return type == game::SCRIPT_STRUCT;
+	}
+
+	template <>
+	object script_value::get() const
+	{
+		return object(this->get_raw().u.uintValue);
+	}
+
+	/***************************************************************
 	 * Vector
 	 **************************************************************/
 
@@ -270,5 +309,11 @@ namespace scripting
 	const game::VariableValue& script_value::get_raw() const
 	{
 		return this->value_.get();
+	}
+
+	value_wrap::value_wrap(const scripting::script_value& value, int argument_index)
+		: value_(value)
+		, argument_index_(argument_index)
+	{
 	}
 }

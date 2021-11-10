@@ -11,6 +11,7 @@
 #include "json.hpp"
 
 #include <json.hpp>
+#include <utils/io.hpp>
 
 namespace json
 {
@@ -18,9 +19,8 @@ namespace json
 	{
 		nlohmann::json gsc_to_json(scripting::script_value value);
 
-		nlohmann::json entity_to_array(unsigned int id)
+		nlohmann::json array_to_json(const scripting::array& array)
 		{
-			scripting::array array(id);
 			nlohmann::json obj;
 
 			auto string_indexed = -1;
@@ -50,6 +50,27 @@ namespace json
 			return obj;
 		}
 
+		std::unordered_set<unsigned int> dumped_objects;
+		nlohmann::json object_to_json(const scripting::object& object)
+		{
+			const auto id = object.get_entity_id();
+			if (dumped_objects.find(id) != dumped_objects.end())
+			{
+				return "[circular reference]";
+			}
+
+			dumped_objects.insert(id);
+			nlohmann::json obj;
+
+			const auto keys = object.get_keys();
+			for (const auto& key : keys)
+			{
+				obj.emplace(key, gsc_to_json(object[key]));
+			}
+
+			return obj;
+		}
+
 		nlohmann::json vector_to_array(const float* value)
 		{
 			nlohmann::json obj;
@@ -60,44 +81,56 @@ namespace json
 			return obj;
 		}
 
-		nlohmann::json gsc_to_json(scripting::script_value _value)
+		nlohmann::json gsc_to_json(scripting::script_value value)
 		{
-			const auto variable = _value.get_raw();
-			const auto value = variable.u;
-			const auto type = variable.type;
+			const auto variable = value.get_raw();
 
-			switch (type)
+			if (value.is<int>())
 			{
-			case (game::SCRIPT_NONE):
-				return {};
-			case (game::SCRIPT_INTEGER):
-				return value.intValue;
-			case (game::SCRIPT_FLOAT):
-				return value.floatValue;
-			case (game::SCRIPT_STRING):
-			case (game::SCRIPT_ISTRING):
-				return game::SL_ConvertToString(static_cast<unsigned int>(value.stringValue));
-			case (game::SCRIPT_VECTOR):
-				return vector_to_array(value.vectorValue);
-			case (game::SCRIPT_OBJECT):
-			{
-				const auto object_type = game::scr_VarGlob->objectVariableValue[value.uintValue].w.type & 0x7F;
-
-				switch (object_type)
-				{
-				case (game::SCRIPT_STRUCT):
-					return "[struct]";
-				case (game::SCRIPT_ARRAY):
-					return entity_to_array(value.uintValue);
-				default:
-					return "[entity]";
-				}
+				return value.as<int>();
 			}
-			case (game::SCRIPT_FUNCTION):
+
+			if (value.is<float>())
+			{
+				return value.as<float>();
+			}
+
+			if (value.is<std::string>())
+			{
+				return value.as<std::string>();
+			}
+
+			if (value.is<scripting::vector>())
+			{
+				return vector_to_array(variable.u.vectorValue);
+			}
+
+			if (value.is<scripting::object>())
+			{
+				return object_to_json(variable.u.uintValue);
+			}
+
+			if (value.is<scripting::array>())
+			{
+				return array_to_json(variable.u.uintValue);
+			}
+
+			if (value.is<scripting::entity>())
+			{
+				return object_to_json(variable.u.uintValue);
+			}
+
+			if (variable.type == game::SCRIPT_FUNCTION)
+			{
 				return "[function]";
-			default:
-				return "[unknown type]";
 			}
+
+			if (variable.type == game::SCRIPT_NONE)
+			{
+				return {};
+			}
+
+			return "[unknown type]";
 		}
 
 		scripting::script_value json_to_gsc(nlohmann::json obj)
@@ -143,7 +176,8 @@ namespace json
 
 	std::string gsc_to_string(const scripting::script_value& value)
 	{
-		return gsc_to_json(value).dump();
+		dumped_objects = {};
+		return gsc_to_json(value).dump().substr(0, 0x5000);
 	}
 
 	class component final : public component_interface
@@ -163,7 +197,7 @@ namespace json
 					}
 
 					const auto key = args[i].as<std::string>();
-					array[key] = args[i + 1].get_raw();
+					array[key] = args[i + 1];
 				}
 
 				return array;
@@ -186,7 +220,24 @@ namespace json
 					indent = args[1].as<int>();
 				}
 
-				return gsc_to_json(value.get_raw()).dump(indent);
+				dumped_objects = {};
+				gsc_to_json(value).dump(indent).substr(0, 0x5000);
+				return 0;
+			});
+
+			gsc::function::add("jsondump", [](const gsc::function_args& args)
+			{
+				const auto file = args[0].as<std::string>();
+				const auto value = args[1];
+				auto indent = -1;
+
+				if (args.size() > 2)
+				{
+					indent = args[2].as<int>();
+				}
+
+				dumped_objects = {};
+				return utils::io::write_file(file, gsc_to_json(value).dump(indent));
 			});
 		}
 	};

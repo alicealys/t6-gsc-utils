@@ -9,6 +9,8 @@ namespace scripting
 {
 	class entity;
 	class array;
+	class object;
+	class value_wrap;
 
 	namespace
 	{
@@ -94,6 +96,7 @@ namespace scripting
 	public:
 		script_value() = default;
 		script_value(const game::VariableValue& value);
+		script_value(const value_wrap& value);
 
 		script_value(void* value);
 
@@ -109,6 +112,7 @@ namespace scripting
 
 		script_value(const entity& value);
 		script_value(const array& value);
+		script_value(const object& value);
 
 		script_value(const vector& value);
 
@@ -149,5 +153,51 @@ namespace scripting
 		template <typename T>
 		T get() const;
 
+	};
+
+	class value_wrap
+	{
+	public:
+		value_wrap(const scripting::script_value& value, int argument_index);
+
+		template <typename T>
+		T as() const
+		{
+			try
+			{
+				return this->value_.as<T>();
+			}
+			catch (const std::exception& e)
+			{
+				throw std::runtime_error(utils::string::va("parameter %d %s", this->argument_index_, e.what()));
+			}
+		}
+
+		template <typename T, typename I = int>
+		T* as_ptr()
+		{
+			try
+			{
+				return this->value_.as_ptr<T>();
+			}
+			catch (const std::exception& e)
+			{
+				throw std::runtime_error(utils::string::va("parameter %d %s", this->argument_index_, e.what()));
+			}
+		}
+
+		template <typename T>
+		T is() const
+		{
+			return this->value_.is<T>();
+		}
+
+		const game::VariableValue& get_raw() const
+		{
+			return this->value_.get_raw();
+		}
+
+		int argument_index_{};
+		scripting::script_value value_;
 	};
 }
