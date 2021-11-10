@@ -535,13 +535,6 @@ namespace gsc
 
                 return {};
             });
-
-            function::add("teststruct", [](const function_args& args) -> scripting::script_value
-            {
-                const auto object = args[0].as<scripting::object>();
-                object.get_keys();
-                return {};
-            });
         }
     };
 }
