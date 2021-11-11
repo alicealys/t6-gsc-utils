@@ -3,6 +3,7 @@
 #include "entity.hpp"
 #include "array.hpp"
 #include "object.hpp"
+#include "function.hpp"
 #include "script_value.hpp"
 
 namespace scripting
@@ -24,6 +25,8 @@ namespace scripting
 	{
 		return call<script_value>(name, arguments).as<T>();
 	}
+
+	script_value exec_ent_thread(const entity& entity, const char* pos, const std::vector<script_value>& arguments);
 
 	void set_entity_field(const entity& entity, const std::string& field, const script_value& value);
 	script_value get_entity_field(const entity& entity, const std::string& field);

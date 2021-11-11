@@ -15,6 +15,8 @@ namespace game
 
 	WEAK symbol<const dvar_t*(const char*)> Dvar_FindVar{0x563A70, 0x673C80};
 
+	WEAK symbol<XAssetHeader(XAssetType type, const char* name, bool errorIfMissing, int waitTime)> DB_FindXAssetHeader{0x6F9030, 0x43F460};
+
 	WEAK symbol<char*(const char*)> I_CleanStr{0x44F2B0, 0x483F40};
 
 	WEAK symbol<void*(const char** pName, int* min_args, int* max_args)> Player_GetMethod{0x432480, 0x6F2DB0};
@@ -32,6 +34,7 @@ namespace game
 
 	WEAK symbol<unsigned int(scriptInstance_t inst)> AllocObject{0x6FB1B0, 0x6FE9D0};
 	WEAK symbol<ObjectVariableValue*(scriptInstance_t inst, unsigned int* index)> AllocVariable{0x8F3150, 0x8F1EB0};
+	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int id)> AllocThread{0x49FDF0, 0x482C40};
 	WEAK symbol<void(scriptInstance_t inst, unsigned int id)> RemoveRefToObject{0x6FB1B0, 0x550DC0};
 	WEAK symbol<void(scriptInstance_t inst, const float* vectorValue)> RemoveRefToVector{0x50C580, 0x432600};
 	WEAK symbol<void(scriptInstance_t inst, const VariableValue* value)> AddRefToValue{0x488FA0, 0x4E5060};
@@ -51,7 +54,7 @@ namespace game
 
 	WEAK symbol<unsigned int(const char* str, unsigned int user)> SL_GetString{0x602C40, 0x4601E0};
 	WEAK symbol<const char*(unsigned int stringValue)> SL_ConvertToString{0x422D10, 0x532230};
-	WEAK symbol<unsigned int(const char* str, bool is_static)> SL_GetCanonicalString{0, 0x546640};
+	WEAK symbol<unsigned int(const char* str, bool is_static)> SL_GetCanonicalString{0x692740, 0x546640};
 
 	WEAK symbol<int(scriptInstance_t inst)> Scr_GetNumParam{0x42E990, 0x680EA0};
 	WEAK symbol<gentity_s*(scriptInstance_t inst, int index)> Scr_GetEntity{0x48F250, 0x489100};
@@ -64,6 +67,8 @@ namespace game
 	WEAK symbol<int(scriptInstance_t inst, const char* filename, 
 		const char* name, unsigned int* checksum, bool errorIfMissing)> Scr_GetFunctionHandle{0x416D30, 0x53E5A0};
 	WEAK symbol<void(scriptInstance_t inst, unsigned int classnum, char const* name, unsigned int offset)> Scr_AddClassField{0x6B7620, 0x438AD0};
+
+	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId, const char* pos, unsigned int paramcount)> VM_Execute{0x8F9550, 0x8F82B0};
 
 	WEAK symbol<void(int clientNum, int type, const char* command)> SV_GameSendServerCommand{0x45D7D0, 0x40D450};
 
