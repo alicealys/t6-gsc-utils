@@ -144,7 +144,7 @@ namespace scripting
 
 			if (string_id < 0x34BC)
 			{
-				const auto string = reinterpret_cast<const char**>(0x2D7CF28)[string_id];
+				const auto string = reinterpret_cast<const char**>(SELECT(0x2DACC28, 0x2D7CF28))[string_id];
 				result.push_back(string);
 			}
 
