@@ -223,8 +223,7 @@ namespace json
 				}
 
 				dumped_objects = {};
-				gsc_to_json(value).dump(indent).substr(0, 0x5000);
-				return 0;
+				return gsc_to_json(value).dump(indent).substr(0, 0x5000);
 			});
 
 			gsc::function::add("jsondump", [](const gsc::function_args& args)
