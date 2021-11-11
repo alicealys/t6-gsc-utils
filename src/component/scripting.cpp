@@ -19,6 +19,9 @@ namespace scripting
 	std::unordered_map<std::string, game::BuiltinMethodDef> method_map;
 	std::unordered_map<std::string, game::BuiltinFunctionDef> function_map;
 
+	std::unordered_map<std::string, std::unordered_map<std::string, const char*>> script_function_table;
+	std::unordered_map<const char*, std::pair<std::string, std::string>> script_function_table_rev;
+
 	namespace
 	{
 		utils::hook::detour vm_notify_hook;
@@ -119,6 +122,31 @@ namespace scripting
 
 			method_map["notifyonplayercommand"] = get_method("notifyonplayercommand");
 		}
+
+		utils::hook::detour scr_load_script_hook;
+		int scr_load_script_stub(int a1, const char* filename)
+		{
+			const auto obj = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_SCRIPTPARSETREE, 
+				utils::string::va("%s.gsc", filename), 0, -1).scriptParseTree->obj;
+
+			const auto exported = reinterpret_cast<game::GSC_EXPORT_ITEM*>(&obj->magic[obj->exports_offset]);
+			const auto count = obj->exports_count;
+			auto iter = &obj->magic[obj->exports_offset + 8];
+
+			for (auto i = 0; i < count; i++)
+			{
+				const auto index = *reinterpret_cast<unsigned __int16*>(iter);
+				const auto function = &obj->magic[index];
+				const auto address = reinterpret_cast<char*>(reinterpret_cast<unsigned int>(obj) + exported[i].address);
+
+				script_function_table[filename][function] = address;
+				script_function_table_rev[address] = {filename, function};
+
+				iter += 12;
+			}
+
+			return scr_load_script_hook.invoke<int>(a1, filename);
+		}
 	}
 
 	script_function find_function(const std::string& _name)
@@ -146,6 +174,7 @@ namespace scripting
 		void post_unpack() override
 		{
 			scr_add_class_field_hook.create(SELECT(0x6B7620, 0x438AD0), scr_add_class_field_stub);
+			scr_load_script_hook.create(SELECT(0x5D2720, 0x608360), scr_load_script_stub);
 			load_functions();
 		}
 	};

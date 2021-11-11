@@ -102,6 +102,28 @@ namespace scripting
 		return call_function(name, arguments);
 	}
 
+	script_value exec_ent_thread(const entity& entity, const char* pos, const std::vector<script_value>& arguments)
+	{
+		const auto id = entity.get_entity_id();
+
+		stack_isolation _;
+		for (auto i = arguments.rbegin(); i != arguments.rend(); ++i)
+		{
+			push_value(*i);
+		}
+
+		game::VariableValue value{};
+		value.type = game::SCRIPT_OBJECT;
+		value.u.uintValue = id;
+		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
+
+		const auto local_id = game::AllocThread(game::SCRIPTINSTANCE_SERVER, id);
+		const auto result = game::VM_Execute(game::SCRIPTINSTANCE_SERVER, local_id, pos, arguments.size());
+		game::RemoveRefToObject(game::SCRIPTINSTANCE_SERVER, result);
+
+		return get_return_value();
+	}
+
 	static std::unordered_map<unsigned int, std::unordered_map<std::string, script_value>> custom_fields;
 
 	script_value get_custom_field(const entity& entity, const std::string& field)

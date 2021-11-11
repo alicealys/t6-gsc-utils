@@ -10,6 +10,7 @@ namespace scripting
 	class entity;
 	class array;
 	class object;
+	class function;
 	class value_wrap;
 
 	namespace
@@ -72,17 +73,27 @@ namespace scripting
 				return "string";
 			}
 
-			if (info == typeid(scripting::entity))
+			if (info == typeid(entity))
 			{
 				return "entity";
 			}
 
-			if (info == typeid(scripting::array))
+			if (info == typeid(array))
 			{
 				return "array";
 			}
 
-			if (info == typeid(scripting::vector))
+			if (info == typeid(object))
+			{
+				return "struct";
+			}
+
+			if (info == typeid(function))
+			{
+				return "function";
+			}
+
+			if (info == typeid(vector))
 			{
 				return "vector";
 			}
@@ -113,6 +124,8 @@ namespace scripting
 		script_value(const entity& value);
 		script_value(const array& value);
 		script_value(const object& value);
+
+		script_value(const function& value);
 
 		script_value(const vector& value);
 

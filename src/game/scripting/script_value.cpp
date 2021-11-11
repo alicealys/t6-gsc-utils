@@ -2,6 +2,7 @@
 #include "script_value.hpp"
 #include "entity.hpp"
 #include "array.hpp"
+#include "function.hpp"
 #include "object.hpp"
 
 namespace scripting
@@ -112,6 +113,15 @@ namespace scripting
 		this->value_ = variable;
 	}
 
+	script_value::script_value(const function& value)
+	{
+		game::VariableValue variable{};
+		variable.type = game::SCRIPT_FUNCTION;
+		variable.u.codePosValue = value.get_pos();
+
+		this->value_ = variable;
+	}
+
 	script_value::script_value(const vector& value)
 	{
 		game::VariableValue variable{};
@@ -201,7 +211,8 @@ namespace scripting
 	template <>
 	bool script_value::is<const char*>() const
 	{
-		return this->get_raw().type == game::SCRIPT_STRING;
+		return this->get_raw().type == game::SCRIPT_STRING
+			|| this->get_raw().type == game::SCRIPT_ISTRING;
 	}
 
 	template <>
@@ -285,6 +296,23 @@ namespace scripting
 	{
 		return object(this->get_raw().u.uintValue);
 	}
+
+	/***************************************************************
+	 * Function
+	 **************************************************************/
+
+	template <>
+	bool script_value::is<function>() const
+	{
+		return this->get_raw().type == game::SCRIPT_FUNCTION;
+	}
+
+	template <>
+	function script_value::get() const
+	{
+		return function(this->get_raw().u.codePosValue);
+	}
+
 
 	/***************************************************************
 	 * Vector

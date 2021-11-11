@@ -9,6 +9,7 @@
 
 #include "gsc.hpp"
 #include "json.hpp"
+#include "scripting.hpp"
 
 #include <json.hpp>
 #include <utils/io.hpp>
@@ -120,9 +121,10 @@ namespace json
 				return object_to_json(variable.u.uintValue);
 			}
 
-			if (variable.type == game::SCRIPT_FUNCTION)
+			if (value.is<scripting::function>())
 			{
-				return "[function]";
+				const auto function = value.as<scripting::function>();
+				return utils::string::va("[[ %s ]]", function.get_name().data());
 			}
 
 			if (variable.type == game::SCRIPT_NONE)
