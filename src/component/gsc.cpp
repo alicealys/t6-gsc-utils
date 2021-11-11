@@ -458,12 +458,6 @@ namespace gsc
                 return {};
             });
 
-            function::add("meow", [](const function_args& args) -> scripting::script_value
-            {
-                printf("meow\n");
-                return {};
-            });
-
             function::add("arrayremovekey", [](const function_args& args) -> scripting::script_value
             {
                 const auto array = args[0].as<scripting::array>();
@@ -535,37 +529,26 @@ namespace gsc
                 return result;
             });
 
-            function::add("_print", [](const function_args& args) -> scripting::script_value
+            function::add("isfunctionptr", [](const function_args& args) -> scripting::script_value
             {
-                const auto args_ = args.get_raw();
-
-                for (const auto& arg : args_)
-                {
-                    const auto str = arg.as<std::string>();
-                    printf("%s\t", str.data());
-                }
-
-                printf("\n");
-
-                return {};
+                return args[0].is<scripting::function>();
             });
 
-            function::add("addcommand", [](const function_args& args) -> scripting::script_value
+            function::add("isentity", [](const function_args& args) -> scripting::script_value
             {
-                const auto name = args[0].as<std::string>();
-                const auto function = args[1].as<scripting::function>();
-                command::add_script_command(name, [function](const command::params& params)
-                {
-                    scripting::array array;
-                    for (auto i = 0; i < params.size(); i++)
-                    {
-                        array.push(params[i]);
-                    }
+                const auto value = args[0].get_raw();
+                const auto type = game::scr_VarGlob->objectVariableValue[value.u.uintValue].w.type & 0x7F;
+                return value.type == game::SCRIPT_OBJECT && type == 20;
+            });
 
-                    function({array.get_raw()});
-                });
+            function::add("isstruct", [](const function_args& args)
+            {
+                return args[0].is<scripting::object>();
+            });
 
-                return {};
+            function::add("typeof", [](const function_args& args)
+            {
+                return args[0].type_name();
             });
         }
     };

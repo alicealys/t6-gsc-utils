@@ -132,6 +132,11 @@ namespace scripting
 		template <typename T>
 		bool is() const;
 
+		std::string type_name()
+		{
+			return get_typename(this->get_raw());
+		}
+
 		template <typename T>
 		T as() const
 		{
@@ -173,6 +178,11 @@ namespace scripting
 	public:
 		value_wrap(const scripting::script_value& value, int argument_index);
 
+		std::string type_name()
+		{
+			return get_typename(this->get_raw());
+		}
+
 		template <typename T>
 		T as() const
 		{
@@ -200,7 +210,7 @@ namespace scripting
 		}
 
 		template <typename T>
-		T is() const
+		bool is() const
 		{
 			return this->value_.is<T>();
 		}
