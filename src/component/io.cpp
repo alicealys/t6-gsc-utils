@@ -100,6 +100,21 @@ namespace io
 				return fmt;
 			});
 
+			gsc::function::add("_print", [](const gsc::function_args& args) -> scripting::script_value
+			{
+				const auto args_ = args.get_raw();
+
+				for (auto i = 0; i < args_.size(); i++)
+				{
+					const auto str = game::Scr_GetString(game::SCRIPTINSTANCE_SERVER, i);
+					printf("%s\t", str);
+				}
+
+				printf("\n");
+
+				return {};
+			});
+
 			gsc::function::add("jsonprint", [](const gsc::function_args& args) -> scripting::script_value
 			{
 				std::string buffer;
