@@ -521,6 +521,20 @@ namespace gsc
                 return {};
             });
 
+            function::add("getstructkeys", [](const function_args& args) -> scripting::script_value
+            {
+                const auto obj = args[0].as<scripting::object>();
+                const auto keys = obj.get_keys();
+                scripting::array result;
+
+                for (const auto& key : keys)
+                {
+                    result.push(key);
+                }
+
+                return result;
+            });
+
             function::add("_print", [](const function_args& args) -> scripting::script_value
             {
                 const auto args_ = args.get_raw();
