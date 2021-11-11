@@ -8,6 +8,7 @@
 
 #include "scripting.hpp"
 #include "scheduler.hpp"
+#include "command.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
@@ -24,10 +25,7 @@ namespace scripting
 
 	namespace
 	{
-		utils::hook::detour vm_notify_hook;
 		utils::hook::detour scr_add_class_field_hook;
-
-		utils::hook::detour scr_load_level_hook;
 		utils::hook::detour g_shutdown_game_hook;
 
 		void scr_add_class_field_stub(game::scriptInstance_t inst, unsigned int classnum, char const* name, unsigned int offset)
@@ -147,6 +145,12 @@ namespace scripting
 
 			return scr_load_script_hook.invoke<int>(a1, filename);
 		}
+
+		void g_shutdown_game_stub(const int free_scripts)
+		{
+			command::clear_script_commands();
+			return g_shutdown_game_hook.invoke<void>(free_scripts);
+		}
 	}
 
 	script_function find_function(const std::string& _name)
@@ -173,8 +177,11 @@ namespace scripting
 	public:
 		void post_unpack() override
 		{
+			g_shutdown_game_hook.create(SELECT(0x60DCF0, 0x688A40), g_shutdown_game_stub);
+
 			scr_add_class_field_hook.create(SELECT(0x6B7620, 0x438AD0), scr_add_class_field_stub);
 			scr_load_script_hook.create(SELECT(0x5D2720, 0x608360), scr_load_script_stub);
+
 			load_functions();
 		}
 	};
