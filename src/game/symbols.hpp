@@ -10,6 +10,7 @@ namespace game
 	WEAK symbol<void(int localClientNum, const char* text)> Cbuf_AddText{0x5C6F10, 0x6B9D20};
 	WEAK symbol<void(const char* cmdName, void(), cmd_function_t* allocedCmd)> Cmd_AddCommandInternal{0x5B3070, 0x4DC2A0};
 	WEAK symbol<const char*(int index)> Cmd_Argv{0x5608F0, 0x6B3D40};
+	WEAK symbol<void(const char* cmdName)> Cmd_RemoveCommand{0x6033D0, 0x65EB30};
 
 	WEAK symbol<void(int clientNum)> ClientUserInfoChanged{0x4ED6A0, 0x427DC0};
 
@@ -71,6 +72,8 @@ namespace game
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId, const char* pos, unsigned int paramcount)> VM_Execute{0x8F9550, 0x8F82B0};
 
 	WEAK symbol<void(int clientNum, int type, const char* command)> SV_GameSendServerCommand{0x45D7D0, 0x40D450};
+
+	WEAK symbol<void*(int valueIndex)> Sys_GetValue{0x5EFBA0, 0x59A740};
 
 	WEAK symbol<void*(jmp_buf* Buf, int Value)> longjmp{0xA78870, 0xA71AD0};
 	WEAK symbol<int(jmp_buf* Buf)> _setjmp{0xA77B10, 0xA70D70};

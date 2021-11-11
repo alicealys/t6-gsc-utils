@@ -246,6 +246,22 @@ namespace game
 		int flags;
 	};
 
+	struct CmdArgs
+	{
+		int nesting;
+		int localClientNum[8];
+		int controllerIndex[8];
+		void* itemDef[8];
+		int argshift[8];
+		int argc[8];
+		const char** argv[8];
+		char textPool[8192];
+		const char* argvPool[512];
+		int usedTextPool[8];
+		int totalUsedArgvPool;
+		int totalUsedTextPool;
+	};
+
 	enum dvarType_t
 	{
 		DVAR_TYPE_INVALID = 0x0,

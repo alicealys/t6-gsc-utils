@@ -13,6 +13,11 @@ namespace command
 {
 	std::unordered_map<std::string, std::function<void(params&)>> handlers;
 
+	game::CmdArgs* get_cmd_args()
+	{
+		return reinterpret_cast<game::CmdArgs*>(game::Sys_GetValue(4));
+	}
+
 	void main_handler()
 	{
 		params params = {};
@@ -25,17 +30,29 @@ namespace command
 		}
 	}
 
-	int params::size()
+	params::params()
+		: nesting_(get_cmd_args()->nesting)
 	{
-		return game::Cmd_Argc();
 	}
 
-	const char* params::get(int index)
+	int params::size() const
 	{
-		return game::Cmd_Argv(index);
+		const auto cmd_args = get_cmd_args();
+		return cmd_args->argc[cmd_args->nesting];
 	}
 
-	std::string params::join(int index)
+	const char* params::get(int index) const
+	{
+		if (index >= this->size())
+		{
+			return "";
+		}
+
+		const auto cmd_args = get_cmd_args();
+		return cmd_args->argv[this->nesting_][index];
+	}
+
+	std::string params::join(int index) const
 	{
 		std::string result = {};
 
@@ -63,6 +80,28 @@ namespace command
 		}
 
 		handlers[command] = callback;
+	}
+
+	std::vector<std::string> script_commands;
+	utils::memory::allocator allocator;
+
+	void add_script_command(const std::string& name, const std::function<void(const params&)>& callback)
+	{
+		script_commands.push_back(name);
+		const auto _name = allocator.duplicate_string(name);
+		add(_name, callback);
+	}
+
+	void clear_script_commands()
+	{
+		for (const auto& name : script_commands)
+		{
+			handlers.erase(name);
+			game::Cmd_RemoveCommand(name.data());
+		}
+
+		allocator.clear();
+		script_commands.clear();
 	}
 
 	class component final : public component_interface
