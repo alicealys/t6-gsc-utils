@@ -124,47 +124,17 @@ namespace scripting
 		return get_return_value();
 	}
 
-	static std::unordered_map<unsigned int, std::unordered_map<std::string, script_value>> custom_fields;
-
 	script_value get_custom_field(const entity& entity, const std::string& field)
 	{
-		auto fields = custom_fields[entity.get_entity_id()];
-		const auto _field = fields.find(field);
-		if (_field != fields.end())
-		{
-			return _field->second;
-		}
-		return {};
+		const object object = entity.get_entity_id();
+		return object.get(field);
 	}
 
 	void set_custom_field(const entity& entity, const std::string& field, const script_value& value)
 	{
-		const auto id = entity.get_entity_id();
-
-		if (custom_fields[id].find(field) != custom_fields[id].end())
-		{
-			custom_fields[id][field] = value;
-			return;
-		}
-
-		custom_fields[id].insert(std::make_pair(field, value));
+		const object object = entity.get_entity_id();
+		object.set(field, value);
 	}
-
-	void clear_entity_fields(const entity& entity)
-	{
-		const auto id = entity.get_entity_id();
-
-		if (custom_fields.find(id) != custom_fields.end())
-		{
-			custom_fields[id].clear();
-		}
-	}
-
-	void clear_custom_fields()
-	{
-		custom_fields.clear();
-	}
-
 
 	void set_entity_field(const entity& entity, const std::string& field, const script_value& value)
 	{

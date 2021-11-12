@@ -131,7 +131,8 @@ namespace gsc
 
             try
             {
-                const auto result = method.second(entref, get_arguments());
+                const scripting::entity entity = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, entref.entnum, entref.classnum, 0);
+                const auto result = method.second(entity, get_arguments());
                 return_value(result);
 
             }
@@ -409,7 +410,7 @@ namespace gsc
     public:
         void post_unpack() override
         {
-            scr_get_common_function_hook.create(SELECT(0x691110, 0x4EB070), scr_get_common_function);
+            scr_get_common_function_hook.create(SELECT(0x4B57B0, 0x4AD040), scr_get_common_function);
             player_get_method_hook.create(SELECT(0x432480, 0x6F2DB0), player_get_method);
 
             utils::hook::jump(SELECT(0x8F63FF, 0x8F515F), SELECT(call_builtin_stub_mp, call_builtin_stub_zm));
@@ -445,17 +446,23 @@ namespace gsc
                 }
             );
 
-            function::add("getfunction", [](const function_args&) -> scripting::script_value
+            function::add("getfunction", [](const function_args& args) -> scripting::script_value
             {
-                const auto filename = game::get<const char*>(0);
-                const auto function = game::get<const char*>(1);
-                const auto handle = game::Scr_GetFunctionHandle(game::SCRIPTINSTANCE_SERVER, filename, function, 0, 0);
+                const auto filename = args[0].as<std::string>();
+                const auto function = args[1].as<std::string>();
 
-                game::Scr_AddInt(game::SCRIPTINSTANCE_SERVER, handle);
-                const auto stack = *reinterpret_cast<int**>(SELECT(0x2E1A5E0, 0x2DEA8E0));
-                *stack = 10;
+                if (scripting::script_function_table[filename].find(function) != scripting::script_function_table[filename].end())
+                {
+                    return scripting::function{scripting::script_function_table[filename][function]};
+                }
 
                 return {};
+            });
+
+            function::add("getfunctionname", [](const function_args& args)
+            {
+                const auto function = args[0].as<scripting::function>();
+                return function.get_name();
             });
 
             function::add("arrayremovekey", [](const function_args& args) -> scripting::script_value
@@ -538,7 +545,7 @@ namespace gsc
             {
                 const auto value = args[0].get_raw();
                 const auto type = game::scr_VarGlob->objectVariableValue[value.u.uintValue].w.type & 0x7F;
-                return value.type == game::SCRIPT_OBJECT && type == 20;
+                return value.type == game::SCRIPT_OBJECT && type == game::SCRIPT_ENTITY;
             });
 
             function::add("isstruct", [](const function_args& args)
@@ -549,6 +556,19 @@ namespace gsc
             function::add("typeof", [](const function_args& args)
             {
                 return args[0].type_name();
+            });
+
+            method::add("get", [](const scripting::entity& entity, const function_args& args)
+            {
+                const auto field = args[0].as<std::string>();
+                return entity.get(field);
+            });
+
+            method::add("set", [](const scripting::entity& entity, const function_args& args) -> scripting::script_value
+            {
+                const auto field = args[0].as<std::string>();
+                entity.set(field, args[1]);
+                return {};
             });
         }
     };

@@ -88,8 +88,9 @@ namespace chat
 
 			utils::hook::call(SELECT(0x4D8888, 0x5304C8), client_disconnect_stub);
 
-			gsc::method::add("resetname", [](game::scr_entref_t ent, const gsc::function_args&) -> scripting::script_value
+			gsc::method::add("resetname", [](const scripting::entity& entity, const gsc::function_args&) -> scripting::script_value
 			{
+				const auto ent = entity.get_entity_reference();
 				if (ent.classnum != 0)
 				{
 					return {};
@@ -101,8 +102,9 @@ namespace chat
 				return {};
 			});
 
-			gsc::method::add("resetclantag", [](game::scr_entref_t ent, const gsc::function_args&) -> scripting::script_value
+			gsc::method::add("resetclantag", [](const scripting::entity& entity, const gsc::function_args&) -> scripting::script_value
 			{
+				const auto ent = entity.get_entity_reference();
 				if (ent.classnum != 0)
 				{
 					return {};
@@ -114,8 +116,9 @@ namespace chat
 				return {};
 			});
 
-			gsc::method::add("rename", [](game::scr_entref_t ent, const gsc::function_args&) -> scripting::script_value
+			gsc::method::add("rename", [](const scripting::entity& entity, const gsc::function_args&) -> scripting::script_value
 			{
+				const auto ent = entity.get_entity_reference();
 				if (ent.classnum != 0)
 				{
 					return {};
@@ -128,8 +131,9 @@ namespace chat
 				return {};
 			});
 
-			gsc::method::add("setclantag", [](game::scr_entref_t ent, const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("setclantag", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
 			{
+				const auto ent = entity.get_entity_reference();
 				if (ent.classnum != 0)
 				{
 					return {};
@@ -142,8 +146,9 @@ namespace chat
 				return {};
 			});
 
-			gsc::method::add("tell", [](game::scr_entref_t ent, const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("tell", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
 			{
+				const auto ent = entity.get_entity_reference();
 				if (ent.classnum != 0)
 				{
 					return {};
