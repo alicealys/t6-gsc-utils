@@ -339,6 +339,42 @@ namespace scripting
 		return this->value_.get();
 	}
 
+	std::string script_value::to_string() const
+	{
+		if (this->is<int>())
+		{
+			return utils::string::va("%i", this->as<int>());
+		}
+
+		if (this->is<float>())
+		{
+			return utils::string::va("%f", this->as<int>());
+		}
+
+		if (this->is<std::string>())
+		{
+			return this->as<std::string>();
+		}
+
+		if (this->is<vector>())
+		{
+			const auto vec = this->as<vector>();
+			return utils::string::va("(%g, %g, %g)",
+				vec.get_x(),
+				vec.get_y(),
+				vec.get_z()
+			);
+		}
+
+		if (this->is<function>())
+		{
+			const auto func = this->as<function>();
+			return utils::string::va("[[ %s ]]", func.get_name());
+		}
+
+		return this->type_name();
+	}
+
 	value_wrap::value_wrap(const scripting::script_value& value, int argument_index)
 		: value_(value)
 		, argument_index_(argument_index)

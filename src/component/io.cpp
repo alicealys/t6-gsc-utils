@@ -104,10 +104,9 @@ namespace io
 			{
 				const auto args_ = args.get_raw();
 
-				for (auto i = 0; i < args_.size(); i++)
+				for (const auto arg : args_)
 				{
-					const auto str = game::Scr_GetString(game::SCRIPTINSTANCE_SERVER, i);
-					printf("%s\t", str);
+					printf("%s\t", arg.to_string().data());
 				}
 
 				printf("\n");

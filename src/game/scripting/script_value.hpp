@@ -132,10 +132,12 @@ namespace scripting
 		template <typename T>
 		bool is() const;
 
-		std::string type_name()
+		std::string type_name() const
 		{
 			return get_typename(this->get_raw());
 		}
+
+		std::string to_string() const;
 
 		template <typename T>
 		T as() const
@@ -151,7 +153,7 @@ namespace scripting
 		}
 
 		template <typename T, typename I = int>
-		T* as_ptr()
+		T* as_ptr() const
 		{
 			const auto value = this->get<I>();
 
@@ -178,9 +180,14 @@ namespace scripting
 	public:
 		value_wrap(const scripting::script_value& value, int argument_index);
 
-		std::string type_name()
+		std::string to_string() const
 		{
-			return get_typename(this->get_raw());
+			return this->value_.to_string();
+		}
+
+		std::string type_name() const
+		{
+			return this->value_.type_name();
 		}
 
 		template <typename T>
@@ -197,7 +204,7 @@ namespace scripting
 		}
 
 		template <typename T, typename I = int>
-		T* as_ptr()
+		T* as_ptr() const
 		{
 			try
 			{
