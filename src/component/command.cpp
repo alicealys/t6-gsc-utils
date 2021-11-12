@@ -5,6 +5,7 @@
 
 #include "command.hpp"
 #include "gsc.hpp"
+#include "scripting.hpp"
 
 #include <utils/string.hpp>
 #include <utils/memory.hpp>
@@ -12,6 +13,9 @@
 namespace command
 {
 	std::unordered_map<std::string, std::function<void(params&)>> handlers;
+
+	std::vector<std::string> script_commands;
+	utils::memory::allocator allocator;
 
 	game::CmdArgs* get_cmd_args()
 	{
@@ -82,9 +86,6 @@ namespace command
 		handlers[command] = callback;
 	}
 
-	std::vector<std::string> script_commands;
-	utils::memory::allocator allocator;
-
 	void add_script_command(const std::string& name, const std::function<void(const params&)>& callback)
 	{
 		script_commands.push_back(name);
@@ -109,6 +110,8 @@ namespace command
 	public:
 		void post_unpack() override
 		{
+			scripting::on_shutdown(clear_script_commands);
+
 			command::add("notifylevel", [](command::params& params)
 			{
 				if (params.size() < 2)
@@ -183,12 +186,13 @@ namespace command
 				command::add_script_command(name, [function](const command::params& params)
 				{
 					scripting::array array;
+
 					for (auto i = 0; i < params.size(); i++)
 					{
 						array.push(params[i]);
 					}
 
-					function({ array.get_raw() });
+					function({array.get_raw()});
 				});
 
 				return {};

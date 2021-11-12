@@ -8,7 +8,6 @@
 
 #include "scripting.hpp"
 #include "scheduler.hpp"
-#include "command.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
@@ -146,9 +145,15 @@ namespace scripting
 			return scr_load_script_hook.invoke<int>(a1, filename);
 		}
 
+		std::vector<std::function<void()>> shutdown_callbacks;
 		void g_shutdown_game_stub(const int free_scripts)
 		{
-			command::clear_script_commands();
+			for (const auto& callback : shutdown_callbacks)
+			{
+				callback();
+			}
+
+			shutdown_callbacks = {};
 			return g_shutdown_game_hook.invoke<void>(free_scripts);
 		}
 	}
@@ -170,6 +175,11 @@ namespace scripting
 		}
 
 		return nullptr;
+	}
+
+	void on_shutdown(const std::function<void()>& callback)
+	{
+		shutdown_callbacks.push_back(callback);
 	}
 
 	class component final : public component_interface
