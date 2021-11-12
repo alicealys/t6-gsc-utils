@@ -100,7 +100,7 @@ namespace io
 				return fmt;
 			});
 
-			gsc::function::add("_print", [](const gsc::function_args& args) -> scripting::script_value
+			gsc::function::add("print", [](const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto args_ = args.get_raw();
 

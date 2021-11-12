@@ -288,7 +288,7 @@ namespace scripting
 		const auto id = this->get_raw().u.uintValue;
 		const auto type = game::scr_VarGlob->objectVariableValue[id].w.type & 0x7F;
 
-		return type == game::SCRIPT_STRUCT;
+		return type == game::SCRIPT_STRUCT || type == game::SCRIPT_ENTITY;
 	}
 
 	template <>

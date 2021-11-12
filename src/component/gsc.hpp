@@ -37,7 +37,7 @@ namespace gsc
 	using builtin_method = void(*)(game::scr_entref_t);
 
 	using script_function = std::function<scripting::script_value(const function_args&)>;
-	using script_method = std::function<scripting::script_value(const game::scr_entref_t, const function_args&)>;
+	using script_method = std::function<scripting::script_value(const scripting::entity&, const function_args&)>;
 
 	namespace function
 	{
