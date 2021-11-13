@@ -348,7 +348,7 @@ namespace scripting
 
 		if (this->is<float>())
 		{
-			return utils::string::va("%f", this->as<int>());
+			return utils::string::va("%f", this->as<float>());
 		}
 
 		if (this->is<std::string>())
