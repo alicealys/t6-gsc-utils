@@ -13,62 +13,71 @@ namespace chat
 {
 	namespace
 	{
-		int post_get_name;
-		int post_get_clantag;
+		using userinfo_map = std::unordered_map<std::string, std::string>;
+		std::unordered_map<int, userinfo_map> userinfo_overrides;
+		utils::hook::detour sv_get_user_info_hook;
+		utils::hook::detour client_connect_hook;
 
-		int client_index;
+		std::vector<scripting::function> say_callbacks;
+		utils::hook::detour g_say_hook;
 
-		std::string names[18];
-		std::string clantags[18];
-
-		const char* get_clantag(int clientNum, const char* s, const char* key)
+		userinfo_map userinfo_to_map(const std::string& userinfo)
 		{
-			if (clantags[clientNum].empty())
+			userinfo_map map;
+			const auto args = utils::string::split(userinfo, '\\');
+
+			for (auto i = 1; i < args.size() - 1; i += 2)
 			{
-				return reinterpret_cast<const char* (*)(const char*, 
-					const char*)>(SELECT(0x68B420, 0x46AD00))(s, key);
+				map[args[i]] = args[i + 1];
 			}
 
-			return clantags[clientNum].data();
+			return map;
 		}
 
-		const char* get_name(int clientNum, const char* s, const char* key)
+		std::string map_to_userinfo(const userinfo_map& map)
 		{
-			if (names[clientNum].empty())
+			std::string buffer;
+
+			for (const auto& value : map)
 			{
-				return reinterpret_cast<const char* (*)(const char*, 
-					const char*)>(SELECT(0x68B420, 0x46AD00))(s, key);
+				buffer.append("\\");
+				buffer.append(value.first);
+				buffer.append("\\");
+				buffer.append(value.second);
 			}
 
-			return names[clientNum].data();
+			return buffer;
 		}
 
 		void sv_get_user_info_stub(int index, char* buffer, int bufferSize)
 		{
-			client_index = index;
-			reinterpret_cast<void (*)(int, char*, 
-				int)>(SELECT(0x68BB90, 0x4C10F0))(index, buffer, bufferSize);
+			char _buffer[1024];
+			sv_get_user_info_hook.invoke<void>(index, _buffer, 1024);
+			auto map = userinfo_to_map(_buffer);
+
+			for (const auto& values : userinfo_overrides[index])
+			{
+				if (values.second.empty())
+				{
+					map.erase(values.first);
+				}
+				else
+				{
+					map[values.first] = values.second;
+				}
+			}
+
+			const auto userinfo = map_to_userinfo(map);
+			strcpy_s(buffer, 1024, userinfo.data());
 		}
 
-		const char* info_value_for_name(const char* s, const char* key)
+		const char* client_connect_stub(int client, unsigned int scriptPersId)
 		{
-			return get_name(client_index, s, key);
+			printf("clear userinfo\n");
+			userinfo_overrides[client].clear();
+			return client_connect_hook.invoke<const char*>(client, scriptPersId);
 		}
 
-		const char* info_value_for_clantag(const char* s, const char* key)
-		{
-			return get_clantag(client_index, s, key);
-		}
-
-		void client_disconnect_stub(int clientNum)
-		{
-			clantags[clientNum].clear();
-			names[clientNum].clear();
-			reinterpret_cast<void (*)(int)>(SELECT(0x42FB00, 0x64ADE0))(clientNum);
-		}
-
-		std::vector<scripting::function> say_callbacks;
-		utils::hook::detour g_say_hook;
 		void g_say_stub(game::gentity_s* ent, game::gentity_s* target, int mode, const char* chatText)
 		{
 			auto hidden = false;
@@ -97,31 +106,56 @@ namespace chat
 		void post_unpack() override
 		{
 			g_say_hook.create(SELECT(0x6A7A40, 0x493DF0), g_say_stub);
+			sv_get_user_info_hook.create(SELECT(0x68BB90, 0x4C10F0), sv_get_user_info_stub);
+			client_connect_hook.create(SELECT(0x5EF5A0, 0x41BE10), client_connect_stub);
 
 			scripting::on_shutdown([]()
 			{
+				userinfo_overrides.clear();
 				say_callbacks.clear();
 			});
 
-			post_get_name = SELECT(0x4ED799, 0x427EB9);
-			post_get_clantag = SELECT(0x4ED7C2, 0x427EE2);
+			gsc::method::add("rename", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
+			{
+				const auto ent = entity.get_entity_reference();
+				const auto name = args[0].as<std::string>();
 
-			utils::hook::call(SELECT(0x4ED794, 0x427EB4), info_value_for_name);
-			utils::hook::call(SELECT(0x4ED7BD, 0x427EDD), info_value_for_clantag);
+				if (ent.classnum != 0 || ent.entnum > 17)
+				{
+					throw std::runtime_error("Invalid entity");
+				}
 
-			utils::hook::call(SELECT(0x4ED6D0, 0x427DF0), sv_get_user_info_stub);
+				userinfo_overrides[ent.entnum]["name"] = name;
+				game::ClientUserInfoChanged(ent.entnum);
 
-			utils::hook::call(SELECT(0x4D8888, 0x5304C8), client_disconnect_stub);
+				return {};
+			});
+
+			gsc::method::add("setname", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
+			{
+				const auto ent = entity.get_entity_reference();
+				const auto name = args[0].as<std::string>();
+
+				if (ent.classnum != 0 || ent.entnum > 17)
+				{
+					throw std::runtime_error("Invalid entity");
+				}
+
+				userinfo_overrides[ent.entnum]["name"] = name;
+				game::ClientUserInfoChanged(ent.entnum);
+
+				return {};
+			});
 
 			gsc::method::add("resetname", [](const scripting::entity& entity, const gsc::function_args&) -> scripting::script_value
 			{
 				const auto ent = entity.get_entity_reference();
-				if (ent.classnum != 0)
+				if (ent.classnum != 0 || ent.entnum > 17)
 				{
-					return {};
+					throw std::runtime_error("Invalid entity");
 				}
 
-				names[ent.entnum].clear();
+				userinfo_overrides[ent.entnum].erase("name");
 				game::ClientUserInfoChanged(ent.entnum);
 
 				return {};
@@ -130,27 +164,15 @@ namespace chat
 			gsc::method::add("resetclantag", [](const scripting::entity& entity, const gsc::function_args&) -> scripting::script_value
 			{
 				const auto ent = entity.get_entity_reference();
-				if (ent.classnum != 0)
+
+				if (ent.classnum != 0 || ent.entnum > 17)
 				{
-					return {};
+					throw std::runtime_error("Invalid entity");
 				}
 
-				clantags[ent.entnum].clear();
-				game::ClientUserInfoChanged(ent.entnum);
-
-				return {};
-			});
-
-			gsc::method::add("rename", [](const scripting::entity& entity, const gsc::function_args&) -> scripting::script_value
-			{
-				const auto ent = entity.get_entity_reference();
-				if (ent.classnum != 0)
-				{
-					return {};
-				}
-
-				const auto name = game::get<std::string>(0);
-				names[ent.entnum] = name;
+				userinfo_overrides[ent.entnum].erase("clantag");
+				userinfo_overrides[ent.entnum].erase("clanAbbrev");
+				userinfo_overrides[ent.entnum].erase("clanAbbrevEV");
 				game::ClientUserInfoChanged(ent.entnum);
 
 				return {};
@@ -159,13 +181,16 @@ namespace chat
 			gsc::method::add("setclantag", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto ent = entity.get_entity_reference();
-				if (ent.classnum != 0)
+				const auto name = args[0].as<std::string>();
+
+				if (ent.classnum != 0 || ent.entnum > 17)
 				{
-					return {};
+					throw std::runtime_error("Invalid entity");
 				}
 
-				const auto clantag = args[0].as<std::string>();
-				clantags[ent.entnum] = clantag;
+				userinfo_overrides[ent.entnum]["clantag"] = name;
+				userinfo_overrides[ent.entnum]["clanAbbrev"] = name;
+				userinfo_overrides[ent.entnum]["clanAbbrevEV"] = "1";
 				game::ClientUserInfoChanged(ent.entnum);
 
 				return {};
@@ -204,6 +229,14 @@ namespace chat
 			{
 				const auto client = args[0].as<int>();
 				const auto cmd = args[1].as<std::string>();
+				game::SV_GameSendServerCommand(client, 0, cmd.data());
+				return {};
+			});
+
+			gsc::method::add("sendservercommand", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
+			{
+				const auto client = entity.get_entity_reference().entnum;
+				const auto cmd = args[0].as<std::string>();
 				game::SV_GameSendServerCommand(client, 0, cmd.data());
 				return {};
 			});
