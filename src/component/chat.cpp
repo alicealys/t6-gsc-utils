@@ -73,7 +73,6 @@ namespace chat
 
 		const char* client_connect_stub(int client, unsigned int scriptPersId)
 		{
-			printf("clear userinfo\n");
 			userinfo_overrides[client].clear();
 			return client_connect_hook.invoke<const char*>(client, scriptPersId);
 		}
