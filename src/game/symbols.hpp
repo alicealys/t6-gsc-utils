@@ -77,7 +77,7 @@ namespace game
 	WEAK symbol<void*(int valueIndex)> Sys_GetValue{0x5EFBA0, 0x59A740};
 
 	WEAK symbol<void*(jmp_buf* Buf, int Value)> longjmp{0xA78870, 0xA71AD0};
-	WEAK symbol<int(jmp_buf* Buf)> _setjmp{0xA77B10, 0xA70D70};
+	WEAK symbol<int(jmp_buf* Buf, int a6, int a7, int a9)> _setjmp{0xA77B10, 0xA70D70};
 
 	// Variables
 
