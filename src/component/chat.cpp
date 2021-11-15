@@ -84,7 +84,7 @@ namespace chat
 			for (const auto& callback : say_callbacks)
 			{
 				const auto entity_id = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, ent->entity_num, 0, 0);
-				const auto result = callback(entity_id, {mode, chatText});
+				const auto result = callback(entity_id, {chatText, mode});
 
 				if (result.is<int>())
 				{
