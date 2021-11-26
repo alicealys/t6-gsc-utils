@@ -1,122 +1,521 @@
 # t6-gsc-utils
-Adds some useful stuff to gsc, based on Matrix's [t6-gsc-helper](https://github.com/skiff/t6-gsc-helper)
+T6 version of [iw5-gsc-utils](https://github.com/fedddddd/iw5-gsc-utils).  
+If you wish for any feature to be added please create an [issue](https://github.com/fedddddd/t6-gsc-utils/issues/new).
+
 # Features
-* Adds chat notifies (eg. `level waittill("say", player, message)`)
-* Adds a bunch of IO functions (`fopen`, `fread`, `fputs`...)
-* Some other useful functions like `printf`, `cmdexecute`, `say`, `curl`, `system` ...
-* Adds `notifynum` and `notifylevel` commands
 
-# Commands
-| Name | Description | Arguments | Example |
-| --- | --- | --- | --- |
-| notifynum | Notifies a player | clientnum, notifyname, ... | `notifynum 0 test argument1 argument2` |
-| notifylevel | Notifies the level | notifyname, ... | `notifylevel test argument1 argument2` |
-# Examples
-IO functions work basically exactly the same as they do in C/C++
+## Bitwise operators
+The T6 GSC compiler is missing support for bitwise operators (or, xor, and, ...), instead you can use the corresponding functions:
 ```c
-init() {
-  level.basepath = getDvar("fs_basepath") + "/" + getDvar("fs_basegame") + "/";
-  path = level.basepath + "whatever.txt";
-  
-  file = fopen(path, "a+");
-  
-  text = fread(file); // fread reads the entire file, you can also use fgets(file, n) to read the first n chars
-  
-  fclose(file);
-  
-  /*
-    printf also works similarly to C/C++ but only has %s
-    eg. printf("%s, %s", 1, "2") -> "1, 2"
-        printf(va("%s, %s", 1, "2")) -> "1, 2"
-  */
-  printf(text);
-  
-  // you can also use fgetc and feof if you desire
-  file = fopen(path, "a+");
-  
-  eof = false;
-  buf = "";
-  
-  while (!eof) {
-    c = fgetc(file);
-    eof = feof(file);
+init()
+{
+    flags = 0;
+    flags = or(flags, 1);       // flags |= 1;
+    flags = and(flags, not(1)); // flags &= ~1;
+    flags = xor(flags, 1);      // flags ^= 1;
     
-    if (!eof) {
-      buf += c;
+    if (and(flags, 1))          // flags & 1
+    {
+        // [...]
     }
-  }
-  
-  fclose(file);
-  printf(buf);
-  
-  // write to a file
-  file = fopen(path, "a+");
-  
-  fputs("hello world\n", file);
-  fprintf("hello world\n", file);
-  
-  fclose(file);
 }
 ```
 
-Chat notify example
+## Misc
+* `getFunction(filename, name)`: Gets a function from a GSC script.
 
-```c
-init () {
-  level thread onPlayerMessage();
-}
+  ```c
+  init()
+  {
+      function = getFunction("maps/mp/gametypes/_callbacksetup", "callbackVoid");
+      [[ function ]]();
+  }
+  ```
+* `getFunctionName(function)`: Returns the function's name.
+  
+  ```c
+  init()
+  {
+      function = getFunction("maps/mp/gametypes/_callbacksetup", "callbackVoid");
+      print(getFunctionName(function)); // "maps/mp/gametypes/_callbacksetup::callbackVoid"
+  }
+  ```
+* `arrayRemoveKey(array, key)`: Removes an array element by its (string) key.
 
-onPlayerMessage() {
-  for (;;) {
-    level waittill("say", player, message);
+  ```c
+  init()
+  {
+      array = [];
+      array["foo"] = 1;
+      arrayRemoveKey(array, "foo");
+  }
+  ```
+* `structGet(struct, key)`: Equivalent to `struct.field_name`.
+
+  ```c
+  init()
+  {
+      object = spawnStruct();
+      object.foo = 1;
+      print(structGet(object, "foo"));
+  }
+  ```
+* `structSet(struct, key, value)`: Equivalent to `struct.field_name = value`.
+
+  ```c
+  init()
+  {
+      object = spawnStruct();
+      structSet(object, "foo", 1);
+      print(structGet(object, "foo"));
+  }
+  ```
+* `structRemove(struct, key)`: Removes an element from a struct.
+
+  ```c
+  init()
+  {
+      object = spawnStruct();
+      object.foo = 1;
+      structRemove(object, "foo");
+  }
+  ```
+* `getStructKeys(struct)`: Returns an array containing all the struct's keys.
+
+  ```c
+  init()
+  {
+      object = spawnStruct();
+      object.foo = 1;
+      object.bar = 2;
+      
+      keys = getStructKeys(object);
+      
+      for (i = 0; i < keys.size; i++)
+      {
+          print(keys[i], structGet(object, keys[i]));
+      }
+  }
+  ```
+* `isFunctionPtr(value)`: Returns true if value is a function.
+
+  ```c
+  init()
+  {
+      assert(isFunctionPtr(::func) == true);
+      assert(isFunctionPtr("func") == false);
+  }
+  
+  func()
+  {
+      print("Hello world");
+  }
+  ```
+* `isEntity(value)`: Returns true if value is an entity (ex. player, script_model, hudelem)
+
+  ```c
+  init()
+  {
+      model = spawn("script_model", (0, 0, 0));
+      array = [];
+      
+      assert(isEntity(model) == true);
+      assert(isEntity(array) == false);
+  }
+  ```
+* `isStruct(value)`: Return true if value is a struct.
+
+  ```c
+  init()
+  {
+      object = spawnStruct();
+      array = [];
+      
+      assert(isStruct(object) == true);
+      assert(isStruct(array) == false);
+  }
+  ```
+* `typeof(value)`: Returns the name of a value's type.
+
+  ```c
+  init()
+  {
+      foo = 1;
+      bar = "hello world";
+      baz = [];
+      
+      assert(typeof(foo) == "int");
+      assert(typeof(bar) == "string");
+      assert(typeof(baz) == "array");
+  }
+  ```
+* `entity set(field, value)`: Sets an entity's field.
+
+  ```c
+  init()
+  {
+      ent = spawn("script_origin", (0, 0, 0));
+      ent set("origin", (100, 100, 100));
+  }
+  ```
+* `entity get(field)`: Gets an entity's field.
+
+  ```c
+  init()
+  {
+      ent = spawn("script_origin", (0, 0, 0));
+      print(ent get("origin"));
+  }
+  ```
+
+## Entity fields
+* `flags`: Get/Set a player's entity flags.
+  
+  ```c
+  onPlayerSpawned()
+  {
+      while (true)
+      {
+          self waittill("spawned_player");
+          self.flags = xor(flags, 1); // FL_GODMODE
+      }
+  }
+  ```
+  
+  Enum of all flags:
+  
+  ```c
+  {
+      FL_GODMODE = 0x1,
+      FL_DEMI_GODMODE = 0x2,
+      FL_NOTARGET = 0x4,
+      FL_NO_KNOCKBACK = 0x8,
+      FL_NO_RADIUS_DAMAGE = 0x10,
+      FL_SUPPORTS_LINKTO = 0x20,
+      FL_NO_AUTO_ANIM_UPDATE = 0x40,
+      FL_GRENADE_TOUCH_DAMAGE = 0x80,
+      FL_STABLE_MISSILES = 0x100,
+      FL_REPEAT_ANIM_UPDATE = 0x200,
+      FL_VEHICLE_TARGET = 0x400,
+      FL_GROUND_ENT = 0x800,
+      FL_CURSOR_HINT = 0x1000,
+      FL_MISSILE_ATTRACTOR_OR_REPULSOR = 0x2000,
+      FL_WEAPON_BEING_GRABBED = 0x4000,
+      FL_DELETE = 0x8000,
+      FL_BOUNCE = 0x10000,
+      FL_MOVER_SLIDE = 0x20000,
+      FL_MOVING = 0x40000,
+      FL_DONT_AUTOBOLT_MISSILE_EFFECTS = 0x80000,
+      FL_DISABLE_MISSILE_STICK = 0x100000,
+      FL_NO_MELEE_TARGET = 0x2000000,
+      FL_DYNAMICPATH = 0x8000000,
+      FL_AUTO_BLOCKPATHS = 0x10000000,
+      FL_OBSTACLE = 0x20000000,
+      FL_BADPLACE_VOLUME = 0x80000000,
+  };
+  ```
+* `clientflags`: Get/Set a player's client flags.
+  
+  ```c
+  onPlayerSpawned()
+  {
+      while (true)
+      {
+          self waittill("spawned_player");
+          self.flags = xor(flags, 1); // NOCLIP
+      }
+  }
+  ```
+  
+## Command
+* `executeCommand(command)`: Executes a console command.
+
+  ```c
+  fast_restart()
+  {
+      executeCommand("fast_restart");
+  }
+  ```
+* `addCommand(name, callback)`: Adds a console command.
+
+  ```c
+  init()
+  {
+      addCommand("test_cmd", ::test_cmd);
+  }
+  
+  test_cmd(args)
+  {
+      assert(args[0] == "test_cmd");
+      print("Hello world", args.size);
+  }
+  ```
+  
+## Chat
+* `entity setname(name)`: Sets a player's name.
+  
+  ```c
+  onPlayerConnected()
+  {
+      while (true)
+      {
+          level waittill("connected", player);
+          player setName("hello world");
+      }
+  }
+  ```
+* `entity rename(name)`: Same as `setname`.
+* `entity resetName()`: Resets a player's name to the original.
+  
+  ```c
+    onPlayerConnected()
+  {
+      while (true)
+      {
+          level waittill("connected", player);
+          player setName("hello world");
+          player resetName();
+      }
+  }
+  ```
+* `entiy setClantag(clantag)`: Sets a player's clantag.
+
+  ```c
+  onPlayerConnected()
+  {
+      while (true)
+      {
+          level waittill("connected", player);
+          player setClantag("hello world");
+      }
+  }
+  ```
+* `entity resetClantag()`: Resets a player's clantag to the original.
+
+  ```c
+  onPlayerConnected()
+  {
+      while (true)
+      {
+          level waittill("connected", player);
+          player setClantag("hello world");
+          player resetClantag();
+      }
+  }
+  ```
+* `say(message)`: Sends a chat message to all players.
+
+  ```c
+  onPlayerConnected()
+  {
+      while (true)
+      {
+          level waittill("connected", player);
+          say(player.name + " connected!");
+      }
+  }
+  ```
+* `entity tell(message)`: Sends a chat message to a player.
+
+  ```c
+  onPlayerConnected()
+  {
+      while (true)
+      {
+          level waittill("connected", player);
+          player tell("Welcome back " + player.name + "!");
+      }
+  }
+  ```
+* `sendServerCommand(clientnum, cmd)`: Executes SV_GameSendServerCommand.
+
+  ```c
+    onPlayerConnected()
+  {
+      while (true)
+      {
+          level waittill("connected", player);
+          sendServerCommand(-1, "j \"Hello world\""); // -1 -> all clients
+      }
+  }
+  ```
+  
+* `entity sendServerCommand(cmd)`: Executes SV_GameSendServerCommand on a specified client.
+
+  ```c
+    onPlayerConnected()
+  {
+      while (true)
+      {
+          level waittill("connected", player);
+          player sendServerCommand("j \"Hello world\"");
+      }
+  }
+  ```
+* `onPlayerSay`: Adds a player say callback.
+
+  ```c
+  init()
+  {
+      onPlayerSay(::callbackPlayerSay);
+  }
+  
+  callbackPlayerSay(text, mode)
+  {
+      // mode == 0 -> all
+      // mode == 1 -> team
+      // self -> player that sent the message
+      
+      self tell("You said " + text);
+      
+      return false; // return false -> hide the message, anything else will not
+  }
+  ```
+  
+# IO
+The basepath for all IO functions is `Plutonium/storage/t6`
+
+* `fopen(path, mode)`: Opens a file of given name with given mode, returns a file stream.
+* `fwrite(stream, text)`: Writes a string to a stream.
+* `fread(stream)`: Reads entire file.
+* `fclose(stream)`: Closes a file stream.
+* `fremove(path)`: Deletes a file.
+
+  ```c
+  init()
+  {
+      file = fopen("test.txt", "w");
+      fwrite(file, "test");
+      fclose(file);
+
+      file = fopen("test.txt", "r");
+      print(fread(file));
+      fclose(file);
+  }
+  ```
+ * `fileExists(path)`: Returns true if the file exists.
+ * `writeFile(path, data[, append])`: Creates a file if it doesn't exist and writes/appends text to it.
+ * `readFile(path)`: Reads a file.
+ * `fileSize(path)`: Returns file size in bytes.
+ * `createDirectory(path)`: Creates a directory.
+ * `directoryExists(path)`: Returns true if the directory exists.
+ * `directoryIsEmpty(path)`: Returns true if the directory is empty.
+ * `listFiles(path)`: Returns the list of files in the directory as an array.
+ * `copyFolder(source, target)`: Copies a folder.
+ * `jsonPrint(...)`: Prints values as json.
+ * `httpGet(url)`: Creates a GET HTTP request-
     
-    player tell("You said: ^5" + message);
+    ```c
+    init()
+    {
+        req = httpGet("https://example.com");
+        req waittill("done", result);
+        print(result);
+    }
+    ```
+# JSON
+
+* `jsonSerialize(variable[, indent])`: Converts GSC variables (such as arrays) into JSON:
+
+  ```c
+  init()
+  {
+      array = [];
+      array[0] = 1;
+      array[1] = 2;
+      json = jsonSerialize(array, 4);
+      
+      print(json);
+      
+      /*
+        [script]: [
+            2,
+            1
+         ]
+      */
   }
-}
+  ```
+  
+  This function can also be useful to reveal contents of existing arrays such as `game`:
+  ```c
+  init()
+  {
+      print(jsonSerialize(game["allies_model"], 4));
+      
+      /*
+      [script]: {
+          "ASSAULT": "[function]",
+          "GHILLIE": "[function]",
+          "JUGGERNAUT": "[function]",
+          "LMG": "[function]",
+          "RIOT": "[function]",
+          "SHOTGUN": "[function]",
+          "SMG": "[function]",
+          "SNIPER": "[function]"
+      }
+      */
+      
+      print(jsonSerialize(game["music"], 4));
+      
+      /*
+      [script]: {
+          "defeat_allies": "UK_defeat_music",
+          "defeat_axis": "IC_defeat_music",
+           "losing_allies": "UK_losing_music",
+           "losing_axis": "IC_losing_music",
+           "losing_time": "mp_time_running_out_losing",
+           "nuke_music": "nuke_music",
+           "spawn_allies": "UK_spawn_music",
+           "spawn_axis": "IC_spawn_music",
+           "suspense": [
+               "mp_suspense_06",
+               "mp_suspense_05",
+               "mp_suspense_04",
+               "mp_suspense_03",
+               "mp_suspense_02",
+               "mp_suspense_01"
+           ],
+           "victory_allies": "UK_victory_music",
+           "victory_axis": "IC_victory_music",
+           "winning_allies": "UK_winning_music",
+           "winning_axis": "IC_winning_music"
+       }
+      */
+  }
+  ```
+* `jsonParse(json)`: Converts JSON into a GSC variable:
 
-```
+  ```c
+  init()
+  {
+      array = jsonParse("[1,2,3,4]");
+      print(array[0] + " " + array[1] + " " + array[2] + " " + array[3]);
+      
+      /*
+        [script]: 1 2 3 4
+      */
+  }
+  ```
+* `createMap(...)`: Creates a string-indexed array:
+  
+  ```c
+  init()
+  {
+      array = map("first", 1, "second", 2);
+      print(jsonSerialize(array, 4));
+      /*
+          [script]: {
+              "first": 1,
+              "second": 2
+          }
+      */
+  }
+  ```
+* `jsonDump(file, value[, indent])`: Dumps a json value to a file.
 
-cURL example
-
-```c
-init() {
-  // The request is sent from a separate thread so it won't freeze the server
-  request = curl("https://example.com");
-  request waittill("done", result);
-  printf(result);
-}
-```
-
-# Full function/method list
-
-| Name | Description | Type | Call on | Arguments | Return |
-| --- | --- | --- | --- | --- | -- |
-| fopen | Opens a file of given name with given mode, returns a file stream | function | - | *string* path, *string* mode | *FILE\** stream | 
-| fclose | Closes a file stream | function | - | *FILE\** stream | *void* |
-| fremove | Deletes a file | function | - | *string* path | *void* |
-| fgetc | Returns the character currently pointed by the internal file position indicator of the given stream | function | - | *FILE\** stream | *void* |
-| fgets | Reads file until *length* characters are read | function | - | *FILE\** stream, int length | *string* text |
-| feof | Returns true if a stream's internal position reaches the end | function | - | *FILE\** stream | *bool* eof |
-| fputs | Writes a string to a stream | function | - | *string* text, *FILE\** stream | *void* |
-| fprintf | Writes a string to a stream | function | - | *string* text, *FILE\** stream | *void* |
-| fread | Reads entire file | function | - | *FILE\** stream | *string* text |
-| popen | Executes shell a command | function | - | *string* command | *FILE\** stream |
-| pclose | Closes a popen stream | function | - | *FILE\** stream | *void* |
-| system | Executes a shell command and returns the result | function | - | *string* command | *string* result |
-| regexreplace | Replaces a sub string in a string based on a regex expression | function | - | *string* what, *string* expression, *string* with | *string* result |
-| regexmatch | Checks if a string matches a regex expression |  function | - | *string* str, *string* expression | *int* matches |
-| cleanstr | Cleans a string from color codes | function | - | *string* str | *string* cleaned |
-| curl | Sends an http request to the given url, returns an object which is notified "done" when the request is done | function | - | *string* url | *object* request |
-| say | Prints a message to a all players' chat | function | - | *string* message | *void* |
-| tell | Prints a message to a player's chat | method | *player* | *string* message | *void* |
-| rename | Renames a player | method | *player* | *string* name | *void* |
-| resetname | Resets a player's name to the original | method | *player* | - | *void* |
-| setclantag | Sets a player's clantag | method | *player* | *string* clantag | *void* |
-| resetclantag | Resets a player's clantag to the original | method | *player* | - | *void* |
-| time | Returns seconds since epoch | function | - | - | *int* seconds |
-| date | Formats a date based on the given format | function | - | *string* format | *string* date |
-| printf | Formats and prints a string to the console | function | - | *string* format, ... | *void* |
-| va | Formats a string | function | - | *string* format, ... | *string* str |
-| cmdexecute | Executes a command | function | - | *string* command | *void* |
-| sendservercommand | Executes SV_GameSendServerCommand | function | - | *int* clientNum, *string* command | *void* |
-| memset | Sets specified address' value | function | - | *int* address, *int* value | *void* |
+  ```c
+  init()
+  {
+      jsonDump("level.txt", level, 4);
+  }
+  ```
