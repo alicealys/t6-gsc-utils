@@ -374,7 +374,8 @@ init()
       
       self tell("You said " + text);
       
-      return false; // return false -> hide the message, anything else will not
+      // returning `false` will hide the message, anything else will not
+      return false;
   }
   ```
   
@@ -434,10 +435,10 @@ The basepath for all IO functions is `Plutonium/storage/t6`
       print(json);
       
       /*
-        [script]: [
-            2,
-            1
-         ]
+      [
+          2,
+          1
+      ]
       */
   }
   ```
@@ -449,7 +450,7 @@ The basepath for all IO functions is `Plutonium/storage/t6`
       print(jsonSerialize(game["allies_model"], 4));
       
       /*
-      [script]: {
+      {
           "ASSAULT": "[function]",
           "GHILLIE": "[function]",
           "JUGGERNAUT": "[function]",
@@ -464,7 +465,7 @@ The basepath for all IO functions is `Plutonium/storage/t6`
       print(jsonSerialize(game["music"], 4));
       
       /*
-      [script]: {
+      {
           "defeat_allies": "UK_defeat_music",
           "defeat_axis": "IC_defeat_music",
            "losing_allies": "UK_losing_music",
@@ -498,7 +499,7 @@ The basepath for all IO functions is `Plutonium/storage/t6`
       print(array[0] + " " + array[1] + " " + array[2] + " " + array[3]);
       
       /*
-        [script]: 1 2 3 4
+      1 2 3 4
       */
   }
   ```
@@ -510,10 +511,10 @@ The basepath for all IO functions is `Plutonium/storage/t6`
       array = map("first", 1, "second", 2);
       print(jsonSerialize(array, 4));
       /*
-          [script]: {
-              "first": 1,
-              "second": 2
-          }
+      {
+          "first": 1,
+          "second": 2
+      }
       */
   }
   ```
