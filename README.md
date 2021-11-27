@@ -284,7 +284,7 @@ init()
       }
   }
   ```
-* `entiy setClantag(clantag)`: Sets a player's clantag.
+* `entity setClantag(clantag)`: Sets a player's clantag.
 
   ```c
   onPlayerConnected()
