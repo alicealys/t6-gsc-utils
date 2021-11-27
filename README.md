@@ -177,7 +177,7 @@ init()
       while (true)
       {
           self waittill("spawned_player");
-          self.flags = xor(flags, 1); // FL_GODMODE
+          self.flags = xor(self.flags, 1); // FL_GODMODE
       }
   }
   ```
@@ -228,7 +228,7 @@ init()
       while (true)
       {
           self waittill("spawned_player");
-          self.flags = xor(flags, 1); // NOCLIP
+          self.clientflags = xor(self.clientflags, 1); // NOCLIP
       }
   }
   ```
