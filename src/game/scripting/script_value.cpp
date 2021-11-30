@@ -75,7 +75,7 @@ namespace scripting
 
 		const auto _ = gsl::finally([&variable]()
 		{
-			game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, &variable);
+			game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable.type, variable.u);
 		});
 
 		this->value_ = variable;
@@ -130,7 +130,7 @@ namespace scripting
 
 		const auto _ = gsl::finally([&variable]()
 		{
-			game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, &variable);
+			game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable.type, variable.u);
 		});
 
 		this->value_ = variable;

@@ -36,7 +36,7 @@ namespace scripting
 		variable_.u = variable->u.u;
 
 		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
-		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, &variable_);
+		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable->type, variable->u.u);
 
 		variable->type = value.type;
 		variable->u.u = value.u;
@@ -127,7 +127,7 @@ namespace scripting
 			value.u.uintValue = this->id_;
 			value.type = game::SCRIPT_OBJECT;
 
-			game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
+			game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, value.type, value.u);
 		}
 	}
 
@@ -205,7 +205,7 @@ namespace scripting
 		variable_.u = variable->u.u;
 
 		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
-		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, &variable_);
+		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_.type, variable_.u);
 
 		variable->type = value.type;
 		variable->u.u = value.u;

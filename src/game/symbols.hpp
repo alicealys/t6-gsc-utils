@@ -39,7 +39,7 @@ namespace game
 	WEAK symbol<void(scriptInstance_t inst, unsigned int id)> RemoveRefToObject{0x6FB1B0, 0x550DC0};
 	WEAK symbol<void(scriptInstance_t inst, const float* vectorValue)> RemoveRefToVector{0x50C580, 0x432600};
 	WEAK symbol<void(scriptInstance_t inst, const VariableValue* value)> AddRefToValue{0x488FA0, 0x4E5060};
-	WEAK symbol<void(scriptInstance_t inst, const VariableValue* value)> RemoveRefToValue{0x55E820, 0x42E7D0};
+	WEAK symbol<void(scriptInstance_t inst, const int type, VariableUnion value)> RemoveRefToValue{0x55E820, 0x42E7D0};
 	WEAK symbol<void(scriptInstance_t inst, unsigned int parentId, unsigned int index)> RemoveVariableValue{0x56A820, 0x6CC320};
 
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int parentId, unsigned int id)> FindVariable{0x6EB1B0, 0x5FE180};

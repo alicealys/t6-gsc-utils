@@ -61,7 +61,7 @@ namespace scripting
 	{
 		if (this->value_.type != game::SCRIPT_NONE)
 		{
-			game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, &this->value_);
+			game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, this->value_.type, this->value_.u);
 			this->value_.type = game::SCRIPT_NONE;
 		}
 	}
