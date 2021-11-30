@@ -18,9 +18,11 @@ namespace json
 {
 	namespace
 	{
-		nlohmann::json gsc_to_json(scripting::script_value value);
+		std::unordered_set<unsigned int> dumped_objects;
 
-		nlohmann::json array_to_json(const scripting::array& array)
+		nlohmann::json gsc_to_json(scripting::script_value value, bool print_id);
+
+		nlohmann::json array_to_json(const scripting::array& array, bool print_id)
 		{
 			nlohmann::json obj;
 
@@ -39,34 +41,43 @@ namespace json
 				if (!string_indexed && is_int)
 				{
 					const auto index = keys[i].as<int>();
-					obj[index] = gsc_to_json(array[index]);
+					obj[index] = gsc_to_json(array[index], print_id);
 				}
 				else if (string_indexed && is_string)
 				{
 					const auto key = keys[i].as<std::string>();
-					obj.emplace(key, gsc_to_json(array[key]));
+					obj.emplace(key, gsc_to_json(array[key], print_id));
 				}
 			}
 
 			return obj;
 		}
 
-		std::unordered_set<unsigned int> dumped_objects;
-		nlohmann::json object_to_json(const scripting::object& object)
+		nlohmann::json object_to_json(const scripting::object& object, bool print_id)
 		{
 			const auto id = object.get_entity_id();
 			if (dumped_objects.find(id) != dumped_objects.end())
 			{
-				return "[circular reference]";
+				return utils::string::va("[struct reference %i]", id);
 			}
 
 			dumped_objects.insert(id);
 			nlohmann::json obj;
 
+			if (print_id)
+			{
+				obj["__id"] = id;
+			}
+
 			const auto keys = object.get_keys();
 			for (const auto& key : keys)
 			{
-				obj.emplace(key, gsc_to_json(object[key]));
+				if (key == "__id")
+				{
+					continue;
+				}
+
+				obj.emplace(key, gsc_to_json(object[key], print_id));
 			}
 
 			return obj;
@@ -82,7 +93,7 @@ namespace json
 			return obj;
 		}
 
-		nlohmann::json gsc_to_json(scripting::script_value value)
+		nlohmann::json gsc_to_json(scripting::script_value value, bool print_id)
 		{
 			const auto variable = value.get_raw();
 
@@ -108,17 +119,17 @@ namespace json
 
 			if (value.is<scripting::object>())
 			{
-				return object_to_json(variable.u.uintValue);
+				return object_to_json(variable.u.uintValue, print_id);
 			}
 
 			if (value.is<scripting::array>())
 			{
-				return array_to_json(variable.u.uintValue);
+				return array_to_json(variable.u.uintValue, print_id);
 			}
 
 			if (value.is<scripting::entity>())
 			{
-				return object_to_json(variable.u.uintValue);
+				return object_to_json(variable.u.uintValue, print_id);
 			}
 
 			if (value.is<scripting::function>())
@@ -179,7 +190,7 @@ namespace json
 	std::string gsc_to_string(const scripting::script_value& value)
 	{
 		dumped_objects = {};
-		return gsc_to_json(value).dump().substr(0, 0x5000);
+		return gsc_to_json(value, false).dump().substr(0, 0x5000);
 	}
 
 	class component final : public component_interface
@@ -216,14 +227,20 @@ namespace json
 			{
 				const auto value = args[0];
 				auto indent = -1;
+				auto print_id = false;
 
 				if (args.size() > 1)
 				{
 					indent = args[1].as<int>();
 				}
 
+				if (args.size() > 2)
+				{
+					print_id = args[2].as<bool>();
+				}
+
 				dumped_objects = {};
-				return gsc_to_json(value).dump(indent).substr(0, 0x5000);
+				return gsc_to_json(value, print_id).dump(indent).substr(0, 0x5000);
 			});
 
 			gsc::function::add("jsondump", [](const gsc::function_args& args)
@@ -231,14 +248,20 @@ namespace json
 				const auto file = args[0].as<std::string>();
 				const auto value = args[1];
 				auto indent = -1;
+				auto print_id = false;
 
 				if (args.size() > 2)
 				{
 					indent = args[2].as<int>();
 				}
 
+				if (args.size() > 3)
+				{
+					print_id = args[3].as<bool>();
+				}
+
 				dumped_objects = {};
-				return utils::io::write_file(file, gsc_to_json(value).dump(indent));
+				return utils::io::write_file(file, gsc_to_json(value, print_id).dump(indent));
 			});
 		}
 	};
