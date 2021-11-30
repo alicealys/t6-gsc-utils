@@ -177,7 +177,7 @@ namespace scripting
 
 			const auto __ = gsl::finally([&value]()
 			{
-				game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
+				game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, value.type, value.u);
 			});
 
 			return value;

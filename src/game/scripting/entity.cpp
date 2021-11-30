@@ -101,7 +101,7 @@ namespace scripting
 			value.type = game::SCRIPT_OBJECT;
 			value.u.uintValue = this->entity_id_;
 
-			game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
+			game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, value.type, value.u);
 		}
 	}
 
