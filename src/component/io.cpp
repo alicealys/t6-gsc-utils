@@ -93,7 +93,7 @@ namespace io
 
 				for (auto i = 1; i < args.size(); i++)
 				{
-					const auto arg = args[i].as<std::string>();
+					const auto arg = args[i].to_string();
 					replace(fmt, "%s", arg);
 				}
 

@@ -470,6 +470,7 @@ namespace gsc
                 const auto array = args[0].as<scripting::array>();
                 const auto key = args[1].as<std::string>();
                 array.erase(key);
+                return {};
             });
 
             function::add("xor", [](const function_args& args)
