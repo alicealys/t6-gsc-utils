@@ -28,11 +28,10 @@ namespace debug
 
             if (opcode == 0x29 || opcode == 0x2A)
             {
-                void* ptr = 0;
                 const char* name = 0;
                 for (auto i = 0; i < 4; i++)
                 {
-                    ptr = *reinterpret_cast<void**>(fs_pos + i);
+                    const auto ptr = *reinterpret_cast<void**>(fs_pos + i);
                     name = scripting::find_function_name(ptr);
 
                     if (name)
