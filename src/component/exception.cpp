@@ -110,7 +110,7 @@ namespace exception
             line("");
             line("Timestamp: "s + get_timestamp());
             line(utils::string::va("Exception: 0x%08X", exceptioninfo->ExceptionRecord->ExceptionCode));
-            line(utils::string::va("Address: 0x%llX", exceptioninfo->ExceptionRecord->ExceptionAddress));
+            line(utils::string::va("Address: 0x%lX", exceptioninfo->ExceptionRecord->ExceptionAddress));
 
 #pragma warning(push)
 #pragma warning(disable: 4996)
