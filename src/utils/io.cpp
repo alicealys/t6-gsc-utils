@@ -4,6 +4,11 @@
 
 namespace utils::io
 {
+	bool remove_file(const std::string& file)
+	{
+		return DeleteFileA(file.data()) == TRUE;
+	}
+
 	bool file_exists(const std::string& file)
 	{
 		return std::ifstream(file).good();

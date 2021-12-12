@@ -5,6 +5,8 @@
 #include "game/game.hpp"
 
 #include "gsc.hpp"
+#include "json.hpp"
+#include "debug.hpp"
 
 #include "scheduler.hpp"
 #include "scripting.hpp"
@@ -111,10 +113,10 @@ namespace gsc
             }
             catch (const std::exception& e)
             {
-                printf("************** Script execution error **************\n");
-                printf("Error executing function '%s':\n", function.first.data());
-                printf("    %s\n", e.what());
-                printf("****************************************************\n");
+                printf("******* script runtime error *******\n");
+                printf("in call to builtin function '%s': %s\n", function.first.data(), e.what());
+                printf(debug::get_call_stack().data());
+                printf("************************************\n");
             }
 
             return true;
@@ -138,10 +140,10 @@ namespace gsc
             }
             catch (const std::exception& e)
             {
-                printf("************** Script execution error **************\n");
-                printf("Error executing method '%s':\n", method.first.data());
-                printf("    %s\n", e.what());
-                printf("****************************************************\n");
+                printf("******* script runtime error *******\n");
+                printf("in call to builtin method '%s': %s\n", method.first.data(), e.what());
+                printf(debug::get_call_stack().data());
+                printf("************************************\n");
             }
 
             return true;
@@ -278,10 +280,10 @@ namespace gsc
             }
             catch (const std::exception& e)
             {
-                printf("************** Script execution error **************\n");
-                printf("Error getting field '%s':\n", field.name.data());
-                printf("    %s\n", e.what());
-                printf("****************************************************\n");
+                printf("******* script runtime error *******\n");
+                printf("error getting field '%s': %s\n", field.name.data(), e.what());
+                printf(debug::get_call_stack().data());
+                printf("************************************\n");
             }
         }
 
@@ -302,10 +304,10 @@ namespace gsc
             }
             catch (const std::exception& e)
             {
-                printf("************** Script execution error **************\n");
-                printf("Error setting field '%s':\n", field.name.data());
-                printf("    %s\n", e.what());
-                printf("****************************************************\n");
+                printf("******* script runtime error *******\n");
+                printf("error setting field '%s': %s\n", field.name.data(), e.what());
+                printf(debug::get_call_stack().data());
+                printf("************************************\n");
             }
         }
 

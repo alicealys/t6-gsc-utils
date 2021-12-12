@@ -49,6 +49,7 @@ namespace game
 		SCRIPT_VECTOR = 4,
 		SCRIPT_FLOAT = 6,
 		SCRIPT_INTEGER = 7,
+		SCRIPT_CODEPOS = 8,
 		SCRIPT_END = 9,
 		SCRIPT_FUNCTION = 10,
 		SCRIPT_STRUCT = 18,
@@ -92,13 +93,11 @@ namespace game
 		unsigned int localId;
 		unsigned int localVarCount;
 		VariableValue* startTop;
-		char profileData[0x24];
 	};
 
 	struct function_frame_t
 	{
 		function_stack_t fs;
-		char* creationPos;
 	};
 
 	struct scrVmPub_t
@@ -108,14 +107,11 @@ namespace game
 		int function_count;
 		function_frame_t* function_frame;
 		VariableValue* top;
-		bool debugCode;
 		bool abort_on_error;
 		bool terminal_error;
 		bool block_execution;
 		unsigned int inparamcount;
 		unsigned int outparamcount;
-		unsigned int breakpointOutparamcount;
-		bool showError;
 		function_frame_t function_frame_start[32];
 		VariableValue stack[2048];
 		void(__cdecl* notifyListeners[1])(unsigned int, unsigned int);
@@ -443,6 +439,12 @@ namespace game
 		const char* name;
 		int len;
 		GSC_OBJ* obj;
+	};
+
+	struct objFileInfo_t
+	{
+		GSC_OBJ* activeVersion;
+		char __pad[0x24];
 	};
 
 	union XAssetHeader

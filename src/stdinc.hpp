@@ -35,3 +35,11 @@ using namespace std::literals;
 
 #include <MinHook.h>
 #include <gsl/gsl>
+
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
