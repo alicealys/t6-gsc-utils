@@ -20,6 +20,7 @@ namespace scripting
 	std::unordered_map<std::string, game::BuiltinFunctionDef> function_map;
 
 	std::unordered_map<std::string, std::unordered_map<std::string, const char*>> script_function_table;
+	std::unordered_map<std::string, std::vector<std::pair<std::string, const char*>>> script_function_table_sort;
 	std::unordered_map<const char*, std::pair<std::string, std::string>> script_function_table_rev;
 
 	namespace
@@ -121,14 +122,18 @@ namespace scripting
 		}
 
 		utils::hook::detour scr_load_script_hook;
-		int scr_load_script_stub(int a1, const char* filename)
-		{
-			const auto obj = game::DB_FindXAssetHeader(game::XAssetType::ASSET_TYPE_SCRIPTPARSETREE, 
-				utils::string::va("%s.gsc", filename), 0, -1).scriptParseTree->obj;
 
+		void extract_obj_functions(game::GSC_OBJ* obj)
+		{
 			const auto exported = reinterpret_cast<game::GSC_EXPORT_ITEM*>(&obj->magic[obj->exports_offset]);
 			const auto count = obj->exports_count;
 			auto iter = &obj->magic[obj->exports_offset + 8];
+
+			std::string filename = &obj->magic[obj->name];
+			if (filename.ends_with(".gsc"))
+			{
+				filename = filename.substr(0, filename.size() - 4);
+			}
 
 			for (auto i = 0; i < count; i++)
 			{
@@ -138,11 +143,25 @@ namespace scripting
 
 				script_function_table[filename][function] = address;
 				script_function_table_rev[address] = {filename, function};
+				script_function_table_sort[filename].push_back({function, address});
 
 				iter += 12;
 			}
+		}
 
-			return scr_load_script_hook.invoke<int>(a1, filename);
+		utils::hook::detour scr_post_load_scripts_hook;
+		unsigned int post_load_scripts_stub()
+		{
+			const auto script_count = *reinterpret_cast<unsigned int*>(SELECT(0x2DB9F18, 0x2D8A218));
+			const auto scripts = reinterpret_cast<game::objFileInfo_t*>(SELECT(0x2DA2FE8, 0x2D732E8));
+
+			for (auto i = 0; i < script_count; i++)
+			{
+				const auto obj = scripts[i].activeVersion;
+				extract_obj_functions(obj);
+			}
+
+			return scr_post_load_scripts_hook.invoke<unsigned int>();
 		}
 
 		std::vector<std::function<void()>> shutdown_callbacks;
@@ -158,7 +177,7 @@ namespace scripting
 		}
 	}
 
-	script_function find_function(const std::string& _name)
+	script_function find_function_ptr(const std::string& _name)
 	{
 		const auto name = utils::string::to_lower(_name);
 
@@ -177,6 +196,44 @@ namespace scripting
 		return nullptr;
 	}
 
+	const char* find_function_name(void* func)
+	{
+		for (auto i = function_map.begin(); i != function_map.end(); ++i)
+		{
+			if (i->second.actionFunc == func)
+			{
+				return i->second.actionString;
+			}
+		}
+
+		for (auto i = method_map.begin(); i != method_map.end(); ++i)
+		{
+			if (i->second.actionFunc == func)
+			{
+				return i->second.actionString;
+			}
+		}
+
+		return 0;
+	}
+
+	std::string find_function(const char* pos)
+	{
+		for (const auto& file : script_function_table_sort)
+		{
+			for (auto i = file.second.begin(); std::next(i) != file.second.end(); ++i)
+			{
+				const auto next = std::next(i);
+				if (pos >= i->second && pos < next->second)
+				{
+					return utils::string::va("%s::%s", file.first.data(), i->first.data());
+				}
+			}
+		}
+
+		return "unknown function";
+	}
+
 	void on_shutdown(const std::function<void()>& callback)
 	{
 		shutdown_callbacks.push_back(callback);
@@ -190,7 +247,7 @@ namespace scripting
 			g_shutdown_game_hook.create(SELECT(0x60DCF0, 0x688A40), g_shutdown_game_stub);
 
 			scr_add_class_field_hook.create(SELECT(0x6B7620, 0x438AD0), scr_add_class_field_stub);
-			scr_load_script_hook.create(SELECT(0x5D2720, 0x608360), scr_load_script_stub);
+			scr_post_load_scripts_hook.create(SELECT(0x642EB0, 0x425F80), post_load_scripts_stub);
 
 			load_functions();
 		}

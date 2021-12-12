@@ -143,7 +143,19 @@ namespace json
 				return {};
 			}
 
-			return "[unknown type]";
+			if (variable.type == game::SCRIPT_CODEPOS)
+			{
+				const auto function = scripting::find_function(variable.u.codePosValue);
+				return utils::string::va("[codepos: %s]", function.data());
+			}
+
+			if (variable.type == game::SCRIPT_END)
+			{
+				const auto function = scripting::find_function(variable.u.codePosValue);
+				return utils::string::va("[precodepos: %s]", function.data());
+			}
+
+			return utils::string::va("[%s]", value.type_name().data());
 		}
 
 		scripting::script_value json_to_gsc(nlohmann::json obj)
@@ -190,7 +202,7 @@ namespace json
 	std::string gsc_to_string(const scripting::script_value& value)
 	{
 		dumped_objects = {};
-		return gsc_to_json(value, false).dump().substr(0, 0x5000);
+		return gsc_to_json(value, false).dump();
 	}
 
 	class component final : public component_interface

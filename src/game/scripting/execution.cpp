@@ -67,7 +67,7 @@ namespace scripting
 		const auto entref = entity.get_entity_reference();
 
 		const auto is_method_call = *reinterpret_cast<const int*>(&entref) != -1;
-		const auto function = find_function(name);
+		const auto function = find_function_ptr(name);
 		if (!function)
 		{
 			throw std::runtime_error("Unknown function '" + name + "'");

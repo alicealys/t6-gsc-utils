@@ -9,8 +9,8 @@ BOOL APIENTRY DllMain(HMODULE module_, DWORD ul_reason_for_call, LPVOID reserved
 {
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
 	{
-		const auto value = *reinterpret_cast<DWORD*>(0x20800000);
-		if (value == 0x2A6784ED)
+		const auto value = *reinterpret_cast<DWORD*>(0x20900000);
+		if (value == 0xF0681B6A)
         {
 			utils::hook::jump(reinterpret_cast<uintptr_t>(&printf), game::plutonium::printf);
 		}

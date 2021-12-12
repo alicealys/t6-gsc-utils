@@ -13,6 +13,8 @@ namespace gsc
 		count
 	};
 
+	void* get_last_call();
+
 	void return_value(const scripting::script_value& value);
 	std::vector<scripting::script_value> get_arguments();
 
