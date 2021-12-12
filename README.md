@@ -2,6 +2,10 @@
 T6 version of [iw5-gsc-utils](https://github.com/fedddddd/iw5-gsc-utils).  
 If you wish for any feature to be added please create an [issue](https://github.com/fedddddd/t6-gsc-utils/issues/new).
 
+# Installation
+* Download the latest version from the [releases](https://github.com/fedddddd/t6-gsc-utils/releases)
+* Copy it to `Plutonium/storage/t6/plugins`
+
 # Features
 
 ## Bitwise operators
@@ -526,3 +530,12 @@ The basepath for all IO functions is `Plutonium/storage/t6`
       jsonDump("level.txt", level, 4);
   }
   ```
+
+# Debugging
+* `crash()`: Crashes the server.
+* `breakpoint(message)`: Pauses the server's execution and shows a message box with the passed message and call stack.
+* `assert(condition)`: Throws an error if condition is false.  
+
+None of these functions will do anything unless `developer_script` is set to `1`, so make sure to set it before attempting to use them.  
+
+Additionally, running the server with the `--gsc-debug` flag will set a custom crash handler to the server which will dump the GSC VM stack trace (along with local variables) to a text file (called `gsc_vm_dump.txt`) along with the regular minidump. These dumps will be saved to `Plutonium/storage/t6/minidumps`.
