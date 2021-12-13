@@ -246,7 +246,7 @@ namespace debug
     {
         std::vector<scripting::thread> threads;
 
-        for (auto i = 1; i < 0x6000; i++)
+        for (auto i = 1; i < 0x8000; i++)
         {
             const auto type = game::scr_VarGlob->objectVariableValue[i].w.type & 0x7F;
             if (type == game::SCRIPT_THREAD || type == game::SCRIPT_TIME_THREAD || type == game::SCRIPT_NOTIFY_THREAD)
