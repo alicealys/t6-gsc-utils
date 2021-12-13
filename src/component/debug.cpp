@@ -17,6 +17,9 @@
 
 namespace debug
 {
+    unsigned int get_var_count();
+    unsigned int get_child_var_count();
+
     namespace
     {
         const game::dvar_t* developer_script = nullptr;
@@ -240,6 +243,17 @@ namespace debug
                 retn
             }
         }
+
+        utils::hook::detour scr_terminal_error_hook;
+        void scr_terminal_error_stub(int inst, const char* error)
+        {
+            printf("TERMINAL ERROR: %s\n", error);
+            printf("**********************\n");
+            printf("      num vars: %i\n", debug::get_var_count());
+            printf("num child vars: %i\n", debug::get_child_var_count());
+            printf("**********************\n");
+            scr_terminal_error_hook.invoke<void>(inst, error);
+        }
     }
 
     std::vector<scripting::thread> get_all_threads()
@@ -256,6 +270,28 @@ namespace debug
         }
 
         return threads;
+    }
+
+    unsigned int get_var_count()
+    {
+        auto count = 0;
+        for (auto i = 0; i < 0x8000; i++)
+        {
+            const auto type = game::scr_VarGlob->objectVariableValue[i].w.type & 0x7F;
+            count += type != game::SCRIPT_FREE;
+        }
+        return count;
+    }
+
+    unsigned int get_child_var_count()
+    {
+        auto count = 0;
+        for (auto i = 0; i < 0x8000; i++)
+        {
+            const auto type = game::scr_VarGlob->childVariableValue[i].type & 0x7F;
+            count += type != game::SCRIPT_FREE;
+        }
+        return count;
     }
 
     std::string get_call_stack(bool print_local_vars)
@@ -291,6 +327,8 @@ namespace debug
         {
             developer_script = game::Dvar_FindVar("developer_script");
             utils::hook::jump(SELECT(0x8F8A57, 0x8F77B7), SELECT(vm_exeucte_error_stub_mp, vm_exeucte_error_stub_zm));
+
+            scr_terminal_error_hook.create(SELECT(0, 0x410440), scr_terminal_error_stub);
 
             gsc::function::add("crash", [](const gsc::function_args& args) -> scripting::script_value
             {
@@ -382,6 +420,16 @@ namespace debug
                 }
 
                 return count;
+            });
+
+            gsc::function::add("getvarusage", [](const gsc::function_args& args) -> scripting::script_value
+            {
+                return get_var_count();
+            });
+
+            gsc::function::add("getchildvarusage", [](const gsc::function_args& args) -> scripting::script_value
+            {
+                return get_child_var_count();
             });
         }
     };
