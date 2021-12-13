@@ -1,5 +1,6 @@
 #include <stdinc.hpp>
 #include "game.hpp"
+#include <utils/hook.hpp>
 
 namespace game
 {
@@ -96,5 +97,39 @@ namespace game
 		entref.classnum = v2->w.classnum >> 8;
 
 		return entref;
+	}
+
+	const auto Scr_TerminateWaitThread_ptr = SELECT(0x8F4620, 0x8F3380);
+	__declspec(naked) void Scr_TerminateWaitThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId)
+	{
+		__asm
+		{
+			pushad
+			mov esi, [esp + 0x20 + 4]
+			push[esp + 0x20 + 0x8]
+			push[esp + 0x20 + 0xC]
+			call Scr_TerminateWaitThread_ptr
+			add esp, 0x8
+			popad
+
+			retn
+		}
+	}
+
+	const auto Scr_TerminateWaittillThread_ptr = SELECT(0x8F4750, 0x8F34B0);
+	__declspec(naked) void Scr_TerminateWaittillThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId)
+	{
+		__asm
+		{
+			pushad
+			mov esi, [esp + 0x20 + 4]
+			mov edi, [esp + 0x20 + 8]
+			push [esp + 0x20 + 0xC]
+			call Scr_TerminateWaittillThread_ptr
+			add esp, 0x4
+			popad
+
+			retn
+		}
 	}
 }

@@ -142,7 +142,6 @@ namespace scripting
 				const auto address = reinterpret_cast<char*>(reinterpret_cast<unsigned int>(obj) + exported[i].address);
 
 				script_function_table[filename][function] = address;
-				script_function_table_rev[address] = {filename, function};
 				script_function_table_sort[filename].push_back({function, address});
 
 				iter += 12;
@@ -196,27 +195,6 @@ namespace scripting
 		return nullptr;
 	}
 
-	const char* find_function_name(void* func)
-	{
-		for (auto i = function_map.begin(); i != function_map.end(); ++i)
-		{
-			if (i->second.actionFunc == func)
-			{
-				return i->second.actionString;
-			}
-		}
-
-		for (auto i = method_map.begin(); i != method_map.end(); ++i)
-		{
-			if (i->second.actionFunc == func)
-			{
-				return i->second.actionString;
-			}
-		}
-
-		return 0;
-	}
-
 	std::string find_function(const char* pos)
 	{
 		for (const auto& file : script_function_table_sort)
@@ -232,6 +210,23 @@ namespace scripting
 		}
 
 		return "unknown function";
+	}
+
+	const char* find_function_start(const char* pos)
+	{
+		for (const auto& file : script_function_table_sort)
+		{
+			for (auto i = file.second.begin(); std::next(i) != file.second.end(); ++i)
+			{
+				const auto next = std::next(i);
+				if (pos >= i->second && pos < next->second)
+				{
+					return i->second;
+				}
+			}
+		}
+
+		return 0;
 	}
 
 	void on_shutdown(const std::function<void()>& callback)

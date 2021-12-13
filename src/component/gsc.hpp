@@ -41,6 +41,9 @@ namespace gsc
 	using script_function = std::function<scripting::script_value(const function_args&)>;
 	using script_method = std::function<scripting::script_value(const scripting::entity&, const function_args&)>;
 
+	std::string find_builtin_name(void* function);
+	std::string find_builtin_method_name(void* function);
+
 	namespace function
 	{
 		void add(const std::string& name, const script_function& function);

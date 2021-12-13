@@ -28,29 +28,6 @@ namespace exception
             PVOID address = nullptr;
         } exception_data;
 
-        struct
-        {
-            std::chrono::time_point<std::chrono::high_resolution_clock> last_recovery{};
-            std::atomic<int> recovery_counts = {0};
-        } recovery_data;
-
-        bool is_exception_interval_too_short()
-        {
-            const auto delta = std::chrono::high_resolution_clock::now() - recovery_data.last_recovery;
-            return delta < 1min;
-        }
-
-        bool too_many_exceptions_occured()
-        {
-            return recovery_data.recovery_counts >= 3;
-        }
-
-        volatile bool& is_initialized()
-        {
-            static volatile bool initialized = false;
-            return initialized;
-        }
-
         void show_mouse_cursor()
         {
             while (ShowCursor(TRUE) < 0);
