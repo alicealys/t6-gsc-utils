@@ -16,6 +16,7 @@ namespace scripting
 	script_function find_function_ptr(const std::string& name);
 	std::string find_function(const char* pos);
 	const char* find_function_start(const char* pos);
+	std::pair<std::string, std::string> find_function_pair(const char* pos);
 
 	void on_shutdown(const std::function<void()>& callback);
 }

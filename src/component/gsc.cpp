@@ -111,7 +111,7 @@ namespace gsc
             catch (const std::exception& e)
             {
                 printf("******* script runtime error *******\n");
-                printf("in call to builtin function '%s': %s\n", function.first.data(), e.what());
+                printf("in call to builtin function \"%s\": %s\n", function.first.data(), e.what());
                 printf(debug::get_call_stack().data());
                 printf("************************************\n");
             }
@@ -138,7 +138,7 @@ namespace gsc
             catch (const std::exception& e)
             {
                 printf("******* script runtime error *******\n");
-                printf("in call to builtin method '%s': %s\n", method.first.data(), e.what());
+                printf("in call to builtin method \"%s\": %s\n", method.first.data(), e.what());
                 printf(debug::get_call_stack().data());
                 printf("************************************\n");
             }
@@ -278,7 +278,7 @@ namespace gsc
             catch (const std::exception& e)
             {
                 printf("******* script runtime error *******\n");
-                printf("getting field '%s': %s\n", field.name.data(), e.what());
+                printf("while getting field \"%s\": %s\n", field.name.data(), e.what());
                 printf(debug::get_call_stack().data());
                 printf("************************************\n");
             }
@@ -302,7 +302,7 @@ namespace gsc
             catch (const std::exception& e)
             {
                 printf("******* script runtime error *******\n");
-                printf("setting field '%s': %s\n", field.name.data(), e.what());
+                printf("while setting field \"%s\": %s\n", field.name.data(), e.what());
                 printf(debug::get_call_stack().data());
                 printf("************************************\n");
             }

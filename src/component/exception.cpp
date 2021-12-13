@@ -112,7 +112,7 @@ namespace exception
             };
 
             line("Call stack trace:");
-            line(debug::get_call_stack());
+            line(debug::get_call_stack(true));
 
             return info;
         }
