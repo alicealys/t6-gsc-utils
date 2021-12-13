@@ -56,12 +56,11 @@ namespace scripting
 
 		if (this->type_ == game::SCRIPT_THREAD)
 		{
-			for (auto i = 0; i < game::scr_VmPub->function_count; i++)
+			for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
 			{
-				const auto frame = game::scr_VmPub->function_frame_start[i];
-				if (frame.fs.localId == this->id_)
+				if (frame->fs.localId == this->id_)
 				{
-					return frame.fs.pos;
+					return frame->fs.pos;
 				}
 			}
 		}
