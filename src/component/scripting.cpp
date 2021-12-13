@@ -211,6 +211,23 @@ namespace scripting
 		return "unknown function";
 	}
 
+	std::pair<std::string, std::string> find_function_pair(const char* pos)
+	{
+		for (const auto& file : script_function_table_sort)
+		{
+			for (auto i = file.second.begin(); std::next(i) != file.second.end(); ++i)
+			{
+				const auto next = std::next(i);
+				if (pos >= i->second && pos < next->second)
+				{
+					return {file.first, i->first};
+				}
+			}
+		}
+
+		return {"unknown", "unknown"};
+	}
+
 	const char* find_function_start(const char* pos)
 	{
 		for (const auto& file : script_function_table_sort)

@@ -2,5 +2,5 @@
 
 namespace debug
 {
-	std::string get_call_stack();
+	std::string get_call_stack(bool print_local_vars = false);
 }
