@@ -171,7 +171,6 @@ namespace scripting
 				callback();
 			}
 
-			shutdown_callbacks = {};
 			return g_shutdown_game_hook.invoke<void>(free_scripts);
 		}
 	}
