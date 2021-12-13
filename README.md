@@ -539,3 +539,34 @@ The basepath for all IO functions is `Plutonium/storage/t6`
 None of these functions will do anything unless `developer_script` is set to `1`, so make sure to set it before attempting to use them.  
 
 Additionally, running the server with the `--gsc-debug` flag will set a custom crash handler to the server which will dump the GSC VM stack trace (along with local variables) to a text file (called `gsc_vm_dump.txt`) along with the regular minidump. These dumps will be saved to `Plutonium/storage/t6/minidumps`.
+
+# Threads
+* `killThread(function[, owner])`: Kills a running/wait/waittill thread based on the function it's executing and optionally even the thread owner object/entity.
+ 
+  ```c
+  /*
+      This will kill the execution of "test_thread" after 5 seconds.
+  */
+  
+  init()
+  {
+      level thread test_thread();
+      level thread test_kill_thread();
+  }
+
+  test_kill_thread()
+  {
+      wait 5;
+      killThread(::test_thread, level);
+  }
+
+  test_thread()
+  {
+      while (true)
+      {
+          wait 1;
+          print("Hello world");
+      }
+  }
+  ```
+* `killAllThreads(function[, owner])`: Same as `killThread` but kills all matching threads.
