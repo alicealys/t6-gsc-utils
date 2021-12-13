@@ -71,9 +71,9 @@ namespace scripting
 		if (this->type_ == game::SCRIPT_TIME_THREAD)
 		{
 			const auto waittime = this->get_wait_time();
-
 			const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, game::scr_VarPub->timeArrayId, waittime);
 			const auto object_id = game::scr_VarGlob->childVariableValue[variable_id].u.f.prev;
+
 			stack_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, object_id, start_local_id + 0x10000);
 		}
 
@@ -83,26 +83,26 @@ namespace scripting
 
 			if (!notify_name)
 			{
-				const auto stack_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, start_local_id, 0x16001);
-				const auto stack = game::scr_VarGlob->childVariableValue[stack_id].u.u.stackValue;
-				return stack->pos;
+				stack_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, start_local_id, 0x16001);
 			}
+			else
+			{
+				const auto self = game::Scr_GetSelf(game::SCRIPTINSTANCE_SERVER, start_local_id);
 
-			const auto self = game::Scr_GetSelf(game::SCRIPTINSTANCE_SERVER, start_local_id);
+				const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, game::scr_VarPub->pauseArrayId, self + 0x10000);
+				const auto object_id = game::scr_VarGlob->childVariableValue[variable_id].u.f.prev;
 
-			const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, game::scr_VarPub->pauseArrayId, self + 0x10000);
-			const auto object_id = game::scr_VarGlob->childVariableValue[variable_id].u.f.prev;
+				const auto variable_id2 = game::FindVariable(game::SCRIPTINSTANCE_SERVER, object_id, start_local_id + 0x10000);
+				const auto variable = &game::scr_VarGlob->childVariableValue[variable_id2];
 
-			const auto variable_id2 = game::FindVariable(game::SCRIPTINSTANCE_SERVER, object_id, start_local_id + 0x10000);
-			const auto variable = &game::scr_VarGlob->childVariableValue[variable_id2];
+				const auto variable_id3 = game::FindVariable(game::SCRIPTINSTANCE_SERVER, variable->u.u.uintValue, 0x18000);
+				const auto object_id2 = game::scr_VarGlob->childVariableValue[variable_id3].u.f.prev;
 
-			const auto variable_id3 = game::FindVariable(game::SCRIPTINSTANCE_SERVER, variable->u.u.uintValue, 0x18000);
-			const auto object_id2 = game::scr_VarGlob->childVariableValue[variable_id3].u.f.prev;
+				const auto variable_id4 = game::FindVariable(game::SCRIPTINSTANCE_SERVER, object_id2, notify_name);
+				const auto object_id3 = game::scr_VarGlob->childVariableValue[variable_id4].u.f.prev;
 
-			const auto variable_id4 = game::FindVariable(game::SCRIPTINSTANCE_SERVER, object_id2, notify_name);
-			const auto object_id3 = game::scr_VarGlob->childVariableValue[variable_id4].u.f.prev;
-
-			stack_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, object_id3, start_local_id + 0x10000);
+				stack_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, object_id3, start_local_id + 0x10000);
+			}
 		}
 
 		const auto stack = &game::scr_VarGlob->childVariableValue[stack_id];
