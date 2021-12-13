@@ -1,6 +1,5 @@
 #include <stdinc.hpp>
 #include "game.hpp"
-#include <utils/hook.hpp>
 
 namespace game
 {
@@ -106,8 +105,8 @@ namespace game
 		{
 			pushad
 			mov esi, [esp + 0x20 + 4]
-			push[esp + 0x20 + 0x8]
-			push[esp + 0x20 + 0xC]
+			push [esp + 0x20 + 0x8]
+			push [esp + 0x20 + 0xC]
 			call Scr_TerminateWaitThread_ptr
 			add esp, 0x8
 			popad
