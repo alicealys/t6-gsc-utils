@@ -19,9 +19,6 @@ namespace gsc
 {
     namespace
     {
-        std::unordered_map<std::string, game::BuiltinMethodDef> registered_methods;
-        std::unordered_map<std::string, game::BuiltinFunctionDef> registered_functions;
-
         std::unordered_map<unsigned int, std::pair<std::string, script_function>> functions;
         std::unordered_map<unsigned int, std::pair<std::string, script_method>> methods;
 
@@ -281,7 +278,7 @@ namespace gsc
             catch (const std::exception& e)
             {
                 printf("******* script runtime error *******\n");
-                printf("error getting field '%s': %s\n", field.name.data(), e.what());
+                printf("getting field '%s': %s\n", field.name.data(), e.what());
                 printf(debug::get_call_stack().data());
                 printf("************************************\n");
             }
@@ -305,7 +302,7 @@ namespace gsc
             catch (const std::exception& e)
             {
                 printf("******* script runtime error *******\n");
-                printf("error setting field '%s': %s\n", field.name.data(), e.what());
+                printf("setting field '%s': %s\n", field.name.data(), e.what());
                 printf(debug::get_call_stack().data());
                 printf("************************************\n");
             }
@@ -405,6 +402,48 @@ namespace gsc
         }
 
         return {this->values_[index], index};
+    }
+
+    std::string find_builtin_name(void* function)
+    {
+        for (auto i = scripting::function_map.begin(); i != scripting::function_map.end(); ++i)
+        {
+            if (i->second.actionFunc == function)
+            {
+                return i->second.actionString;
+            }
+        }
+
+        for (auto i = functions.begin(); i != functions.end(); ++i)
+        {
+            if (i->first == reinterpret_cast<unsigned int>(function))
+            {
+                return i->second.first;
+            }
+        }
+
+        return {};
+    }
+
+    std::string find_builtin_method_name(void* function)
+    {
+        for (auto i = scripting::method_map.begin(); i != scripting::method_map.end(); ++i)
+        {
+            if (i->second.actionFunc == function)
+            {
+                return i->second.actionString;
+            }
+        }
+
+        for (auto i = methods.begin(); i != methods.end(); ++i)
+        {
+            if (i->first == reinterpret_cast<unsigned int>(function))
+            {
+                return i->second.first;
+            }
+        }
+
+        return {};
     }
 
     class component final : public component_interface

@@ -43,6 +43,7 @@ namespace game
 	WEAK symbol<void(scriptInstance_t inst, unsigned int parentId, unsigned int index)> RemoveVariableValue{0x56A820, 0x6CC320};
 
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int parentId, unsigned int id)> FindVariable{0x6EB1B0, 0x5FE180};
+	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int parentId, unsigned int id)> GetVariable{0, 0x5CD170};
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int parentId, unsigned int name)> GetNewVariable{0x5AD920, 0x5C18A0};
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int parentId, unsigned int unsignedValue)> GetNewArrayVariable{0x5D80C0, 0x42C260};
 
@@ -69,6 +70,8 @@ namespace game
 		const char* name, unsigned int* checksum, bool errorIfMissing)> Scr_GetFunctionHandle{0x416D30, 0x53E5A0};
 	WEAK symbol<void(scriptInstance_t inst, unsigned int classnum, char const* name, unsigned int offset)> Scr_AddClassField{0x6B7620, 0x438AD0};
 	WEAK symbol<unsigned int(scriptInstance_t inst, int entnum, unsigned int classnum, int clientNum)> Scr_GetEntityId{0x5765B0, 0x488430};
+	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId)> GetStartLocalId{0x402760, 0x5D6CD0};
+	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId)> Scr_TerminateRunningThread{0x8F45A0, 0x8F3300};
 
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId, const char* pos, unsigned int paramcount)> VM_Execute{0x8F9550, 0x8F82B0};
 
@@ -86,6 +89,7 @@ namespace game
 
 	WEAK symbol<scrVmPub_t> scr_VmPub{0x2E1A5D0, 0x2DEA8D0};
 	WEAK symbol<scrVarGlob_t> scr_VarGlob{0x2E1A100, 0x2DEA400};
+	WEAK symbol<scrVarPub_t> scr_VarPub{0x2E1A500, 0x2DEA800};
 
 	WEAK symbol<scr_classStruct_t*> g_classMap{0xD6FFE0, 0xD64E60};
 

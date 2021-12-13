@@ -51,6 +51,9 @@ namespace game
 		SCRIPT_INTEGER = 7,
 		SCRIPT_CODEPOS = 8,
 		SCRIPT_END = 9,
+		SCRIPT_THREAD = 0xE,
+		SCRIPT_NOTIFY_THREAD = 0xF,
+		SCRIPT_TIME_THREAD = 0x10,
 		SCRIPT_FUNCTION = 10,
 		SCRIPT_STRUCT = 18,
 		SCRIPT_ENTITY = 20,
@@ -115,6 +118,42 @@ namespace game
 		function_frame_t function_frame_start[32];
 		VariableValue stack[2048];
 		void(__cdecl* notifyListeners[1])(unsigned int, unsigned int);
+	};
+
+	struct scrVarPub_t
+	{
+		const char* fieldBuffer;
+		bool developer;
+		bool developer_script;
+		bool evaluate;
+		const char* error_message;
+		int error_index;
+		unsigned int time;
+		unsigned int timeArrayId;
+		unsigned int pauseArrayId;
+		unsigned int levelId;
+		unsigned int gameId;
+		unsigned int animId;
+		unsigned int freeEntList;
+		unsigned int tempVariable;
+		bool bInited;
+		unsigned __int16 savecount;
+		unsigned int checksum;
+		unsigned int entId;
+		unsigned int entFieldName;
+		void* programHunkUser;
+		char* programBuffer;
+		char* endScriptBuffer;
+		unsigned __int16* saveIdMap;
+		unsigned __int16* saveIdMapRev;
+		unsigned int numScriptThreads;
+		unsigned int numScriptValues;
+		unsigned int numScriptObjects;
+		char* varUsagePos;
+		int ext_threadcount;
+		int totalObjectRefCount;
+		volatile int totalVectorRefCount;
+		int allocationCount;
 	};
 
 	struct ObjectVariableChildren

@@ -28,20 +28,22 @@ namespace debug
 
             if (opcode == 0x29 || opcode == 0x2A)
             {
-                const char* name = 0;
+                std::string name{};
                 for (auto i = 0; i < 4; i++)
                 {
                     const auto ptr = *reinterpret_cast<void**>(fs_pos + i);
-                    name = scripting::find_function_name(ptr);
+                    name = opcode == 0x2A 
+                        ? gsc::find_builtin_method_name(ptr) 
+                        : gsc::find_builtin_name(ptr);
 
-                    if (name)
+                    if (!name.empty())
                     {
                         break;
                     }
                 }
 
                 printf("******* script runtime error *******\n");
-                printf("in call to builtin %s '%s': %s\n", opcode == 0x2A ? "method" : "function", name, error);
+                printf("in call to builtin %s '%s': %s\n", opcode == 0x2A ? "method" : "function", name.data(), error);
                 printf(debug::get_call_stack().data());
                 printf("************************************\n");
             }
@@ -91,6 +93,22 @@ namespace debug
                 retn
             }
         }
+    }
+
+    std::vector<scripting::thread> get_all_threads()
+    {
+        std::vector<scripting::thread> threads;
+
+        for (auto i = 1; i < 0x6000; i++)
+        {
+            const auto type = game::scr_VarGlob->objectVariableValue[i].w.type & 0x7F;
+            if (type == game::SCRIPT_THREAD || type == game::SCRIPT_TIME_THREAD || type == game::SCRIPT_NOTIFY_THREAD)
+            {
+                threads.push_back(i);
+            }
+        }
+
+        return threads;
     }
 
     std::string get_call_stack()
@@ -170,6 +188,53 @@ namespace debug
                 }
 
                 return {};
+            });
+
+            gsc::function::add("killthread", [](const gsc::function_args& args) -> scripting::script_value
+            {
+                const auto function = args[0].as<scripting::function>();
+                const auto threads = get_all_threads();
+
+                auto entity_id = 0;
+                if (args.size() >= 2)
+                {
+                    entity_id = args[1].as<scripting::entity>().get_entity_id();
+                }
+
+                for (const auto& thread : threads)
+                {
+                    if (thread.get_start_pos() == function.get_pos() && (!entity_id || (entity_id == thread.get_self())))
+                    {
+                        thread.kill();
+                        return 1;
+                    }
+                }
+
+                return 0;
+            });
+
+            gsc::function::add("killallthreads", [](const gsc::function_args& args) -> scripting::script_value
+            {
+                const auto function = args[0].as<scripting::function>();
+                const auto threads = get_all_threads();
+
+                auto entity_id = 0;
+                if (args.size() >= 2)
+                {
+                    entity_id = args[1].as<scripting::entity>().get_entity_id();
+                }
+
+                auto count = 0;
+                for (const auto& thread : threads)
+                {
+                    if (thread.get_start_pos() == function.get_pos() && (!entity_id || (entity_id == thread.get_self())))
+                    {
+                        thread.kill();
+                        count++;
+                    }
+                }
+
+                return count;
             });
         }
     };

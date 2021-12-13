@@ -4,6 +4,7 @@
 #include "array.hpp"
 #include "object.hpp"
 #include "function.hpp"
+#include "thread.hpp"
 #include "script_value.hpp"
 
 namespace scripting
