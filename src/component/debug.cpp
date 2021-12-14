@@ -17,9 +17,6 @@
 
 namespace debug
 {
-    unsigned int get_var_count();
-    unsigned int get_child_var_count();
-
     namespace
     {
         const game::dvar_t* developer_script = nullptr;
