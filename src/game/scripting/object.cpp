@@ -64,13 +64,11 @@ namespace scripting
 	object::object()
 	{
 		this->id_ = make_object();
-		this->add();
 	}
 
 	object::object(std::unordered_map<std::string, script_value> values)
 	{
 		this->id_ = make_object();
-		this->add();
 
 		for (const auto& value : values)
 		{

@@ -247,11 +247,9 @@ namespace debug
         utils::hook::detour scr_terminal_error_hook;
         void scr_terminal_error_stub(int inst, const char* error)
         {
-            printf("TERMINAL ERROR: %s\n", error);
-            printf("**********************\n");
-            printf("      num vars: %i\n", debug::get_var_count());
-            printf("num child vars: %i\n", debug::get_child_var_count());
-            printf("**********************\n");
+            printf("====================================================\n");
+            printf("Scr_TerminalError: %s\n", error);
+            printf("====================================================\n");
             scr_terminal_error_hook.invoke<void>(inst, error);
         }
     }
@@ -286,7 +284,7 @@ namespace debug
     unsigned int get_child_var_count()
     {
         auto count = 0;
-        for (auto i = 0; i < 0x8000; i++)
+        for (auto i = 0; i < 0x10000; i++)
         {
             const auto type = game::scr_VarGlob->childVariableValue[i].type & 0x7F;
             count += type != game::SCRIPT_FREE;
@@ -430,6 +428,18 @@ namespace debug
             gsc::function::add("getchildvarusage", [](const gsc::function_args& args) -> scripting::script_value
             {
                 return get_child_var_count();
+            });
+
+            gsc::function::add("getusagestats", [](const gsc::function_args& args) -> scripting::script_value
+            {
+                scripting::object stats{};
+
+                stats["maxvars"] = 0x8000;
+                stats["maxchildvars"] = 0x10000;
+                stats["childvars"] = get_child_var_count();
+                stats["vars"] = get_child_var_count();
+
+                return stats;
             });
         }
     };
