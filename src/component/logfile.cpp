@@ -12,7 +12,6 @@ namespace logfile
 {
 	namespace
 	{
-		utils::concurrency::container<std::fstream> file;
 		utils::hook::detour printf_hook;
 		utils::hook::detour printf_hook2;
 		std::string filename;
