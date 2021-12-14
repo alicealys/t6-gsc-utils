@@ -453,7 +453,7 @@ namespace debug
                 stats["maxvars"] = 0x8000;
                 stats["maxchildvars"] = 0x10000;
                 stats["childvars"] = get_child_var_count();
-                stats["vars"] = get_child_var_count();
+                stats["vars"] = get_var_count();
 
                 return stats;
             });
