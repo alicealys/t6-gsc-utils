@@ -157,4 +157,16 @@ namespace utils::string
 
 		return str;
 	}
+
+	std::string get_timestamp()
+	{
+		tm ltime{};
+		char timestamp[MAX_PATH] = { 0 };
+		const auto time = _time64(nullptr);
+
+		_localtime64_s(&ltime, &time);
+		strftime(timestamp, sizeof(timestamp) - 1, "%Y-%m-%d-%H-%M-%S", &ltime);
+
+		return timestamp;
+	}
 }

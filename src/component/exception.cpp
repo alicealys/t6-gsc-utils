@@ -62,18 +62,6 @@ namespace exception
             }
         }
 
-        std::string get_timestamp()
-        {
-            tm ltime{};
-            char timestamp[MAX_PATH] = {0};
-            const auto time = _time64(nullptr);
-
-            _localtime64_s(&ltime, &time);
-            strftime(timestamp, sizeof(timestamp) - 1, "%Y-%m-%d-%H-%M-%S", &ltime);
-
-            return timestamp;
-        }
-
         std::string generate_crash_info(const LPEXCEPTION_POINTERS exceptioninfo)
         {
             std::string info{};
@@ -85,7 +73,7 @@ namespace exception
 
             line("Plutonium T6 Crash Dump");
             line("");
-            line("Timestamp: "s + get_timestamp());
+            line("Timestamp: "s + utils::string::get_timestamp());
             line(utils::string::va("Exception: 0x%08X", exceptioninfo->ExceptionRecord->ExceptionCode));
             line(utils::string::va("Address: 0x%lX", exceptioninfo->ExceptionRecord->ExceptionAddress));
 
@@ -120,7 +108,7 @@ namespace exception
         void write_minidump(const LPEXCEPTION_POINTERS exceptioninfo)
         {
             const std::string crash_name = utils::string::va("minidumps/plutonium-t6-crash-%s.zip",
-                                                             get_timestamp().data());
+                                                             utils::string::get_timestamp().data());
 
             utils::compression::zip::archive zip_file{};
             zip_file.add("crash.dmp", create_minidump(exceptioninfo));
