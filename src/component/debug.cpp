@@ -326,7 +326,7 @@ namespace debug
             developer_script = game::Dvar_FindVar("developer_script");
             utils::hook::jump(SELECT(0x8F8A57, 0x8F77B7), SELECT(vm_exeucte_error_stub_mp, vm_exeucte_error_stub_zm));
 
-            scr_terminal_error_hook.create(SELECT(0, 0x410440), scr_terminal_error_stub);
+            scr_terminal_error_hook.create(SELECT(0x698C50, 0x410440), scr_terminal_error_stub);
 
             gsc::function::add("crash", [](const gsc::function_args& args) -> scripting::script_value
             {
