@@ -164,6 +164,11 @@ namespace debug
 
         void print_error(const game::opcode opcode)
         {
+            if (!developer_script->current.enabled)
+            {
+                return;
+            }
+
             const auto error = reinterpret_cast<const char*>(SELECT(0x2E27C70, 0x2DF7F70));
             const auto fs_pos = *reinterpret_cast<char**>(SELECT(0x2E23C08, 0x2DF3F08));
 
@@ -302,10 +307,25 @@ namespace debug
 
         for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
         {
-            const auto function = scripting::find_function_pair(frame == game::scr_VmPub->function_frame ? fs_pos : frame->fs.pos);
-            const scripting::object local_vars{frame->fs.localId};
+            const auto pos = fs_pos;
+            auto function = scripting::find_function_pair(pos);
 
-            line(utils::string::va("\tat function \"%s\" in file \"%s.gsc\"", function.second.data(), function.first.data()));
+            if (!function.has_value())
+            {
+                function = scripting::find_function_pair(frame->fs.pos);
+            }
+
+            if (function.has_value())
+            {
+                const auto value = function.value();
+                line(utils::string::va("\tat function \"%s\" in file \"%s.gsc\"", value.second.data(), value.first.data()));
+            }
+            else
+            {
+                line(utils::string::va("\tat unknown location (%p)", pos)); 
+            }
+
+            const scripting::object local_vars{frame->fs.localId};
             if (local_vars.get_keys().size() && print_local_vars)
             {
                 line(utils::string::va("\t\tlocal vars: %s", json::gsc_to_string(local_vars).data()));
