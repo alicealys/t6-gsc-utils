@@ -21,6 +21,7 @@
 #include <csetjmp>
 #include <atlcomcli.h>
 #include <variant>
+#include <optional>
 
 #pragma comment(lib, "urlmon.lib")
 
