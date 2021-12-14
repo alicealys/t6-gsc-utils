@@ -50,7 +50,7 @@ namespace scripting
 			if (func)
 			{
 				method.actionFunc = reinterpret_cast<script_function>(func);
-				method.actionString = name.data();
+				method.actionString = pName;
 			}
 
 			return method;
