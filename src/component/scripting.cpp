@@ -155,8 +155,11 @@ namespace scripting
 		}
 
 		utils::hook::detour scr_post_load_scripts_hook;
-		unsigned int post_load_scripts_stub()
+		unsigned int post_load_scripts_stub(unsigned int inst)
 		{
+			script_function_table.clear();
+			script_function_table_sort.clear();
+
 			const auto script_count = *reinterpret_cast<unsigned int*>(SELECT(0x2DB9F18, 0x2D8A218));
 			const auto scripts = reinterpret_cast<game::objFileInfo_t*>(SELECT(0x2DA2FE8, 0x2D732E8));
 
@@ -166,7 +169,7 @@ namespace scripting
 				extract_obj_functions(obj);
 			}
 
-			return scr_post_load_scripts_hook.invoke<unsigned int>();
+			return scr_post_load_scripts_hook.invoke<unsigned int>(inst);
 		}
 
 		std::vector<std::function<void()>> shutdown_callbacks;
