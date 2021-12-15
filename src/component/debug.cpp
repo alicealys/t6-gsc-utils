@@ -307,16 +307,7 @@ namespace debug
 
         for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
         {
-            auto pos = frame == game::scr_VmPub->function_frame
-                ? fs_pos
-                : frame->fs.pos;
-            auto function = scripting::find_function_pair(pos);
-
-            if (!function.has_value() && pos != frame->fs.pos)
-            {
-                pos = frame->fs.pos;
-                function = scripting::find_function_pair(frame->fs.pos);
-            }
+            const auto function = scripting::find_function_pair(frame->fs.pos);
 
             if (function.has_value())
             {
@@ -325,7 +316,7 @@ namespace debug
             }
             else
             {
-                line(utils::string::va("\tat unknown location (%p)", pos));
+                line(utils::string::va("\tat unknown location (%p)", frame->fs.pos));
             }
 
             const scripting::object local_vars{frame->fs.localId};
