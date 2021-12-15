@@ -1,5 +1,12 @@
 #pragma once
 
+#pragma warning(disable: 6011)
+#pragma warning(disable: 6054)
+#pragma warning(disable: 6387)
+#pragma warning(disable: 26451)
+#pragma warning(disable: 26812)
+#pragma warning(disable: 28182)
+
 #define DLL_EXPORT extern "C" __declspec(dllexport)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -23,20 +30,6 @@
 #include <variant>
 #include <optional>
 
-#pragma comment(lib, "urlmon.lib")
-
-using namespace std::literals;
-
-#pragma warning(disable: 6011)
-#pragma warning(disable: 6054)
-#pragma warning(disable: 6387)
-#pragma warning(disable: 26451)
-#pragma warning(disable: 26812)
-#pragma warning(disable: 28182)
-
-#include <MinHook.h>
-#include <gsl/gsl>
-
 #ifdef max
 #undef max
 #endif
@@ -44,3 +37,17 @@ using namespace std::literals;
 #ifdef min
 #undef min
 #endif
+
+#include <MinHook.h>
+#include <gsl/gsl>
+
+#include <asmjit/core/jitruntime.h>
+#include <asmjit/x86/x86assembler.h>
+
+#pragma comment(lib, "ntdll.lib")
+#pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "urlmon.lib" )
+#pragma comment(lib, "iphlpapi.lib")
+#pragma comment(lib, "Crypt32.lib")
+
+using namespace std::literals;

@@ -72,6 +72,7 @@ namespace game
 	WEAK symbol<unsigned int(scriptInstance_t inst, int entnum, unsigned int classnum, int clientNum)> Scr_GetEntityId{0x5765B0, 0x488430};
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId)> GetStartLocalId{0x402760, 0x5D6CD0};
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId)> Scr_TerminateRunningThread{0x8F45A0, 0x8F3300};
+	WEAK symbol<void(scriptInstance_t inst, const char* error, bool force_terminal)> Scr_Error{0x0, 0x5E81C0};
 
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId, const char* pos, unsigned int paramcount)> VM_Execute{0x8F9550, 0x8F82B0};
 

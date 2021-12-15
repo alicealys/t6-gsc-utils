@@ -2,8 +2,38 @@
 
 #define CalculateRelativeJMPAddress(X, Y) (((std::uintptr_t)Y - (std::uintptr_t)X) - 5)
 
+#include <asmjit/core/jitruntime.h>
+#include <asmjit/x86/x86assembler.h>
+
+using namespace asmjit::x86;
+
 namespace utils::hook
 {
+	class assembler : public Assembler
+	{
+	public:
+		using Assembler::Assembler;
+		using Assembler::call;
+		using Assembler::jmp;
+
+		void pushad64();
+		void popad64();
+
+		void prepare_stack_for_call();
+		void restore_stack_after_call();
+
+		template <typename T>
+		void call_aligned(T&& target)
+		{
+			this->prepare_stack_for_call();
+			this->call(std::forward<T>(target));
+			this->restore_stack_after_call();
+		}
+
+		asmjit::Error call(void* target);
+		asmjit::Error jmp(void* target);
+	};
+
 	class detour
 	{
 	public:
@@ -75,6 +105,8 @@ namespace utils::hook
 	void call(size_t pointer, size_t data);
 
 	void jump(std::uintptr_t address, void* destination);
+
+	void* assemble(const std::function<void(assembler&)>& asm_function);
 
 	template <typename T>
 	T extract(void* address)

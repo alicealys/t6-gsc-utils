@@ -19,8 +19,8 @@ namespace gsc
 {
     namespace
     {
-        std::unordered_map<unsigned int, std::pair<std::string, script_function>> functions;
-        std::unordered_map<unsigned int, std::pair<std::string, script_method>> methods;
+        std::unordered_map<std::string, std::pair<script_function, builtin_function>> functions;
+        std::unordered_map<std::string, std::pair<script_method, builtin_method>> methods;
 
         utils::hook::detour scr_get_common_function_hook;
         utils::hook::detour player_get_method_hook;
@@ -37,26 +37,26 @@ namespace gsc
         std::vector<std::function<void()>> post_load_callbacks;
         std::unordered_map<unsigned int, std::unordered_map<unsigned int, entity_field>> custom_fields;
 
-        unsigned int find_function(const std::string& name)
+        builtin_function find_function(const std::string& name)
         {
             for (const auto& function : functions)
             {
-                if (function.second.first == name)
+                if (function.first == name)
                 {
-                    return function.first;
+                    return function.second.second;
                 }
             }
 
             return 0;
         }
 
-        unsigned int find_method(const std::string& name)
+        builtin_method find_method(const std::string& name)
         {
             for (const auto& method : methods)
             {
-                if (method.second.first == name)
+                if (method.first == name)
                 {
-                    return method.first;
+                    return method.second.second;
                 }
             }
 
@@ -87,31 +87,31 @@ namespace gsc
             {
                 return player_get_method_hook.invoke<builtin_method>(pName, min_args, max_args);
             }
-            
+
             *min_args = 0;
             *max_args = 512;
 
             return method;
         }
 
-        bool call_function(unsigned int ptr)
+        bool call_function(const char* name)
         {
-            if (functions.find(ptr) == functions.end())
+            if (functions.find(name) == functions.end())
             {
                 return false;
             }
 
-            const auto function = functions[ptr];
+            const auto function = functions[name];
 
             try
             {
-                const auto result = function.second(get_arguments());
+                const auto result = function.first(get_arguments());
                 return_value(result);
             }
             catch (const std::exception& e)
             {
                 printf("******* script runtime error *******\n");
-                printf("in call to builtin function \"%s\": %s\n", function.first.data(), e.what());
+                printf("in call to builtin function \"%s\": %s\n", name, e.what());
                 printf(debug::get_call_stack().data());
                 printf("************************************\n");
             }
@@ -119,145 +119,31 @@ namespace gsc
             return true;
         }
 
-        bool call_method(unsigned int ptr, game::scr_entref_t entref)
+        bool call_method(const char* name, game::scr_entref_t entref)
         {
-            if (methods.find(ptr) == methods.end())
+            if (methods.find(name) == methods.end())
             {
                 return false;
             }
 
-            const auto method = methods[ptr];
+            const auto method = methods[name];
 
             try
             {
                 const scripting::entity entity = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, entref.entnum, entref.classnum, 0);
-                const auto result = method.second(entity, get_arguments());
+                const auto result = method.first(entity, get_arguments());
                 return_value(result);
 
             }
             catch (const std::exception& e)
             {
                 printf("******* script runtime error *******\n");
-                printf("in call to builtin method \"%s\": %s\n", method.first.data(), e.what());
+                printf("in call to builtin method \"%s\": %s\n", name, e.what());
                 printf(debug::get_call_stack().data());
                 printf("************************************\n");
             }
 
             return true;
-        }
-
-        __declspec(naked) void call_builtin_stub_mp()
-        {
-            __asm
-            {
-                pushad
-                push ecx
-                call call_function
-
-                cmp al, 0
-                jne loc_1
-
-                pop ecx
-                call ecx
-                popad
-
-                push 0x8F6498
-                retn
-            loc_1:
-                pop ecx
-                popad
-
-                push 0x8F6498
-                retn
-            }
-        }
-
-        __declspec(naked) void call_builtin_stub_zm()
-        {
-            __asm
-            {
-                pushad
-                push ecx
-                call call_function
-
-                cmp al, 0
-                jne loc_1
-
-                pop ecx
-                call ecx
-                popad
-
-                push 0x8F51F8
-                retn
-            loc_1:
-                pop ecx
-                popad
-
-                push 0x8F51F8
-                retn
-            }
-        }
-
-        __declspec(naked) void call_builtin_method_stub_mp()
-        {
-            __asm
-            {
-                pushad
-                push esi
-                push [ebp + 0x2C]
-                call call_method
-
-                cmp al, 0
-                jne loc_1
-
-                add esp, 0x8
-                popad
-
-                call[ebp + 0x2C]
-
-                jmp end
-            loc_1:
-                add esp, 0x8
-                popad
-
-                jmp end
-            end:
-                add esp, 0x18
-
-                push 0x8F6498
-                retn
-            }
-        }
-
-        __declspec(naked) void call_builtin_method_stub_zm()
-        {
-            __asm
-            {
-                pushad
-                push esi
-                push[ebp + 0x2C]
-                call call_method
-
-                cmp al, 0
-                jne loc_1
-
-                add esp, 0x8
-                popad
-
-                call[ebp + 0x2C]
-
-                jmp end
-            loc_1:
-                add esp, 0x8
-                popad
-
-                jmp end
-            end:
-                add esp, 0x18
-
-                push 0x8F51F8
-                retn
-            }
         }
 
         utils::hook::detour scr_get_object_field_hook;
@@ -324,8 +210,21 @@ namespace gsc
     {
         void add(const std::string& name, const script_function& function)
         {
-            const auto id = functions.size() + 1;
-            functions[id] = std::make_pair(name, function);
+            const auto string = utils::memory::duplicate_string(name);
+            const auto ptr = reinterpret_cast<builtin_function>(
+                utils::hook::assemble([string](utils::hook::assembler& a)
+                {
+                    a.pushad();
+                    a.push(string);
+                    a.call(call_function);
+                    a.add(esp, 0x4);
+                    a.popad();
+
+                    a.ret();
+                })
+            );
+
+            functions[name] = std::make_pair(function, ptr);
         }
     }
 
@@ -333,8 +232,22 @@ namespace gsc
     {
         void add(const std::string& name, const script_method& function)
         {
-            const auto id = methods.size() + 1;
-            methods[id] = std::make_pair(name, function);
+            const auto string = utils::memory::duplicate_string(name);
+            const auto ptr = reinterpret_cast<builtin_method>(
+                utils::hook::assemble([string](utils::hook::assembler& a)
+                {
+                    a.pushad();
+                    a.push(dword_ptr(esp, 0x24));
+                    a.push(string);
+                    a.call(call_method);
+                    a.add(esp, 0x8);
+                    a.popad();
+
+                    a.ret();
+                })
+            );
+
+            methods[name] = std::make_pair(function, ptr);
         }
     }
 
@@ -416,9 +329,9 @@ namespace gsc
 
         for (auto i = functions.begin(); i != functions.end(); ++i)
         {
-            if (i->first == reinterpret_cast<unsigned int>(function))
+            if (i->second.second == function)
             {
-                return i->second.first;
+                return i->first;
             }
         }
 
@@ -437,9 +350,9 @@ namespace gsc
 
         for (auto i = methods.begin(); i != methods.end(); ++i)
         {
-            if (i->first == reinterpret_cast<unsigned int>(function))
+            if (i->second.second == function)
             {
-                return i->second.first;
+                return i->first;
             }
         }
 
@@ -453,9 +366,6 @@ namespace gsc
         {
             scr_get_common_function_hook.create(SELECT(0x4B57B0, 0x4AD040), scr_get_common_function);
             player_get_method_hook.create(SELECT(0x432480, 0x6F2DB0), player_get_method);
-
-            utils::hook::jump(SELECT(0x8F63FF, 0x8F515F), SELECT(call_builtin_stub_mp, call_builtin_stub_zm));
-            utils::hook::jump(SELECT(0x8F6492, 0x8F51F2), SELECT(call_builtin_method_stub_mp, call_builtin_method_stub_zm));
 
             scr_get_object_field_hook.create(SELECT(0x573160, 0x4224E0), scr_get_object_field_stub);
             scr_set_object_field_hook.create(SELECT(0x5B9820, 0x43F2A0), scr_set_object_field_stub);
