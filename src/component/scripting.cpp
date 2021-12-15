@@ -146,7 +146,8 @@ namespace scripting
 
 				if (i == count - 1)
 				{
-					script_function_table[filename]["$end"] = address + obj->cseg_size;
+					script_function_table[filename]["$end"] = &obj->magic[obj->fixup_offset];
+					script_function_table_sort[filename].push_back({"$end", &obj->magic[obj->fixup_offset]});
 				}
 
 				iter += 12;
