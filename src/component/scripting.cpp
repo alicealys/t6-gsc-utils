@@ -144,6 +144,11 @@ namespace scripting
 				script_function_table[filename][function] = address;
 				script_function_table_sort[filename].push_back({function, address});
 
+				if (i == count - 1)
+				{
+					script_function_table[filename]["$end"] = address + obj->cseg_size;
+				}
+
 				iter += 12;
 			}
 		}
