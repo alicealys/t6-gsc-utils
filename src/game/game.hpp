@@ -74,11 +74,14 @@ namespace game
 		return reinterpret_cast<T>(value);
 	}
 
-	int Cmd_Argc();
-
 	scr_entref_t Scr_GetEntityIdRef(unsigned int entId);
 	void Scr_TerminateWaitThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId);
 	void Scr_TerminateWaittillThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId);
+
+	namespace plutonium
+	{
+		bool is_up_to_date();
+	}
 }
 
 #include "symbols.hpp"

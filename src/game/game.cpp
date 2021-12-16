@@ -1,6 +1,8 @@
 #include <stdinc.hpp>
 #include "game.hpp"
 
+#include <utils/hook.hpp>
+
 namespace game
 {
 	gamemode current = reinterpret_cast<const char*>(0xC2F028) == "multiplayer"s
@@ -74,18 +76,6 @@ namespace game
 		return game::Scr_GetString(SCRIPTINSTANCE_SERVER, index);
 	}
 
-	int Cmd_Argc()
-	{
-		auto count = 0;
-
-		for (auto i = 0; strcmp(game::Cmd_Argv(i), "") != 0; i++)
-		{
-			count++;
-		}
-
-		return count;
-	}
-
 	scr_entref_t Scr_GetEntityIdRef(unsigned int entId)
 	{
 		scr_entref_t entref;
@@ -98,37 +88,48 @@ namespace game
 		return entref;
 	}
 
-	const auto Scr_TerminateWaitThread_ptr = SELECT(0x8F4620, 0x8F3380);
-	__declspec(naked) void Scr_TerminateWaitThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId)
+	void Scr_TerminateWaitThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId)
 	{
-		__asm
+		static const auto func = utils::hook::assemble([](utils::hook::assembler& a)
 		{
-			pushad
-			mov esi, [esp + 0x20 + 4]
-			push [esp + 0x20 + 0x8]
-			push [esp + 0x20 + 0xC]
-			call Scr_TerminateWaitThread_ptr
-			add esp, 0x8
-			popad
+			a.pushad();
+			a.mov(esi, dword_ptr(esp, 0x24));
+			a.push(dword_ptr(esp, 0x28));
+			a.push(dword_ptr(esp, 0x2C));
+			a.call(SELECT(0x8F4620, 0x8F3380));
+			a.add(esp, 0x8);
+			a.popad();
 
-			retn
-		}
+			a.ret();
+		});
+
+		utils::hook::invoke<void>(func, inst, localId, startLocalId);
 	}
 
-	const auto Scr_TerminateWaittillThread_ptr = SELECT(0x8F4750, 0x8F34B0);
-	__declspec(naked) void Scr_TerminateWaittillThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId)
+	void Scr_TerminateWaittillThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId)
 	{
-		__asm
+		static const auto func = utils::hook::assemble([](utils::hook::assembler& a)
 		{
-			pushad
-			mov esi, [esp + 0x20 + 4]
-			mov edi, [esp + 0x20 + 8]
-			push [esp + 0x20 + 0xC]
-			call Scr_TerminateWaittillThread_ptr
-			add esp, 0x4
-			popad
+			a.pushad();
+			a.mov(esi, dword_ptr(esp, 0x24));
+			a.mov(edi, dword_ptr(esp, 0x28));
+			a.push(dword_ptr(esp, 0x2C));
+			a.call(SELECT(0x8F4750, 0x8F34B0));
+			a.add(esp, 0x4);
+			a.popad();
 
-			retn
+			a.ret();
+		});
+
+		utils::hook::invoke<void>(func, inst, localId, startLocalId);
+	}
+
+	namespace plutonium
+	{
+		bool is_up_to_date()
+		{
+			const auto value = *reinterpret_cast<DWORD*>(0x20900000);
+			return value == 0xF0681B6A;
 		}
 	}
 }
