@@ -94,18 +94,13 @@ namespace scheduler
 			execute(pipeline::server);
 		}
 
-		int glass_update{};
-		__declspec(naked) void server_frame_stub()
+		void server_frame_stub(utils::hook::assembler& a)
 		{
-			__asm
-			{
-				pushad
-				call execute_server
-				popad
+			a.pushad();
+			a.call(execute_server);
+			a.popad();
 
-				push glass_update
-				retn
-			}
+			a.jmp(SELECT(0x49E910, 0x5001A0));
 		}
 	}
 
@@ -156,8 +151,7 @@ namespace scheduler
 				}
 			});
 
-			glass_update = SELECT(0x49E910, 0x5001A0);
-			utils::hook::jump(SELECT(0x4A59F7, 0x6AA2F7), server_frame_stub);
+			utils::hook::jump(SELECT(0x4A59F7, 0x6AA2F7), utils::hook::assemble(server_frame_stub));
 		}
 	};
 }

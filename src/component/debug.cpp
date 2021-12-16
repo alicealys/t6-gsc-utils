@@ -208,42 +208,19 @@ namespace debug
             }
         }
 
-        __declspec(naked) void vm_exeucte_error_stub_zm()
+        void vm_execute_error_stub(utils::hook::assembler& a)
         {
-            __asm
-            {
-                pushad
-                push eax
-                call print_error
-                pop eax
-                popad
+            a.pushad();
+            a.push(eax);
+            a.call(print_error);
+            a.pop(eax);
+            a.popad();
 
-                add eax, 0xFFFFFFE5
-                mov [ebp + 0x6C], esi
-                mov [ebp + 0x44], edx
+            a.add(eax, 0xFFFFFFE5);
+            a.mov(dword_ptr(ebp, 0x6C), esi);
+            a.mov(dword_ptr(ebp, 0x44), edx);
 
-                push 0x8F77C0
-                retn
-            }
-        }
-
-        __declspec(naked) void vm_exeucte_error_stub_mp()
-        {
-            __asm
-            {
-                pushad
-                push eax
-                call print_error
-                pop eax
-                popad
-
-                add eax, 0xFFFFFFE5
-                mov[ebp + 0x6C], esi
-                mov[ebp + 0x44], edx
-
-                push 0x8F8A60
-                retn
-            }
+            a.jmp(SELECT(0x8F8A60, 0x8F77C0));
         }
 
         utils::hook::detour scr_terminal_error_hook;
@@ -335,7 +312,7 @@ namespace debug
         void post_unpack() override
         {
             developer_script = game::Dvar_FindVar("developer_script");
-            utils::hook::jump(SELECT(0x8F8A57, 0x8F77B7), SELECT(vm_exeucte_error_stub_mp, vm_exeucte_error_stub_zm));
+            utils::hook::jump(SELECT(0x8F8A57, 0x8F77B7), utils::hook::assemble(vm_execute_error_stub));
 
             scr_terminal_error_hook.create(SELECT(0x698C50, 0x410440), scr_terminal_error_stub);
 

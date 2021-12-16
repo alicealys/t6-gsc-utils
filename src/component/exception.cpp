@@ -52,14 +52,16 @@ namespace exception
             display_error_dialog();
         }
 
-        __declspec(naked) void reset_state_stub()
+        size_t get_reset_state_stub()
         {
-            __asm
+            static auto* stub = utils::hook::assemble([](utils::hook::assembler& a)
             {
-                sub esp, 0x10
-                or esp, 0x8
-                jmp reset_state
-            }
+                a.sub(esp, 0x10);
+                a.or_(esp, 0x8);
+                a.jmp(reset_state);
+            });
+
+            return reinterpret_cast<size_t>(stub);
         }
 
         std::string generate_crash_info(const LPEXCEPTION_POINTERS exceptioninfo)
@@ -134,7 +136,7 @@ namespace exception
 
             exception_data.code = exceptioninfo->ExceptionRecord->ExceptionCode;
             exception_data.address = exceptioninfo->ExceptionRecord->ExceptionAddress;
-            exceptioninfo->ContextRecord->Eip = reinterpret_cast<DWORD>(&reset_state_stub);
+            exceptioninfo->ContextRecord->Eip = get_reset_state_stub();
 
             return EXCEPTION_CONTINUE_EXECUTION;
         }
