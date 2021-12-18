@@ -30,28 +30,24 @@ namespace io
 			str.replace(start_pos, from.length(), to);
 		}
 
-		void http_get()
+		scripting::script_value http_get(const gsc::function_args& args)
 		{
-			const auto url = game::get<std::string>(0);
-
-			const auto object = game::AllocObject(game::SCRIPTINSTANCE_SERVER);
-			game::Scr_AddObject(game::SCRIPTINSTANCE_SERVER, object);
+			const auto url = args[0].as<std::string>();
+			const auto object = scripting::entity(scripting::make_object());
 
 			scheduler::once([object, url]()
 			{
 				const auto result = utils::http::get_data(url.data());
 				scheduler::once([object, result]()
 				{
-					const auto name = game::SL_GetString("done", 0);
-
 					const auto value = result.has_value()
 						? result.value().substr(0, 0x5000)
 						: "";
-
-						game::add(value.data());
-						game::Scr_NotifyId(game::SCRIPTINSTANCE_SERVER, 0, object, name, 1);
+					scripting::notify(object, "done", {value});
 				});
 			}, scheduler::pipeline::async);
+
+			return object;
 		}
 	}
 
@@ -237,7 +233,7 @@ namespace io
 				const auto path = args[0].as<std::string>();
 				const auto files = utils::io::list_files(path);
 
-				scripting::array array;
+				scripting::array array{};
 				for (const auto& file : files)
 				{
 					array.push(file);
@@ -255,25 +251,14 @@ namespace io
 				return scripting::script_value{};
 			});
 
-			gsc::function::add("httpget", [](const gsc::function_args& args) -> scripting::script_value
+			gsc::function::add("removefile", [](const gsc::function_args& args)
 			{
-				const auto url = args[0].as<std::string>();
-				const auto object = scripting::entity(scripting::make_object());
-
-				scheduler::once([object, url]()
-				{
-					const auto result = utils::http::get_data(url.data());
-					scheduler::once([object, result]()
-					{
-						const auto value = result.has_value()
-							? result.value().substr(0, 0x5000)
-							: "";
-						scripting::notify(object, "done", {value});
-					});
-				}, scheduler::pipeline::async);
-
-				return object;
+				const auto path = args[0].as<std::string>();
+				return utils::io::remove_file(path);
 			});
+
+			gsc::function::add("httpget", http_get);
+			gsc::function::add("curl", http_get);
 		}
 	};
 }
