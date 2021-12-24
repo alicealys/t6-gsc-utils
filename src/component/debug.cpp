@@ -347,7 +347,7 @@ namespace debug
 
             gsc::function::add("assert", [](const gsc::function_args& args) -> scripting::script_value
             {
-                if (!developer_script->current.enabled )
+                if (!developer_script->current.enabled)
                 {
                     return {};
                 }
@@ -359,6 +359,17 @@ namespace debug
                 }
 
                 return {};
+            });
+
+            gsc::function::add("assertmsg", [](const gsc::function_args& args) -> scripting::script_value
+            {
+                if (!developer_script->current.enabled)
+                {
+                    return {};
+                }
+
+                const auto msg = args[0].as<std::string>();
+                throw std::runtime_error(msg);
             });
 
             gsc::function::add("killthread", [](const gsc::function_args& args) -> scripting::script_value
