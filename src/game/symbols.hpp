@@ -92,6 +92,8 @@ namespace game
 	WEAK symbol<scrVarGlob_t> scr_VarGlob{0x2E1A100, 0x2DEA400};
 	WEAK symbol<scrVarPub_t> scr_VarPub{0x2E1A500, 0x2DEA800};
 
+	WEAK symbol<unsigned short> sv_configstrings{0x28E67AC, 0x28B70AC};
+
 	WEAK symbol<scr_classStruct_t*> g_classMap{0xD6FFE0, 0xD64E60};
 
 	WEAK symbol<BuiltinFunctionDef> common_functions{0xC75160, 0xC6ACC8};
