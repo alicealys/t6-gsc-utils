@@ -23,12 +23,15 @@ namespace chat
 
 		userinfo_map userinfo_to_map(const std::string& userinfo)
 		{
-			userinfo_map map;
+			userinfo_map map{};
 			const auto args = utils::string::split(userinfo, '\\');
 
-			for (auto i = 1; i < args.size() - 1; i += 2)
+			if (args.size() > 0)
 			{
-				map[args[i]] = args[i + 1];
+				for (auto i = 1; i < args.size() - 1; i += 2)
+				{
+					map[args[i]] = args[i + 1];
+				}
 			}
 
 			return map;
@@ -36,7 +39,7 @@ namespace chat
 
 		std::string map_to_userinfo(const userinfo_map& map)
 		{
-			std::string buffer;
+			std::string buffer{};
 
 			for (const auto& value : map)
 			{
@@ -51,12 +54,16 @@ namespace chat
 
 		void sv_get_user_info_stub(int index, char* buffer, int bufferSize)
 		{
-			char _buffer[1024];
-			sv_get_user_info_hook.invoke<void>(index, _buffer, 1024);
-			auto map = userinfo_to_map(_buffer);
+			sv_get_user_info_hook.invoke<void>(index, buffer, bufferSize);
+			auto map = userinfo_to_map(buffer);
 
 			for (const auto& values : userinfo_overrides[index])
 			{
+				if (map.find(values.first) == map.end())
+				{
+					continue;
+				}
+
 				if (values.second.empty())
 				{
 					map.erase(values.first);
@@ -240,7 +247,7 @@ namespace chat
 				return {};
 			});
 
-			gsc::function::add("onplayersay", [](const gsc::function_args& args)->scripting::script_value
+			gsc::function::add("onplayersay", [](const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto function = args[0].as<scripting::function>();
 				say_callbacks.push_back(function);
