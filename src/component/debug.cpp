@@ -459,6 +459,45 @@ namespace debug
 
                 return stats;
             });
+
+            gsc::function::add("removeconfigstring", [](const gsc::function_args& args)
+            {
+                const auto target = args[0].as<std::string>();
+
+                for (auto i = 0; i < 2806; i++)
+                {
+                    const auto string_value = game::sv_configstrings[i];
+                    const auto string = game::SL_ConvertToString(string_value);
+
+                    if (string && *string && target == string)
+                    {
+                        game::sv_configstrings[i] = game::SL_GetString("", 0);
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+
+            gsc::function::add("replaceconfigstring", [](const gsc::function_args& args)
+            {
+                const auto target = args[0].as<std::string>();
+                const auto new_string = args[1].as<std::string>();
+
+                for (auto i = 0; i < 2806; i++)
+                {
+                    const auto string_value = game::sv_configstrings[i];
+                    const auto string = game::SL_ConvertToString(string_value);
+
+                    if (string && *string && string == target)
+                    {
+                        game::sv_configstrings[i] = game::SL_GetString(new_string.data(), 0);
+                        return true;
+                    }
+                }
+
+                return false;
+            });
         }
     };
 }
