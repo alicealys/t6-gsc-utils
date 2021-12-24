@@ -372,6 +372,25 @@ namespace debug
                 throw std::runtime_error(msg);
             });
 
+            gsc::function::add("throw", [](const gsc::function_args& args) -> scripting::script_value
+            {
+                if (!developer_script->current.enabled)
+                {
+                    return {};
+                }
+
+                const auto msg = args[0].as<std::string>();
+                printf("******* script runtime error *******\n");
+                printf("exception thrown: %s\n", msg.data());
+                printf(debug::get_call_stack().data());
+                printf("************************************\n");
+
+                for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
+                {
+                    game::Scr_TerminateRunningThread(game::SCRIPTINSTANCE_SERVER, frame->fs.localId);
+                }
+            });
+
             gsc::function::add("killthread", [](const gsc::function_args& args) -> scripting::script_value
             {
                 const auto function = args[0].as<scripting::function>();
