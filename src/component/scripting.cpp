@@ -135,6 +135,13 @@ namespace scripting
 				filename = filename.substr(0, filename.size() - 4);
 			}
 
+			std::string original = filename;
+			auto filename_count = 0;
+			while (script_function_table.find(filename) != script_function_table.end())
+			{
+				filename = utils::string::va("%s_%i", original.data(), filename_count++);
+			}
+
 			for (auto i = 0; i < count; i++)
 			{
 				const auto index = *reinterpret_cast<unsigned __int16*>(iter);
