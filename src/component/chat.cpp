@@ -21,17 +21,19 @@ namespace chat
 		std::vector<scripting::function> say_callbacks;
 		utils::hook::detour g_say_hook;
 
-		userinfo_map userinfo_to_map(const std::string& userinfo)
+		userinfo_map userinfo_to_map(std::string userinfo)
 		{
 			userinfo_map map{};
-			const auto args = utils::string::split(userinfo, '\\');
 
-			if (args.size() > 0)
+			if (userinfo[0] == '\\')
 			{
-				for (auto i = 1; i < args.size() - 1; i += 2)
-				{
-					map[args[i]] = args[i + 1];
-				}
+				userinfo = userinfo.substr(1);
+			}
+
+			const auto args = utils::string::split(userinfo, '\\');
+			for (size_t i = 0; !args.empty() && i < (args.size() - 1); i += 2)
+			{
+				map[args[i]] = args[i + 1];
 			}
 
 			return map;
@@ -93,7 +95,7 @@ namespace chat
 				const auto entity_id = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, ent->entity_num, 0, 0);
 				const auto result = callback(entity_id, {chatText, mode});
 
-				if (result.is<int>())
+				if (result.is<int>() && !hidden)
 				{
 					hidden = result.as<int>() == 0;
 				}
