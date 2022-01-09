@@ -116,6 +116,7 @@ namespace exception
             zip_file.add("crash.dmp", create_minidump(exceptioninfo));
             zip_file.add("info.txt", generate_crash_info(exceptioninfo));
             zip_file.add("gsc_vm_dump.txt", generate_gsc_dump());
+            zip_file.add("child_var_alloactions.txt", debug::get_child_var_allocations(1));
             zip_file.write(crash_name, "Plutonium T6 Crash Dump");
         }
 
