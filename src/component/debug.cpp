@@ -14,6 +14,7 @@
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
+#include <utils/compression.hpp>
 
 namespace debug
 {
@@ -231,44 +232,107 @@ namespace debug
             printf("====================================================\n");
             scr_terminal_error_hook.invoke<void>(inst, error);
         }
-    }
 
-    std::vector<scripting::thread> get_all_threads()
-    {
-        std::vector<scripting::thread> threads;
+        utils::hook::detour alloc_child_variable_hook;
+        std::unordered_map<std::string, std::unordered_set<unsigned int>> allocations;
 
-        for (auto i = 1; i < 0x8000; i++)
+        int* alloc_child_variable_stub(int inst, unsigned int* index)
         {
-            const auto type = game::scr_VarGlob->objectVariableValue[i].w.type & 0x7F;
-            if (type == game::SCRIPT_THREAD || type == game::SCRIPT_TIME_THREAD || type == game::SCRIPT_NOTIFY_THREAD)
+            const auto result = alloc_child_variable_hook.invoke<int*>(inst, index);
+            const auto frame = game::scr_VmPub->function_frame;
+            const auto function = scripting::find_function_pair(frame->fs.pos);
+
+            if (function.has_value())
             {
-                threads.push_back(i);
+                const auto name = utils::string::va("%s::%s", function.value().first.data(), function.value().second.data());
+                allocations[name].insert(*index);
+            }
+
+            return result;
+        }
+
+        void remove_variable_allocation(unsigned int index)
+        {
+            for (auto& allocation : allocations)
+            {
+                allocation.second.erase(index);
             }
         }
 
-        return threads;
-    }
-
-    unsigned int get_var_count()
-    {
-        auto count = 0;
-        for (auto i = 0; i < 0x8000; i++)
+        __declspec(naked) void free_child_variable_stub()
         {
-            const auto type = game::scr_VarGlob->objectVariableValue[i].w.type & 0x7F;
-            count += type != game::SCRIPT_FREE;
-        }
-        return count;
-    }
+            static auto return_ = 0x8F1C97;
 
-    unsigned int get_child_var_count()
-    {
-        auto count = 0;
-        for (auto i = 0; i < 0x10000; i++)
-        {
-            const auto type = game::scr_VarGlob->childVariableValue[i].type & 0x7F;
-            count += type != game::SCRIPT_FREE;
+            __asm
+            {
+                pushad
+                push edi
+                call remove_variable_allocation
+                pop edi
+                popad
+
+                mov ecx, [eax + 0x4]
+                and ecx, 0x7F
+                push ebx
+
+                jmp return_
+            }
         }
-        return count;
+
+        std::vector<scripting::thread> get_all_threads()
+        {
+            std::vector<scripting::thread> threads;
+
+            for (auto i = 1; i < 0x8000; i++)
+            {
+                const auto type = game::scr_VarGlob->objectVariableValue[i].w.type & 0x7F;
+                if (type == game::SCRIPT_THREAD || type == game::SCRIPT_TIME_THREAD || type == game::SCRIPT_NOTIFY_THREAD)
+                {
+                    threads.push_back(i);
+                }
+            }
+
+            return threads;
+        }
+
+        unsigned int get_var_count()
+        {
+            auto count = 0;
+
+            for (auto i = 0; i < 0x8000; i++)
+            {
+                const auto type = game::scr_VarGlob->objectVariableValue[i].w.type & 0x7F;
+                count += type != game::SCRIPT_FREE;
+            }
+
+            return count;
+        }
+
+        unsigned int get_child_var_count()
+        {
+            auto count = 0;
+
+            for (auto i = 0; i < 0x10000; i++)
+            {
+                const auto type = game::scr_VarGlob->childVariableValue[i].type & 0x7F;
+                count += type != game::SCRIPT_FREE;
+            }
+
+            return count;
+        }
+
+        void exceeded_max_child_vars_error_stub(int inst, const char* err)
+        {
+            const std::string name = utils::string::va("minidumps/child-var-allocations-%s.zip", 
+                utils::string::get_timestamp().data());
+
+            utils::compression::zip::archive zip_file{};
+            zip_file.add("allocations.txt", debug::get_child_var_allocations(1));
+            zip_file.write(name, "Plutonium T6ZM child variable allocations");
+
+            scr_terminal_error_stub(inst, 
+                utils::string::va("%s\na child variable dump has been written at %s", err, name.data()));
+        }
     }
 
     std::string get_call_stack(bool print_local_vars)
@@ -302,6 +366,47 @@ namespace debug
                 line(utils::string::va("\t\tlocal vars: %s", json::gsc_to_string(local_vars).data()));
             }
         }
+
+        return info;
+    }
+
+    std::string get_child_var_allocations(int limit)
+    {
+        std::string info{};
+        const auto line = [&info](const std::string& text)
+        {
+            info.append(text);
+            info.append("\r\n");
+        };
+
+        line(utils::string::va("child var allocations where count > %i\n", limit));
+        std::vector<std::pair<std::string, int>> sorted_allocations;
+        auto total = 0;
+        for (const auto& allocation : allocations)
+        {
+            const auto count = allocation.second.size();
+            total += count;
+            if (count < limit)
+            {
+                continue;
+            }
+
+            sorted_allocations.push_back({allocation.first, count});
+        }
+
+        std::sort(sorted_allocations.begin(), sorted_allocations.end(),
+            [](std::pair<std::string, int> a, std::pair<std::string, int> b)
+            {
+                return a.second > b.second;
+            }
+        );
+
+        for (const auto& allocation : sorted_allocations)
+        {
+            line(utils::string::va("%s: %i", allocation.first.data(), allocation.second));
+        }
+
+        line(utils::string::va("\ntotal: %i, total calculated: %i", total, get_child_var_count()));
 
         return info;
     }
@@ -498,6 +603,24 @@ namespace debug
 
                 return false;
             });
+
+            if (game::environment::t6zm())
+            {
+                alloc_child_variable_hook.create(SELECT(0, 0x8F19A0), alloc_child_variable_stub);
+                utils::hook::jump(SELECT(0, 0x8F1C90), free_child_variable_stub);
+                utils::hook::call(SELECT(0, 0x8F1A3F), exceeded_max_child_vars_error_stub);
+
+                command::add("printallocations", [](command::params& params)
+                {
+                    auto limit = 1;
+                    if (params.size() > 1)
+                    {
+                        limit = atoi(params.get(1));
+                    }
+
+                    printf(get_child_var_allocations(limit).data());
+                });
+            }
         }
     };
 }
