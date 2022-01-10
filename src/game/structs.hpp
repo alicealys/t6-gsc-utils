@@ -17,7 +17,7 @@ namespace game
 	{
 		unsigned short entnum;
 		unsigned short classnum;
-		unsigned short client;
+		int client;
 	};
 
 	struct BuiltinMethodDef
