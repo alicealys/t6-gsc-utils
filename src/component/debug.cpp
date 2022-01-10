@@ -259,24 +259,19 @@ namespace debug
             }
         }
 
-        __declspec(naked) void free_child_variable_stub()
+        void free_child_variable_stub(utils::hook::assembler& a)
         {
-            static auto return_ = 0x8F1C97;
+            a.pushad();
+            a.push(edi);
+            a.call(remove_variable_allocation);
+            a.pop(edi);
+            a.popad();
 
-            __asm
-            {
-                pushad
-                push edi
-                call remove_variable_allocation
-                pop edi
-                popad
+            a.mov(ecx, dword_ptr(eax, 0x4));
+            a.and_(ecx, 0x7F);
+            a.push(ebx);
 
-                mov ecx, [eax + 0x4]
-                and ecx, 0x7F
-                push ebx
-
-                jmp return_
-            }
+            a.jmp(SELECT(0, 0x8F1C97));
         }
 
         std::vector<scripting::thread> get_all_threads()
@@ -607,7 +602,7 @@ namespace debug
             if (game::environment::t6zm())
             {
                 alloc_child_variable_hook.create(SELECT(0, 0x8F19A0), alloc_child_variable_stub);
-                utils::hook::jump(SELECT(0, 0x8F1C90), free_child_variable_stub);
+                utils::hook::jump(SELECT(0, 0x8F1C90), utils::hook::assemble(free_child_variable_stub));
                 utils::hook::call(SELECT(0, 0x8F1A3F), exceeded_max_child_vars_error_stub);
 
                 command::add("printallocations", [](command::params& params)

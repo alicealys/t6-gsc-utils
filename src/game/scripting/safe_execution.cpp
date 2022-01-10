@@ -6,19 +6,16 @@
 
 namespace scripting::safe_execution
 {
-	namespace
+	bool execute_with_seh(const script_function function, const game::scr_entref_t& entref)
 	{
-		bool execute_with_seh(const script_function function, const game::scr_entref_t& entref)
+		__try
 		{
-			__try
-			{
-				function(entref);
-				return true;
-			}
-			__except (EXCEPTION_EXECUTE_HANDLER)
-			{
-				return false;
-			}
+			function(entref);
+			return true;
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER)
+		{
+			return false;
 		}
 	}
 

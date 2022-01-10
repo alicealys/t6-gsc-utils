@@ -5,6 +5,8 @@ namespace scripting::safe_execution
 {
 	using script_function = void(*)(game::scr_entref_t);
 
+	bool execute_with_seh(const script_function function, const game::scr_entref_t& entref);
+
 	bool call(script_function function, const game::scr_entref_t& entref);
 
 	bool set_entity_field(const game::scr_entref_t& entref, int offset);
