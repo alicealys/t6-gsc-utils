@@ -234,29 +234,19 @@ namespace debug
         }
 
         utils::hook::detour alloc_child_variable_hook;
-        std::unordered_map<std::string, std::unordered_set<unsigned int>> allocations;
+        const char* allocations[0x10000];
 
         int* alloc_child_variable_stub(int inst, unsigned int* index)
         {
             const auto result = alloc_child_variable_hook.invoke<int*>(inst, index);
-            const auto frame = game::scr_VmPub->function_frame;
-            const auto function = scripting::find_function_pair(frame->fs.pos);
-
-            if (function.has_value())
-            {
-                const auto name = utils::string::va("%s::%s", function.value().first.data(), function.value().second.data());
-                allocations[name].insert(*index);
-            }
-
+            const auto pos = game::scr_VmPub->function_frame->fs.pos;
+            allocations[*index] = pos;
             return result;
         }
 
         void remove_variable_allocation(unsigned int index)
         {
-            for (auto& allocation : allocations)
-            {
-                allocation.second.erase(index);
-            }
+            allocations[index] = nullptr;
         }
 
         void free_child_variable_stub(utils::hook::assembler& a)
@@ -375,20 +365,33 @@ namespace debug
         };
 
         line(utils::string::va("child var allocations where count > %i\n", limit));
-        std::vector<std::pair<std::string, int>> sorted_allocations;
+        std::unordered_map<std::string, int> allocations_map;
+
         auto total = 0;
-        for (const auto& allocation : allocations)
+        for (auto i = 0; i < 0x10000; i++)
         {
-            const auto count = allocation.second.size();
-            total += count;
-            if (count < limit)
+            const auto pos = allocations[i];
+            if (pos == nullptr)
             {
                 continue;
             }
 
-            sorted_allocations.push_back({allocation.first, count});
+            total++;
+            const auto pair_value = scripting::find_function_pair(pos);
+
+            if (!pair_value.has_value())
+            {
+                continue;
+            }
+
+            const auto pair = pair_value.value();
+            const auto function = utils::string::va("%s::%s", pair.first.data(), pair.second.data());
+
+            allocations_map[function]++;
         }
 
+        std::vector<std::pair<std::string, int>> sorted_allocations(
+            allocations_map.begin(), allocations_map.end());
         std::sort(sorted_allocations.begin(), sorted_allocations.end(),
             [](std::pair<std::string, int> a, std::pair<std::string, int> b)
             {
@@ -398,6 +401,11 @@ namespace debug
 
         for (const auto& allocation : sorted_allocations)
         {
+            if (allocation.second < limit)
+            {
+                continue;
+            }
+
             line(utils::string::va("%s: %i", allocation.first.data(), allocation.second));
         }
 
