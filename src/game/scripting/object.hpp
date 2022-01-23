@@ -33,6 +33,7 @@ namespace scripting
 		unsigned int size() const;
 		void erase(const std::string&) const;
 
+		bool has(const std::string& key) const;
 		script_value get(const std::string&) const;
 		void set(const std::string&, const script_value&) const;
 

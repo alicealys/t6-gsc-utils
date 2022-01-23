@@ -38,6 +38,8 @@ namespace scripting
 		void erase(const std::string&) const;
 		script_value pop() const;
 
+		bool has(const std::string& key) const;
+
 		script_value get(const script_value&) const;
 		script_value get(const std::string&) const;
 		script_value get(const unsigned int) const;

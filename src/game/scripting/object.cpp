@@ -167,6 +167,19 @@ namespace scripting
 		}
 	}
 
+	bool object::has(const std::string& key) const
+	{
+		const auto string_value = game::SL_GetCanonicalString(key.data(), 0);
+		const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, this->id_, string_value);
+
+		if (!variable_id)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
 	script_value object::get(const std::string& key) const
 	{
 		const auto string_value = game::SL_GetCanonicalString(key.data(), 0);

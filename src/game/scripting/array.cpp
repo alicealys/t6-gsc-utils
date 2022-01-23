@@ -213,6 +213,19 @@ namespace scripting
 		return value;
 	}
 
+	bool array::has(const std::string& key) const
+	{
+		const auto string_value = game::SL_GetString(key.data(), 0);
+		const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, this->id_, string_value);
+
+		if (!variable_id)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
 	script_value array::get(const std::string& key) const
 	{
 		const auto string_value = game::SL_GetString(key.data(), 0);
