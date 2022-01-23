@@ -6,6 +6,8 @@ namespace game
 {
 	// Functions
 
+	WEAK symbol<int(const char* str)> BG_StringHashValue{0x6BB660, 0x612780};
+
 	WEAK symbol<void(int localClientNum, const char* text)> Cbuf_InsertText{0x4A5FF0, 0x702E40};
 	WEAK symbol<void(int localClientNum, const char* text)> Cbuf_AddText{0x5C6F10, 0x6B9D20};
 	WEAK symbol<void(const char* cmdName, void(), cmd_function_t* allocedCmd)> Cmd_AddCommandInternal{0x5B3070, 0x4DC2A0};

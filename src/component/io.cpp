@@ -257,6 +257,12 @@ namespace io
 				return utils::io::remove_file(path);
 			});
 
+			gsc::function::add("hashstring", [](const gsc::function_args& args)
+			{
+				const auto str = args[0].as<std::string>();
+				return game::BG_StringHashValue(str.data());
+			});
+
 			gsc::function::add("httpget", http_get);
 			gsc::function::add("curl", http_get);
 		}
