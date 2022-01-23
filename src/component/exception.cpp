@@ -154,11 +154,6 @@ namespace exception
     public:
         void post_unpack() override
         {
-            if (!strstr(GetCommandLineA(), "--gsc-debug"))
-            {
-                return;
-            }
-
             SetUnhandledExceptionFilter(exception_filter);
             utils::hook::jump(reinterpret_cast<uintptr_t>(&SetUnhandledExceptionFilter), set_unhandled_exception_filter_stub);
         }
