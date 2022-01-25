@@ -37,6 +37,8 @@ namespace gsc
         std::vector<std::function<void()>> post_load_callbacks;
         std::unordered_map<unsigned int, std::unordered_map<unsigned int, entity_field>> custom_fields;
 
+        std::unordered_map<std::string, scripting::script_value> world;
+
         builtin_function find_function(const std::string& name)
         {
             for (const auto& function : functions)
@@ -520,6 +522,19 @@ namespace gsc
             {
                 const auto field = args[0].as<std::string>();
                 entity.set(field, args[1]);
+                return {};
+            });
+
+            function::add("worldget", [](const function_args& args) -> scripting::script_value
+            {
+                const auto key = args[0].as<std::string>();
+                return world[key];
+            });
+
+            function::add("worldset", [](const function_args& args) -> scripting::script_value
+            {
+                const auto key = args[0].as<std::string>();
+                world[key] = args[1];
                 return {};
             });
         }
