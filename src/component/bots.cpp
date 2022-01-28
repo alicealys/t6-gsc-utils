@@ -35,6 +35,12 @@ namespace bots
 			bot_names.emplace_back(std::make_pair(name, clantag));
 		}
 
+		void clear_bot_data()
+		{
+			std::unique_lock<std::mutex> _(bot_names_mutex);
+			bot_names.clear();
+		}
+
 		// If the list contains at least 18 names there should not be any collisions
 		const char* sv_bot_name_random_stub()
 		{
@@ -98,11 +104,23 @@ namespace bots
 				add_bot_data(params.get(1), params.get(2));
 			});
 
+			command::add("clearbotdata", [](command::params&)
+			{
+				clear_bot_data();
+			});
+
 			gsc::function::add("addbotdata", [](const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto name = args[0].as<std::string>();
 				const auto clantag = args[1].as<std::string>();
 				add_bot_data(name, clantag);
+
+				return {};
+			});
+
+			gsc::function::add("clearbotdata", [](const gsc::function_args& args) -> scripting::script_value
+			{
+				clear_bot_data();
 
 				return {};
 			});
