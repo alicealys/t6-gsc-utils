@@ -7,12 +7,12 @@
 #include <utils/io.hpp>
 #include <utils/hook.hpp>
 
-typedef std::pair<std::string, std::string> bot_entry;
-
 namespace bots
 {
 	namespace
 	{
+		typedef std::pair<std::string, std::string> bot_entry;
+
 		std::vector<bot_entry> bot_names;
 		utils::hook::detour sv_bot_name_random_hook;
 
@@ -37,7 +37,7 @@ namespace bots
 				return;
 			}
 
-			for (auto& [key, val] : obj["names"].items())
+			for (const auto& [key, val] : obj["names"].items())
 			{
 				bot_names.emplace_back(std::make_pair(key, val.get<std::string>()));
 			}
@@ -51,11 +51,11 @@ namespace bots
 				load_bot_data();
 			}
 
-			static int botId = 0;
+			static int bot_id = 0;
 			if (!bot_names.empty())
 			{
-				botId %= bot_names.size();
-				const auto& entry = bot_names.at(botId++);
+				bot_id %= bot_names.size();
+				const auto& entry = bot_names.at(bot_id++);
 				return entry.first.data();
 			}
 
