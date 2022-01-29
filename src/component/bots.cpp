@@ -1,9 +1,10 @@
 #include <stdinc.hpp>
 #include "loader/component_loader.hpp"
 
-#include "command.hpp"
 #include "gsc.hpp"
 
+#include <json.hpp>
+#include <utils/io.hpp>
 #include <utils/hook.hpp>
 
 typedef std::pair<std::string, std::string> bot_entry;
@@ -12,39 +13,43 @@ namespace bots
 {
 	namespace
 	{
-		std::vector<bot_entry> bot_names{};
-		std::mutex bot_names_mutex;
+		std::vector<bot_entry> bot_names;
 		utils::hook::detour sv_bot_name_random_hook;
 
-		void add_bot_data(const std::string name, const std::string clantag)
+		// Json file is expected to contain one "names" object and that should contain a string (key)
+		// for the bot's name and one string (value) for the clantag
+		void load_bot_data()
 		{
-			std::unique_lock<std::mutex> _(bot_names_mutex);
-
-			if (!bot_names.empty())
+			if (!utils::io::file_exists("bots/bots.json"))
 			{
-				for (const auto& entry : bot_names)
-				{
-					if (entry.first == name)
-					{
-						// No duplicates
-						return;
-					}
-				}
+				printf("bots.json was not found\n");
+				return;
 			}
 
-			bot_names.emplace_back(std::make_pair(name, clantag));
-		}
+			nlohmann::json obj;
+			try
+			{
+				obj = nlohmann::json::parse(utils::io::read_file("bots/bots.json").data());
+			}
+			catch (nlohmann::json::parse_error& ex)
+			{
+				printf("json parse error\n");
+				return;
+			}
 
-		void clear_bot_data()
-		{
-			std::unique_lock<std::mutex> _(bot_names_mutex);
-			bot_names.clear();
+			for (auto& [key, val] : obj["names"].items())
+			{
+				bot_names.emplace_back(std::make_pair(key, val.get<std::string>()));
+			}
 		}
 
 		// If the list contains at least 18 names there should not be any collisions
 		const char* sv_bot_name_random_stub()
 		{
-			std::unique_lock<std::mutex> _(bot_names_mutex);
+			if (bot_names.empty())
+			{
+				load_bot_data();
+			}
 
 			static int botId = 0;
 			if (!bot_names.empty())
@@ -60,18 +65,14 @@ namespace bots
 		int build_connect_string(char* buf, const char* connectString, const char* name, const char* xuid,
 			const char* xnaddr, int protocol, int netfield, int sessionMode, int port)
 		{
-			std::unique_lock<std::mutex> _(bot_names_mutex);
-
-			auto clantag = "3arch"s; // Default
-			if (!bot_names.empty())
+			// Default
+			auto clantag = "3arc"s;
+			for (const auto& entry : bot_names)
 			{
-				for (const auto& entry : bot_names)
+				if (entry.first == name)
 				{
-					if (entry.first == name)
-					{
-						clantag = entry.second;
-						break;
-					}
+					clantag = entry.second;
+					break;
 				}
 			}
 
@@ -92,38 +93,6 @@ namespace bots
 
 			sv_bot_name_random_hook.create(SELECT(0x6A2C70, 0x62D750), &sv_bot_name_random_stub);
 			utils::hook::call(SELECT(0x551601, 0x428BE0), build_connect_string);
-
-			command::add("addbotdata", [](command::params& params)
-			{
-				if (params.size() < 3)
-				{
-					printf("Usage: %s <name> <clantag>\n", params.get(0));
-					return;
-				}
-
-				add_bot_data(params.get(1), params.get(2));
-			});
-
-			command::add("clearbotdata", [](command::params&)
-			{
-				clear_bot_data();
-			});
-
-			gsc::function::add("addbotdata", [](const gsc::function_args& args) -> scripting::script_value
-			{
-				const auto name = args[0].as<std::string>();
-				const auto clantag = args[1].as<std::string>();
-				add_bot_data(name, clantag);
-
-				return {};
-			});
-
-			gsc::function::add("clearbotdata", [](const gsc::function_args& args) -> scripting::script_value
-			{
-				clear_bot_data();
-
-				return {};
-			});
 		}
 	};
 }
