@@ -115,6 +115,6 @@ namespace game
 
 	namespace plutonium
 	{
-		WEAK symbol<int(const char* fmt, ...)> printf{0x20887840, 0x20887840};
+		WEAK symbol<int(const char* fmt, ...)> printf{0x208A9060, 0x208A9060};
 	}
 }
