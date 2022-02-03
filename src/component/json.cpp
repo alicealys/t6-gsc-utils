@@ -231,7 +231,17 @@ namespace json
 			gsc::function::add("jsonparse", [](const gsc::function_args& args)
 			{
 				const auto json = args[0].as<std::string>();
-				const auto obj = nlohmann::json::parse(json);
+
+				nlohmann::json obj;
+				try
+				{
+					obj = nlohmann::json::parse(json);
+				}
+				catch (nlohmann::json::parse_error& ex)
+				{
+					printf("jsonparse: json parse error:\n%s\n", ex.what());
+				}
+
 				return json_to_gsc(obj);
 			});
 
