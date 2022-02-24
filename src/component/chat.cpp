@@ -128,9 +128,14 @@ namespace chat
 				const auto ent = entity.get_entity_reference();
 				const auto name = args[0].as<std::string>();
 
-				if (ent.classnum != 0 || ent.entnum > 17)
+				if (ent.classnum != 0)
 				{
 					throw std::runtime_error("Invalid entity");
+				}
+
+				if (game::g_entities[ent.entnum].client == nullptr)
+				{
+					throw std::runtime_error("Not a player entity");
 				}
 
 				userinfo_overrides[ent.entnum]["name"] = name;
@@ -144,9 +149,14 @@ namespace chat
 				const auto ent = entity.get_entity_reference();
 				const auto name = args[0].as<std::string>();
 
-				if (ent.classnum != 0 || ent.entnum > 17)
+				if (ent.classnum != 0)
 				{
 					throw std::runtime_error("Invalid entity");
+				}
+
+				if (game::g_entities[ent.entnum].client == nullptr)
+				{
+					throw std::runtime_error("Not a player entity");
 				}
 
 				userinfo_overrides[ent.entnum]["name"] = name;
@@ -158,9 +168,14 @@ namespace chat
 			gsc::method::add("resetname", [](const scripting::entity& entity, const gsc::function_args&) -> scripting::script_value
 			{
 				const auto ent = entity.get_entity_reference();
-				if (ent.classnum != 0 || ent.entnum > 17)
+				if (ent.classnum != 0)
 				{
 					throw std::runtime_error("Invalid entity");
+				}
+
+				if (game::g_entities[ent.entnum].client == nullptr)
+				{
+					throw std::runtime_error("Not a player entity");
 				}
 
 				userinfo_overrides[ent.entnum].erase("name");
@@ -173,9 +188,14 @@ namespace chat
 			{
 				const auto ent = entity.get_entity_reference();
 
-				if (ent.classnum != 0 || ent.entnum > 17)
+				if (ent.classnum != 0)
 				{
 					throw std::runtime_error("Invalid entity");
+				}
+
+				if (game::g_entities[ent.entnum].client == nullptr)
+				{
+					throw std::runtime_error("Not a player entity");
 				}
 
 				userinfo_overrides[ent.entnum].erase("clantag");
@@ -191,9 +211,14 @@ namespace chat
 				const auto ent = entity.get_entity_reference();
 				const auto name = args[0].as<std::string>();
 
-				if (ent.classnum != 0 || ent.entnum > 17)
+				if (ent.classnum != 0)
 				{
 					throw std::runtime_error("Invalid entity");
+				}
+
+				if (game::g_entities[ent.entnum].client == nullptr)
+				{
+					throw std::runtime_error("Not a player entity");
 				}
 
 				userinfo_overrides[ent.entnum]["clantag"] = name;

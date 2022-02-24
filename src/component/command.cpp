@@ -120,7 +120,7 @@ namespace command
 					return;
 				}
 
-				if (!(*game::levelEntityId))
+				if (!*game::levelEntityId)
 				{
 					printf("Level not loaded\n");
 					return;
@@ -146,7 +146,7 @@ namespace command
 					return;
 				}
 
-				if (!(*game::levelEntityId))
+				if (!*game::levelEntityId)
 				{
 					printf("Level not loaded\n");
 					return;
@@ -156,6 +156,11 @@ namespace command
 				const auto sv_maxclients = game::Dvar_FindVar("sv_maxclients")->current.integer;
 
 				if (client < 0 || client >= sv_maxclients)
+				{
+					return;
+				}
+
+				if (game::g_entities[client].client == nullptr)
 				{
 					return;
 				}
