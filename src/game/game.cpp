@@ -76,6 +76,19 @@ namespace game
 		return game::Scr_GetString(SCRIPTINSTANCE_SERVER, index);
 	}
 
+	gentity_s* GetEntity(scr_entref_t entref)
+	{
+		if (entref.classnum != 0)
+		{
+			game::Scr_ObjectError("Not an entity");
+			return nullptr;
+		}
+
+		assert(entref.entnum < (1 << 10));
+
+		return &game::g_entities[entref.entnum];
+	}
+
 	scr_entref_t Scr_GetEntityIdRef(unsigned int entId)
 	{
 		scr_entref_t entref;
