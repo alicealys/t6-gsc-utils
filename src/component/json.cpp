@@ -257,10 +257,15 @@ namespace json
 
 			gsc::function::add("jsondump", [](const gsc::function_args& args)
 			{
-				const auto file = args[0].as<std::string>();
+				auto file = args[0].as<std::string>();
 				const auto value = args[1];
 				auto indent = -1;
 				auto print_id = false;
+
+				if (!file.ends_with(".json"))
+				{
+					file.append(".json");
+				}
 
 				if (args.size() > 2)
 				{
