@@ -570,3 +570,19 @@ Additionally, running the server with the `--gsc-debug` flag will set a custom c
   }
   ```
 * `killAllThreads(function[, owner])`: Same as `killThread` but kills all matching threads.
+
+# Bots
+
+Custom bot names and clantags can be set by creating a file in `Plutonium/storage/t6/bots/bots.json` (create the folders if they don't exist) with the following json:
+
+```json
+{
+    "names": {
+        "name": "clantag",
+        "name2": "clantag2"
+    }
+}
+```
+
+As shown by this example the pairs of name and clantag must be stored in an object called `names`.
+When a bot connects it will assign the pair of name and clantag based on the order they are in the object starting from the top.
