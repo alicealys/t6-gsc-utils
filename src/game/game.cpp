@@ -141,8 +141,8 @@ namespace game
 	{
 		bool is_up_to_date()
 		{
-			const auto value = *reinterpret_cast<DWORD*>(0x20900000);
-			return value == 0xF0681B6A;
+			const auto value = *reinterpret_cast<DWORD*>(0x21600000);
+			return value == 0x9730166E;
 		}
 	}
 }
