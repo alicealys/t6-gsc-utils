@@ -61,11 +61,6 @@ namespace chat
 
 			for (const auto& values : userinfo_overrides[index])
 			{
-				if (map.find(values.first) == map.end())
-				{
-					continue;
-				}
-
 				if (values.second.empty())
 				{
 					map.erase(values.first);
