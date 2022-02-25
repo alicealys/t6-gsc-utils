@@ -74,7 +74,7 @@ namespace game
 		return reinterpret_cast<T>(value);
 	}
 
-	gentity_s* GetEntity(scr_entref_t entref);
+	//gentity_s* GetEntity(scr_entref_t entref);
 	scr_entref_t Scr_GetEntityIdRef(unsigned int entId);
 	void Scr_TerminateWaitThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId);
 	void Scr_TerminateWaittillThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId);
