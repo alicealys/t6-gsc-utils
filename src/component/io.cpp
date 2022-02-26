@@ -87,7 +87,7 @@ namespace io
 			{
 				auto fmt = args[0].as<std::string>();
 
-				for (auto i = 1; i < args.size(); i++)
+				for (auto i = 1u; i < args.size(); i++)
 				{
 					const auto arg = args[i].to_string();
 					replace(fmt, "%s", arg);
@@ -135,7 +135,11 @@ namespace io
 				const auto* path = args[0].as<const char*>();
 				const auto* mode = args[1].as<const char*>();
 
-				const auto handle = fopen(path, mode);
+				FILE* handle = nullptr;
+				if (fopen_s(&handle, path, mode) != 0)
+				{
+					throw std::runtime_error("Invalid handle");
+				}
 
 				if (!handle)
 				{

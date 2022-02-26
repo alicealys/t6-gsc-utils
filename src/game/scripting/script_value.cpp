@@ -369,7 +369,8 @@ namespace scripting
 		if (this->is<function>())
 		{
 			const auto func = this->as<function>();
-			return utils::string::va("[[ %s ]]", func.get_name());
+			const auto& name = func.get_name();
+			return utils::string::va("[[ %s ]]", name.data());
 		}
 
 		return this->type_name();

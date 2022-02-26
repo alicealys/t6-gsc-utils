@@ -46,6 +46,7 @@ workspace "t6-gsc-utils"
 
 	disablewarnings 
 	{
+		"4324",
 		"6031",
 		"6053",
 		"26495",

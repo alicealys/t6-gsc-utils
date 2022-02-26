@@ -38,7 +38,7 @@ namespace scripting
 		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
 		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_.type, variable_.u);
 
-		variable->type = value.type;
+		variable->type = gsl::narrow_cast<char>(value.type);
 		variable->u.u = value.u;
 
 		this->value_ = value;
@@ -283,7 +283,7 @@ namespace scripting
 		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
 		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_.type, variable_.u);
 
-		variable->type = value.type;
+		variable->type = gsl::narrow_cast<char>(value.type);
 		variable->u.u = value.u;
 	}
 
@@ -305,7 +305,7 @@ namespace scripting
 		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
 		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_.type, variable_.u);
 
-		variable->type = value.type;
+		variable->type = gsl::narrow_cast<char>(value.type);
 		variable->u.u = value.u;
 	}
 

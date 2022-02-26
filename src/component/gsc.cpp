@@ -283,9 +283,7 @@ namespace gsc
     {
         std::vector<scripting::script_value> args;
 
-        const auto top = game::scr_VmPub->top;
-
-        for (auto i = 0; i < game::scr_VmPub->outparamcount; i++)
+        for (auto i = 0; static_cast<unsigned int>(i) < game::scr_VmPub->outparamcount; i++)
         {
             const auto value = game::scr_VmPub->top[-i];
             args.push_back(value);
@@ -311,7 +309,7 @@ namespace gsc
 
     scripting::value_wrap function_args::get(const int index) const
     {
-        if (index >= this->values_.size())
+        if (static_cast<unsigned int>(index) >= this->values_.size())
         {
             throw std::runtime_error(utils::string::va("parameter %d does not exist", index));
         }
