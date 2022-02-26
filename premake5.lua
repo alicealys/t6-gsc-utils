@@ -35,12 +35,15 @@ workspace "t6-gsc-utils"
 	location "./build"
 	objdir "%{wks.location}/obj"
 	targetdir "%{wks.location}/bin/%{cfg.platform}/%{cfg.buildcfg}"
-	
+
 	configurations { "Debug", "Release" }
-	
+
+	language "C++"
+	cppdialect "C++20"
+
 	architecture "x86"
-	platforms "win32"
-	
+	platforms "Win32"
+
 	disablewarnings 
 	{
 		"6031",
@@ -49,65 +52,62 @@ workspace "t6-gsc-utils"
 		"26812",
 	}
 
-	buildoptions "/std:c++latest"
 	systemversion "latest"
-	defines { "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" }
-	
-	configuration "windows"
+	symbols "On"
+	staticruntime "On"
+	editandcontinue "Off"
+	warnings "Extra"
+	characterset "ASCII"
+
+	flags
+	{
+		"NoIncrementalLink",
+		"MultiProcessorCompile",
+		"No64BitChecks",
+	}
+
+	filter "platforms:Win*"
 		defines { "_WINDOWS", "WIN32" }
-		staticruntime "On"
-		
-		if symbols ~= nil then
-			symbols "On"
-		else
-			flags { "Symbols" }
-		end
+	filter {}
 
-	configuration "Release"
-		defines { "NDEBUG" }
-		flags { "MultiProcessorCompile", "LinkTimeOptimization", "No64BitChecks" }
+	filter "configurations:Release"
 		optimize "Full"
+		defines { "NDEBUG" }
+		flags { "LinkTimeOptimization" }
+	filter {}
 
-	configuration "Debug"
-		defines { "DEBUG", "_DEBUG" }
-		flags { "MultiProcessorCompile", "No64BitChecks" }
+	filter "configurations:Debug"
 		optimize "Debug"
+		defines { "DEBUG", "_DEBUG" }
+	filter {}
 
 	project "t6-gsc-utils"
 		kind "SharedLib"
 		language "C++"
-		
+
 		files 
 		{
 			"./src/**.h",
 			"./src/**.hpp",
 			"./src/**.cpp",
 		}
-		
+
 		includedirs 
 		{
 			"%{prj.location}/src",
 			"./src",
 		}
-		
+
 		resincludedirs 
 		{
 			"$(ProjectDir)src"
 		}
-				
+	
 		pchheader "stdinc.hpp"
 		pchsource "src/stdinc.cpp"
 		buildoptions { "/Zm100 -Zm100" }
 
-		flags { "UndefinedIdentifiers" }
-		warnings "Off"
-		
-		configuration "Release"
-			flags { "FatalCompileWarnings" }
-			
-		configuration {}
-
 		dependencies.imports()
-	
+
 	group "Dependencies"
 	dependencies.projects()
