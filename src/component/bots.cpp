@@ -107,8 +107,7 @@ namespace bots
 
 				for (auto i = 0; i < client_count; i++)
 				{
-					if (game::svs_clients[i].header.state != game::clientState_t::CS_FREE
-						&& game::svs_clients[i].header.netchan.remoteAddress.type == game::netadrtype_t::NA_BOT)
+					if (game::SV_IsTestClient(i))
 					{
 						game::SV_GameDropClient(i, "GAME_DROPPEDFORINACTIVITY");
 					}

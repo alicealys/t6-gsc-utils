@@ -384,7 +384,9 @@ namespace game
 		clientHeader_t header;
 		const char* dropReason;
 		char userinfo[1024];
-		unsigned char __pad0[0x4D650];
+		unsigned char __pad0[0x3F75C];
+		int bIsTestClient;
+		unsigned char __pad1[0xDEF0];
 	};
 
 	static_assert(sizeof(client_s) == 0x4E180);
