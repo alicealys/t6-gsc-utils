@@ -76,18 +76,18 @@ namespace game
 		return game::Scr_GetString(SCRIPTINSTANCE_SERVER, index);
 	}
 
-	/*gentity_s* GetEntity(scr_entref_t entref)
+	gentity_s* GetEntity(scr_entref_t entref)
 	{
 		if (entref.classnum != 0)
 		{
-			game::Scr_ObjectError("Not an entity");
+			game::Scr_ObjectError(SCRIPTINSTANCE_SERVER, "Not an entity");
 			return nullptr;
 		}
 
 		assert(entref.entnum < (1 << 10));
 
 		return &game::g_entities[entref.entnum];
-	}*/
+	}
 
 	scr_entref_t Scr_GetEntityIdRef(unsigned int entId)
 	{
@@ -96,7 +96,7 @@ namespace game
 		const auto v2 = &game::scr_VarGlob->objectVariableValue[entId];
 
 		entref.entnum = v2->u.f.next;
-		entref.classnum = v2->w.classnum >> 8;
+		entref.classnum = gsl::narrow_cast<unsigned short>(v2->w.classnum >> 8);
 
 		return entref;
 	}

@@ -17,6 +17,7 @@ namespace game
 	WEAK symbol<void(int clientNum)> ClientUserInfoChanged{0x4ED6A0, 0x427DC0};
 
 	WEAK symbol<const dvar_t*(const char*)> Dvar_FindVar{0x563A70, 0x673C80};
+	WEAK symbol<int(const dvar_t*)> Dvar_GetInt{0x44DFC0, 0x6909F0};
 
 	WEAK symbol<XAssetHeader(XAssetType type, const char* name, bool errorIfMissing, int waitTime)> DB_FindXAssetHeader{0x6F9030, 0x43F460};
 
@@ -82,6 +83,7 @@ namespace game
 
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId, const char* pos, unsigned int paramcount)> VM_Execute{0x8F9550, 0x8F82B0};
 
+	WEAK symbol<void(int clientNum, const char* reason)> SV_GameDropClient{0x6D2980, 0x677690};
 	WEAK symbol<void(int clientNum, int type, const char* command)> SV_GameSendServerCommand{0x45D7D0, 0x40D450};
 
 	WEAK symbol<void*(int valueIndex)> Sys_GetValue{0x5EFBA0, 0x59A740};
@@ -116,6 +118,8 @@ namespace game
 
 	WEAK symbol<gentity_s> g_entities{0x21EF7C0, 0x21C13C0};
 	WEAK symbol<unsigned int> levelEntityId{0x2E1A51C, 0x2DEA81C};
+
+	WEAK symbol<client_s> svs_clients{0x291C0C0, 0x28EC9C0};
 
 	namespace plutonium
 	{

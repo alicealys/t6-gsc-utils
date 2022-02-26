@@ -31,7 +31,7 @@ namespace bots
 			{
 				obj = nlohmann::json::parse(utils::io::read_file("bots/bots.json").data());
 			}
-			catch (nlohmann::json::parse_error& ex)
+			catch (nlohmann::json::parse_error&)
 			{
 				printf("json parse error\n");
 				return;
@@ -51,7 +51,7 @@ namespace bots
 				load_bot_data();
 			}
 
-			static int bot_id = 0;
+			static auto bot_id = 0;
 			if (!bot_names.empty())
 			{
 				bot_id %= bot_names.size();
@@ -86,6 +86,8 @@ namespace bots
 	public:
 		void post_unpack() override
 		{
+			add_gsc_functions();
+
 			// Add custom clantag
 			utils::hook::set<const char*>(SELECT(0x5515FC, 0x428BDB), "connect \"\\invited\\1\\cg_predictItems\\1\\cl_anonymous\\0\\color\\4\\head\\default\\"
 				" model\\multi\\snaps\\20\\rate\\5000\\name\\%s\\clanAbbrev\\%s\\xuid\\%s\\xnaddr\\%s\\"
@@ -93,6 +95,27 @@ namespace bots
 
 			sv_bot_name_random_hook.create(SELECT(0x6A2C70, 0x62D750), &sv_bot_name_random_stub);
 			utils::hook::call(SELECT(0x551601, 0x428BE0), build_connect_string);
+		}
+
+	private:
+		static void add_gsc_functions()
+		{
+			gsc::function::add("dropallbots", [](const gsc::function_args&) -> scripting::script_value
+			{
+				const auto* dvar = game::Dvar_FindVar("com_maxclients");
+				const auto client_count = game::Dvar_GetInt(dvar);
+
+				for (auto i = 0; i < client_count; i++)
+				{
+					if (game::svs_clients[i].header.state != game::clientState_t::CS_FREE
+						&& game::svs_clients[i].header.netchan.remoteAddress.type == game::netadrtype_t::NA_BOT)
+					{
+						game::SV_GameDropClient(i, "GAME_DROPPEDFORINACTIVITY");
+					}
+				}
+
+				return {};
+			});
 		}
 	};
 }
