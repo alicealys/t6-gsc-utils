@@ -84,6 +84,7 @@ namespace game
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId, const char* pos, unsigned int paramcount)> VM_Execute{0x8F9550, 0x8F82B0};
 
 	WEAK symbol<void(int clientNum, const char* reason)> SV_GameDropClient{0x6D2980, 0x677690};
+	WEAK symbol<bool(int clientNum)> SV_IsTestClient{0x4E64B0, 0x42C300};
 	WEAK symbol<void(int clientNum, int type, const char* command)> SV_GameSendServerCommand{0x45D7D0, 0x40D450};
 
 	WEAK symbol<void*(int valueIndex)> Sys_GetValue{0x5EFBA0, 0x59A740};
