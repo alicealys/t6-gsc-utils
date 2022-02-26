@@ -329,7 +329,7 @@ namespace debug
             info.append("\r\n");
         };
 
-        const auto fs_pos = *reinterpret_cast<char**>(SELECT(0x2E23C08, 0x2DF3F08));
+        [[maybe_unused]] const auto fs_pos = *reinterpret_cast<char**>(SELECT(0x2E23C08, 0x2DF3F08));
 
         for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
         {
@@ -424,7 +424,7 @@ namespace debug
 
             scr_terminal_error_hook.create(SELECT(0x698C50, 0x410440), scr_terminal_error_stub);
 
-            gsc::function::add("crash", [](const gsc::function_args& args) -> scripting::script_value
+            gsc::function::add("crash", [](const gsc::function_args&) -> scripting::script_value
             {
                 if (!developer_script->current.enabled)
                 {
@@ -497,6 +497,8 @@ namespace debug
                 {
                     game::Scr_TerminateRunningThread(game::SCRIPTINSTANCE_SERVER, frame->fs.localId);
                 }
+
+                return {};
             });
 
             gsc::function::add("killthread", [](const gsc::function_args& args) -> scripting::script_value
@@ -504,7 +506,7 @@ namespace debug
                 const auto function = args[0].as<scripting::function>();
                 const auto threads = get_all_threads();
 
-                auto entity_id = 0;
+                auto entity_id = 0u;
                 if (args.size() >= 2)
                 {
                     entity_id = args[1].as<scripting::entity>().get_entity_id();
@@ -527,7 +529,7 @@ namespace debug
                 const auto function = args[0].as<scripting::function>();
                 const auto threads = get_all_threads();
 
-                auto entity_id = 0;
+                auto entity_id = 0u;
                 if (args.size() >= 2)
                 {
                     entity_id = args[1].as<scripting::entity>().get_entity_id();
@@ -546,17 +548,17 @@ namespace debug
                 return count;
             });
 
-            gsc::function::add("getvarusage", [](const gsc::function_args& args) -> scripting::script_value
+            gsc::function::add("getvarusage", [](const gsc::function_args&) -> scripting::script_value
             {
                 return get_var_count();
             });
 
-            gsc::function::add("getchildvarusage", [](const gsc::function_args& args) -> scripting::script_value
+            gsc::function::add("getchildvarusage", [](const gsc::function_args&) -> scripting::script_value
             {
                 return get_child_var_count();
             });
 
-            gsc::function::add("getusagestats", [](const gsc::function_args& args) -> scripting::script_value
+            gsc::function::add("getusagestats", [](const gsc::function_args&) -> scripting::script_value
             {
                 scripting::object stats{};
 
@@ -579,7 +581,7 @@ namespace debug
 
                     if (string && *string && target == string)
                     {
-                        game::sv_configstrings[i] = game::SL_GetString("", 0);
+                        game::sv_configstrings[i] = gsl::narrow_cast<unsigned short>(game::SL_GetString("", 0));
                         return true;
                     }
                 }
@@ -599,7 +601,7 @@ namespace debug
 
                     if (string && *string && string == target)
                     {
-                        game::sv_configstrings[i] = game::SL_GetString(new_string.data(), 0);
+                        game::sv_configstrings[i] = gsl::narrow_cast<unsigned short>(game::SL_GetString(new_string.data(), 0));
                         return true;
                     }
                 }

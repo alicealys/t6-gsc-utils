@@ -273,6 +273,124 @@ namespace game
 		char __pad1[0x1C4];
 	};
 
+	enum clientState_t
+	{
+		CS_FREE,
+		CS_ZOMBIE,
+		CS_RECONNECTING,
+		CS_CONNECTED,
+		CS_CLIENTLOADING,
+		CS_ACTIVE,
+	};
+
+	enum netsrc_t
+	{
+		NS_CLIENT1 = 0x0,
+		NS_CLIENT2 = 0x1,
+		NS_CLIENT3 = 0x2,
+		NS_CLIENT4 = 0x3,
+		NS_SERVER = 0x4,
+		NS_PACKET = 0x5,
+		NS_NULL = -1,
+	};
+
+	enum netadrtype_t
+	{
+		NA_BOT = 0x0,
+		NA_BAD = 0x1,
+		NA_LOOPBACK = 0x2,
+		NA_BROADCAST = 0x3,
+		NA_IP = 0x4,
+	};
+
+	struct netadr_t
+	{
+		union
+		{
+			unsigned char ip[4];
+			unsigned int inaddr;
+		};
+		unsigned __int16 port;
+		netadrtype_t type;
+		netsrc_t localNetID;
+		unsigned __int16 serverID;
+	};
+
+	static_assert(sizeof(netadr_t) == 0x14);
+
+	struct netProfileInfo_t
+	{
+		unsigned char __pad0[0x5E0];
+	};
+
+	struct netchan_t
+	{
+		int outgoingSequence;
+		netsrc_t sock;
+		int dropped;
+		int incomingSequence;
+		netadr_t remoteAddress;
+		int qport;
+		int fragmentSequence;
+		int fragmentLength;
+		unsigned char* fragmentBuffer;
+		int fragmentBufferSize;
+		int unsentFragments;
+		int unsentOnLoan;
+		int unsentFragmentStart;
+		int unsentLength;
+		unsigned char* unsentBuffer;
+		int unsentBufferSize;
+		int reliable_fragments;
+		unsigned char fragment_send_count[128];
+		unsigned int fragment_ack[4];
+		int lowest_send_count;
+		netProfileInfo_t prof;
+	};
+
+	static_assert(sizeof(netchan_t) == 0x6C8);
+
+	struct PredictedVehicleDef
+	{
+		bool fullPhysics;
+		vec3_t origin;
+		vec3_t angles;
+		vec3_t tVel;
+		vec3_t aVel;
+		int serverTime;
+	};
+
+	static_assert(sizeof(PredictedVehicleDef) == 0x38);
+
+	struct clientHeader_t
+	{
+		clientState_t state;
+		int sendAsActive;
+		int deltaMessage;
+		int rateDelayed;
+		int hasAckedBaselineData;
+		int hugeSnapshotSent;
+		netchan_t netchan;
+		vec3_t predictedOrigin;
+		int predictedOriginServerTime;
+		int migrationState;
+		PredictedVehicleDef predictedVehicle;
+	};
+
+	static_assert(sizeof(clientHeader_t) == 0x72C);
+
+	struct client_s
+	{
+		clientHeader_t header;
+		const char* dropReason;
+		char userinfo[1024];
+		unsigned char __pad0[0x3F75C];
+		int bIsTestClient;
+		unsigned char __pad1[0xDEF0];
+	};
+
+	static_assert(sizeof(client_s) == 0x4E180);
+
 	struct cmd_function_t
 	{
 		cmd_function_t* next;

@@ -172,7 +172,7 @@ namespace scripting
 			const auto script_count = *reinterpret_cast<unsigned int*>(SELECT(0x2DB9F18, 0x2D8A218));
 			const auto scripts = reinterpret_cast<game::objFileInfo_t*>(SELECT(0x2DA2FE8, 0x2D732E8));
 
-			for (auto i = 0; i < script_count; i++)
+			for (auto i = 0u; i < script_count; i++)
 			{
 				const auto obj = scripts[i].activeVersion;
 				extract_obj_functions(obj);

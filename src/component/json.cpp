@@ -28,7 +28,7 @@ namespace json
 
 			auto string_indexed = -1;
 			const auto keys = array.get_keys();
-			for (auto i = 0; i < keys.size(); i++)
+			for (auto i = 0u; i < keys.size(); i++)
 			{
 				const auto is_int = keys[i].is<int>();
 				const auto is_string = keys[i].is<std::string>();
@@ -214,7 +214,7 @@ namespace json
 			{
 				scripting::array array;
 
-				for (auto i = 0; i < args.size(); i += 2)
+				for (auto i = 0u; i < args.size(); i += 2)
 				{
 					if (i >= args.size() - 1)
 					{

@@ -7,12 +7,13 @@
 [submodule "deps/GSL"]
 	path = deps/GSL
 	url = https://github.com/microsoft/GSL.git
-[submodule "deps/json"]
-	path = deps/json
-	url = https://github.com/nlohmann/json.git
 [submodule "deps/zlib"]
 	path = deps/zlib
 	url = https://github.com/madler/zlib.git
 [submodule "deps/asmjit"]
 	path = deps/asmjit
 	url = https://github.com/asmjit/asmjit.git
+[submodule "deps/json"]
+	path = deps/json
+	url = https://github.com/nlohmann/json.git
+	branch = develop
