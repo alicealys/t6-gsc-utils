@@ -246,13 +246,6 @@ namespace chat
 				return {};
 			});
 
-			gsc::function::add("cmdexecute", [](const gsc::function_args& args) -> scripting::script_value
-			{
-				const auto cmd = args[0].as<std::string>();
-				game::Cbuf_InsertText(0, cmd.data());
-				return {};
-			});
-
 			gsc::function::add("sendservercommand", [](const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto client = args[0].as<int>();
