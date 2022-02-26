@@ -105,6 +105,20 @@ namespace command
 		script_commands.clear();
 	}
 
+	void execute(std::string command, const bool sync)
+	{
+		command += "\n";
+
+		if (sync)
+		{
+			game::Cmd_ExecuteSingleCommand(0, 0, command.data());
+		}
+		else
+		{
+			game::Cbuf_AddText(0, command.data());
+		}
+	}
+
 	class component final : public component_interface
 	{
 	public:
@@ -179,8 +193,8 @@ namespace command
 
 			gsc::function::add("executecommand", [](const gsc::function_args&) -> scripting::script_value
 			{
-				const auto cmd = game::get<const char*>(0);
-				game::Cbuf_InsertText(0, cmd);
+				const auto cmd = game::get<std::string>(0);
+				execute(cmd);
 				return {};
 			});
 

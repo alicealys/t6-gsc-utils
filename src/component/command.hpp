@@ -25,4 +25,6 @@ namespace command
 
 	void add_script_command(const std::string& name, const std::function<void(const params&)>& callback);
 	void clear_script_commands();
+
+	void execute(std::string command, const bool sync = false);
 }

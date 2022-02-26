@@ -62,8 +62,8 @@ namespace bots
 			return sv_bot_name_random_hook.invoke<const char*>();
 		}
 
-		int build_connect_string(char* buf, const char* connectString, const char* name, const char* xuid,
-			const char* xnaddr, int protocol, int netfield, int sessionMode, int port)
+		int build_connect_string(char* buf, const char* connect_string, const char* name, const char* xuid,
+			const char* xnaddr, int protocol, int netfield, int session_mode, int port)
 		{
 			// Default
 			auto clantag = "3arc"s;
@@ -76,8 +76,8 @@ namespace bots
 				}
 			}
 
-			return _snprintf_s(buf, 0x400, _TRUNCATE, connectString, name,
-				clantag.data(), xuid, xnaddr, protocol, netfield, sessionMode, port);
+			return _snprintf_s(buf, 0x400, _TRUNCATE, connect_string, name,
+				clantag.data(), xuid, xnaddr, protocol, netfield, session_mode, port);
 		}
 	}
 
