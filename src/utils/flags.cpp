@@ -3,9 +3,6 @@
 #include "flags.hpp"
 #include "string.hpp"
 
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
 #include <shellapi.h>
 
 namespace utils::flags
@@ -41,6 +38,7 @@ namespace utils::flags
 		if (!parsed)
 		{
 			parse_flags(enabled_flags);
+			parsed = true;
 		}
 
 		for (const auto& entry : enabled_flags)
