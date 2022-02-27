@@ -7,6 +7,7 @@
 #include <utils/string.hpp>
 #include <utils/concurrency.hpp>
 #include <utils/io.hpp>
+#include <utils/flags.hpp>
 
 namespace logfile
 {
@@ -16,6 +17,18 @@ namespace logfile
 		utils::hook::detour printf_hook2;
 		std::string filename;
 		std::mutex mutex;
+
+		bool is_logging_enabled()
+		{
+			static std::optional<bool> flag;
+
+			if (!flag.has_value())
+			{
+				flag.emplace(utils::flags::has_flag("log"));
+			}
+
+			return flag.value();
+		}
 
 		int printf_stub(const char* fmt, ...)
 		{
@@ -30,7 +43,10 @@ namespace logfile
 
 			va_end(ap);
 
-			utils::io::write_file(filename, result, true);
+			if (is_logging_enabled())
+			{
+				utils::io::write_file(filename, result, true);
+			}
 
 			return printf_hook.invoke<int>(result);
 		}
