@@ -10,7 +10,7 @@ BOOL APIENTRY DllMain(HMODULE /*module_*/, DWORD ul_reason_for_call, LPVOID /*re
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
 	{
 		if (game::plutonium::is_up_to_date())
-        {
+		{
 			utils::hook::jump(reinterpret_cast<uintptr_t>(&printf), game::plutonium::printf);
 		}
 
