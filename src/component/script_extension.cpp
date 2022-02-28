@@ -7,21 +7,13 @@
 
 namespace script_extension
 {
-	class component final : public component_interface
+	namespace
 	{
-	public:
-		void post_unpack() override
-		{
-			add_gsc_funcs();
-		}
-
-	private:
-		static void add_gsc_funcs()
+		void add_gsc_funcs()
 		{
 			gsc::method::add("noclip", [](const scripting::entity& entity, [[maybe_unused]] const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto entref = entity.get_entity_reference();
-
 				const auto* ent = game::GetPlayerEntity(entref);
 
 				if (ent->client->flags & game::gclientFlag::NOCLIP)
@@ -42,7 +34,6 @@ namespace script_extension
 			gsc::method::add("ufo", [](const scripting::entity& entity, [[maybe_unused]] const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto entref = entity.get_entity_reference();
-
 				const auto* ent = game::GetPlayerEntity(entref);
 
 				if (ent->client->flags & game::gclientFlag::UFO)
@@ -63,7 +54,6 @@ namespace script_extension
 			gsc::method::add("god", [](const scripting::entity& entity, [[maybe_unused]] const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto entref = entity.get_entity_reference();
-
 				auto* ent = game::GetEntity(entref);
 
 				if (ent->flags & game::entityFlag::FL_GODMODE)
@@ -84,7 +74,6 @@ namespace script_extension
 			gsc::method::add("demigod", [](const scripting::entity& entity, [[maybe_unused]] const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto entref = entity.get_entity_reference();
-
 				auto* ent = game::GetEntity(entref);
 
 				if (ent->flags & game::entityFlag::FL_DEMI_GODMODE)
@@ -105,7 +94,6 @@ namespace script_extension
 			gsc::method::add("notarget", [](const scripting::entity& entity, [[maybe_unused]] const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto entref = entity.get_entity_reference();
-
 				auto* ent = game::GetEntity(entref);
 
 				if (ent->flags & game::entityFlag::FL_NOTARGET)
@@ -123,6 +111,15 @@ namespace script_extension
 				return {};
 			});
 		}
+	}
+
+	class component final : public component_interface
+	{
+	public:
+		void post_unpack() override
+		{
+			add_gsc_funcs();
+		}		
 	};
 }
 
