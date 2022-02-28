@@ -87,7 +87,7 @@ namespace chat
 
 			for (const auto& callback : say_callbacks)
 			{
-				const auto entity_id = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, ent->entity_num, 0, 0);
+				const auto entity_id = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, ent->number, 0, 0);
 				const auto result = callback(entity_id, {chatText, mode});
 
 				if (result.is<int>() && !hidden)
@@ -227,9 +227,15 @@ namespace chat
 			gsc::method::add("tell", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto ent = entity.get_entity_reference();
+
 				if (ent.classnum != 0)
 				{
-					return {};
+					throw std::runtime_error("Invalid entity");
+				}
+
+				if (game::g_entities[ent.entnum].client == nullptr)
+				{
+					throw std::runtime_error("Not a player entity");
 				}
 
 				const auto client = ent.entnum;

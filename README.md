@@ -236,7 +236,14 @@ init()
       }
   }
   ```
-  
+
+## Entity Methods
+* `entity noclip()`: Toggles Noclip.
+* `entity ufo()`: Toggles Ufo.
+* `entity god()`: Toggles God mode.
+* `entity demigod()`: Toggles Demigod mode.
+* `entity notarget()`: Toggles Notarget.
+
 ## Command
 * `executeCommand(command)`: Executes a console command.
 
