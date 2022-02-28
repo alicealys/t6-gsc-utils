@@ -19,7 +19,6 @@ namespace chat
 		utils::hook::detour client_connect_hook;
 
 		std::vector<scripting::function> say_callbacks;
-		utils::hook::detour g_say_hook;
 
 		userinfo_map userinfo_to_map(std::string userinfo)
 		{
@@ -72,7 +71,7 @@ namespace chat
 			}
 
 			const auto userinfo = map_to_userinfo(map);
-			strcpy_s(buffer, 1024, userinfo.data());
+			strcpy_s(buffer, bufferSize, userinfo.data());
 		}
 
 		const char* client_connect_stub(int client, unsigned int scriptPersId)
@@ -98,7 +97,8 @@ namespace chat
 
 			if (!hidden)
 			{
-				g_say_hook.invoke<void>(ent, target, mode, chatText);
+				reinterpret_cast<void (*)(game::gentity_s*, game::gentity_s*,
+					int, const char*)>(SELECT(0x6A7A40, 0x493DF0))(ent, target, mode, chatText);
 			}
 		}
 	}
@@ -108,7 +108,9 @@ namespace chat
 	public:
 		void post_unpack() override
 		{
-			g_say_hook.create(SELECT(0x6A7A40, 0x493DF0), g_say_stub);
+			utils::hook::call(SELECT(0x47E618, 0x449148), g_say_stub); // ClientCommand
+			utils::hook::call(SELECT(0x47E65F, 0x44918F), g_say_stub); // ClientCommand
+
 			sv_get_user_info_hook.create(SELECT(0x68BB90, 0x4C10F0), sv_get_user_info_stub);
 			client_connect_hook.create(SELECT(0x5EF5A0, 0x41BE10), client_connect_stub);
 
