@@ -227,9 +227,15 @@ namespace chat
 			gsc::method::add("tell", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
 			{
 				const auto ent = entity.get_entity_reference();
+
 				if (ent.classnum != 0)
 				{
-					return {};
+					throw std::runtime_error("Invalid entity");
+				}
+
+				if (game::g_entities[ent.entnum].client == nullptr)
+				{
+					throw std::runtime_error("Not a player entity");
 				}
 
 				const auto client = ent.entnum;
