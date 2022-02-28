@@ -257,6 +257,20 @@ namespace game
 		const char* name;
 	};
 
+	enum gclientFlag
+	{
+		NOCLIP = 1 << 0,
+		UFO = 1 << 1,
+	};
+
+	enum entityFlag
+	{
+		FL_GODMODE = 1 << 0,
+		FL_DEMI_GODMODE = 1 << 1,
+		FL_NOTARGET = 1 << 2,
+		FL_SUPPORTS_LINKTO = 1 << 12,
+	}; // TODO: Finish
+
 	struct gclient_s
 	{
 		char __pad0[0x18];
@@ -267,11 +281,15 @@ namespace game
 
 	struct gentity_s
 	{
-		int entity_num;
+		int number;
 		char __pad0[0x150];
-		gclient_s* client;
-		char __pad1[0x1C4];
+		gclient_s* client; // 340
+		char __pad1[0x30];
+		int flags; // 392
+		char __pad2[0x190];
 	};
+
+	static_assert(sizeof(gentity_s) == 0x31C);
 
 	enum clientState_t
 	{
