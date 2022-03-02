@@ -13,11 +13,22 @@ namespace bots
 	{
 		typedef std::pair<std::string, std::string> bot_entry;
 
-		std::vector<bot_entry> bot_names;
+		//std::vector<bot_entry> bot_names;
+
+		std::vector<std::string> names;
+		std::vector<bot_entry> clantags;
+
+
 		utils::hook::detour sv_bot_name_random_hook;
 
 		// Json file is expected to contain one "names" object and that should contain a string (key)
 		// for the bot's name and one string (value) for the clantag
+		// exemple: 
+		//{ 
+		//		"names": ["name1", "name2", "name3"],
+		//		"clantags" : ["c1", "c2", "c3"]
+		//}
+
 		void load_bot_data()
 		{
 			if (!utils::io::file_exists("bots/bots.json"))
@@ -25,7 +36,6 @@ namespace bots
 				printf("bots.json was not found\n");
 				return;
 			}
-
 			nlohmann::json obj;
 			try
 			{
@@ -37,27 +47,35 @@ namespace bots
 				return;
 			}
 
-			for (const auto& [key, val] : obj["names"].items())
+			std::vector<std::string> ns = obj["names"];
+
+			for (int i = 0; i < ns.size(); i++)
 			{
-				bot_names.emplace_back(std::make_pair(key, val.get<std::string>()));
+				names.push_back(ns.at(i).c_str());
+			}
+
+			std::vector<std::string> cs = obj["clantags"];
+			for (int i = 0; i < cs.size(); i++)
+			{
+				clantags.emplace_back(ns.at(i).c_str(), cs.at(i).c_str());
 			}
 		}
 
 		// If the list contains at least 18 names there should not be any collisions
 		const char* sv_bot_name_random_stub()
 		{
-			if (bot_names.empty())
+			if (names.empty())
 			{
 				load_bot_data();
 			}
-
 			static auto bot_id = 0;
-			if (!bot_names.empty())
+			if (!names.empty())
 			{
-				bot_id %= bot_names.size();
-				const auto& entry = bot_names.at(bot_id++);
-				return entry.first.data();
+				bot_id %= names.size();
+				//const auto& entry = names.at(bot_id++).c_str();
+				return names.at(bot_id++).c_str();
 			}
+
 
 			return sv_bot_name_random_hook.invoke<const char*>();
 		}
@@ -67,7 +85,7 @@ namespace bots
 		{
 			// Default
 			auto clantag = "3arc"s;
-			for (const auto& entry : bot_names)
+			for (const auto& entry : clantags)
 			{
 				if (entry.first == name)
 				{

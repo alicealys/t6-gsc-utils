@@ -8,6 +8,8 @@
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
+#include <utils/io.hpp>
+#include <json.hpp>
 
 namespace chat
 {
@@ -101,6 +103,66 @@ namespace chat
 				g_say_hook.invoke<void>(ent, target, mode, chatText);
 			}
 		}
+
+		std::map<std::string, std::string> colors_users;
+
+		// exemple:
+		// { 
+		//	 "purple": ["DoktorSAS"],
+		//	 "red" : ["fed"]
+		// }
+
+		void load_colors_data()
+		{
+			if (!utils::io::file_exists("colors/chat.json"))
+			{
+				printf("chat.json was not found\n");
+				return;
+			}
+
+
+			nlohmann::json obj;
+			try
+			{
+				obj = nlohmann::json::parse(utils::io::read_file("colors/chat.json").data());
+			}
+			catch (nlohmann::json::parse_error&)
+			{
+				printf("json parse error\n");
+				return;
+			}
+
+			std::vector<std::string> keys = { "black", "red", "green", "yellow", "blue", "cyan", "purple", "white", "grey", "brown" };
+			std::vector<std::string> values = { "^0", "^1", "^2", "^3", "^4", "^5", "^6", "^7", "^8", "^9" };
+
+			for (int i = 0; i < keys.size(); i++)
+			{
+				if (obj.contains(std::string{ keys.at(i) }))
+				{
+					std::vector<std::string> current = obj[keys.at(i)];
+					for (int j = 0; j < current.size(); j++)
+					{
+						colors_users[current.at(j).c_str()] = values.at(i);
+					}
+				}
+			}
+		}
+
+		const char* g_say_va_hook(const char* msg, int mode, const char* teamColor, const char* name, const char* szStateString, const char* teamString, int a6, const char* color, const char* message)
+		{
+			if (colors_users.empty())
+			{
+				load_colors_data();
+			}
+			if (!colors_users.empty() && colors_users.contains(name))
+			{
+				auto chat_color = colors_users[name];
+				return utils::string::va(msg, mode, chat_color.c_str(), name, szStateString, teamString, 94, color, message);
+			}
+
+
+			return utils::string::va(msg, mode, teamColor, name, szStateString, teamString, 94, color, message);
+		}
 	}
 
 	class component final : public component_interface
@@ -111,7 +173,7 @@ namespace chat
 			g_say_hook.create(SELECT(0x6A7A40, 0x493DF0), g_say_stub);
 			sv_get_user_info_hook.create(SELECT(0x68BB90, 0x4C10F0), sv_get_user_info_stub);
 			client_connect_hook.create(SELECT(0x5EF5A0, 0x41BE10), client_connect_stub);
-
+			utils::hook::call(SELECT(0x82BC5D, 0x00), g_say_va_hook);
 			scripting::on_shutdown([]()
 			{
 				userinfo_overrides.clear();
