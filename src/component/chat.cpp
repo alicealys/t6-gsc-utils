@@ -23,6 +23,8 @@ namespace chat
 		std::vector<scripting::function> say_callbacks;
 		utils::hook::detour g_say_hook;
 
+		std::map<std::string, std::string> colors_users;
+
 		userinfo_map userinfo_to_map(std::string userinfo)
 		{
 			userinfo_map map{};
@@ -104,8 +106,7 @@ namespace chat
 			}
 		}
 
-		std::map<std::string, std::string> colors_users;
-
+		
 		// exemple:
 		// { 
 		//	 "purple": ["DoktorSAS"],
@@ -120,7 +121,6 @@ namespace chat
 				return;
 			}
 
-
 			nlohmann::json obj;
 			try
 			{
@@ -132,23 +132,26 @@ namespace chat
 				return;
 			}
 
-			std::vector<std::string> keys = { "black", "red", "green", "yellow", "blue", "cyan", "purple", "white", "grey", "brown" };
-			std::vector<std::string> values = { "^0", "^1", "^2", "^3", "^4", "^5", "^6", "^7", "^8", "^9" };
+			static std::vector<std::string> keys = { "black", "red", "green", "yellow", "blue", "cyan", "purple", "white", "grey", "brown" };
+			static std::vector<std::string> values = { "^0", "^1", "^2", "^3", "^4", "^5", "^6", "^7", "^8", "^9" };
 
-			for (int i = 0; i < keys.size(); i++)
+			int index = 0;
+			for (const auto& entry_k : keys)
 			{
-				if (obj.contains(std::string{ keys.at(i) }))
+				if (obj.contains( entry_k ))
 				{
-					std::vector<std::string> current = obj[keys.at(i)];
-					for (int j = 0; j < current.size(); j++)
+					std::vector<std::string> current = obj[entry_k];
+					for (const auto& entry_v : current)
 					{
-						colors_users[current.at(j).c_str()] = values.at(i);
+						colors_users[entry_v] = values.at(index).data();
 					}
 				}
+				index++;
 			}
 		}
 
-		const char* g_say_va_hook(const char* msg, int mode, const char* teamColor, const char* name, const char* szStateString, const char* teamString, int a6, const char* color, const char* message)
+		const char* g_say_va_hook(const char* msg, char mode, char* team_color, char* name, 
+			char* sz_state_string, char* team_string, int a6, char* color, const char* message)
 		{
 			if (colors_users.empty())
 			{
@@ -156,12 +159,12 @@ namespace chat
 			}
 			if (!colors_users.empty() && colors_users.contains(name))
 			{
-				auto chat_color = colors_users[name];
-				return utils::string::va(msg, mode, chat_color.c_str(), name, szStateString, teamString, 94, color, message);
+				auto chat_color = colors_users[name].data();
+				return utils::string::va(msg, mode, chat_color, name, sz_state_string, team_string, 94, color, message);
 			}
 
 
-			return utils::string::va(msg, mode, teamColor, name, szStateString, teamString, 94, color, message);
+			return utils::string::va(msg, mode, team_color, name, sz_state_string, team_string, 94, color, message);
 		}
 	}
 
@@ -173,7 +176,8 @@ namespace chat
 			g_say_hook.create(SELECT(0x6A7A40, 0x493DF0), g_say_stub);
 			sv_get_user_info_hook.create(SELECT(0x68BB90, 0x4C10F0), sv_get_user_info_stub);
 			client_connect_hook.create(SELECT(0x5EF5A0, 0x41BE10), client_connect_stub);
-			utils::hook::call(SELECT(0x82BC5D, 0x00), g_say_va_hook);
+			utils::hook::call(SELECT(0x82BC5D, 0x82A4C5), g_say_va_hook);
+
 			scripting::on_shutdown([]()
 			{
 				userinfo_overrides.clear();

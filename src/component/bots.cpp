@@ -13,10 +13,10 @@ namespace bots
 	{
 		typedef std::pair<std::string, std::string> bot_entry;
 
-		//std::vector<bot_entry> bot_names;
 
 		std::vector<std::string> names;
-		std::vector<bot_entry> clantags;
+
+		std::map<std::string, std::string> names_combination;
 
 
 		utils::hook::detour sv_bot_name_random_hook;
@@ -24,10 +24,10 @@ namespace bots
 		// Json file is expected to contain one "names" object and that should contain a string (key)
 		// for the bot's name and one string (value) for the clantag
 		// exemple: 
-		//{ 
+		// { 
 		//		"names": ["name1", "name2", "name3"],
 		//		"clantags" : ["c1", "c2", "c3"]
-		//}
+		// }
 
 		void load_bot_data()
 		{
@@ -36,6 +36,7 @@ namespace bots
 				printf("bots.json was not found\n");
 				return;
 			}
+
 			nlohmann::json obj;
 			try
 			{
@@ -47,18 +48,19 @@ namespace bots
 				return;
 			}
 
-			std::vector<std::string> ns = obj["names"];
-
-			for (int i = 0; i < ns.size(); i++)
+			for (const auto& entry : obj["names"])
 			{
-				names.push_back(ns.at(i).c_str());
+				names.push_back(entry);
 			}
 
-			std::vector<std::string> cs = obj["clantags"];
-			for (int i = 0; i < cs.size(); i++)
+			int index = 0;
+			for (const auto& entry : obj["clantags"])
 			{
-				clantags.emplace_back(ns.at(i).c_str(), cs.at(i).c_str());
+				names.push_back(entry);
+				names_combination[names.at(index)] = entry;
+				index++;
 			}
+
 		}
 
 		// If the list contains at least 18 names there should not be any collisions
@@ -72,8 +74,8 @@ namespace bots
 			if (!names.empty())
 			{
 				bot_id %= names.size();
-				//const auto& entry = names.at(bot_id++).c_str();
-				return names.at(bot_id++).c_str();
+				const auto& entry = names.at(bot_id++).c_str();
+				return entry;
 			}
 
 
@@ -85,13 +87,9 @@ namespace bots
 		{
 			// Default
 			auto clantag = "3arc"s;
-			for (const auto& entry : clantags)
+			if (!names_combination.empty() && names_combination.contains(name))
 			{
-				if (entry.first == name)
-				{
-					clantag = entry.second;
-					break;
-				}
+				clantag = names_combination[name];
 			}
 
 			return _snprintf_s(buf, 0x400, _TRUNCATE, connect_string, name,
