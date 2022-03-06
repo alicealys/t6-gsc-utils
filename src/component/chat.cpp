@@ -101,6 +101,29 @@ namespace chat
 				g_say_hook.invoke<void>(ent, target, mode, chatText);
 			}
 		}
+
+		void client_clean_name(const char* in, char* out, int out_size)
+		{
+			utils::hook::invoke<void>(SELECT(0x424F00, 0x655010), out, in, out_size); // I_strncpyz
+		}
+
+		__declspec(naked) void client_clean_name_stub()
+		{
+			__asm
+			{
+				pushad
+
+				push [esp + 0x20 + 0x4] // outSize
+				push edx // out
+				push ecx // in
+				call client_clean_name
+				add esp, 0xC
+
+				popad
+				ret
+			}
+		}
+
 	}
 
 	class component final : public component_interface
@@ -111,6 +134,8 @@ namespace chat
 			g_say_hook.create(SELECT(0x6A7A40, 0x493DF0), g_say_stub);
 			sv_get_user_info_hook.create(SELECT(0x68BB90, 0x4C10F0), sv_get_user_info_stub);
 			client_connect_hook.create(SELECT(0x5EF5A0, 0x41BE10), client_connect_stub);
+			utils::hook::call(SELECT(0x4ED764, 0x427E84), client_clean_name_stub);
+			utils::hook::call(SELECT(0x4ED79F, 0x427EBF), client_clean_name_stub);
 
 			scripting::on_shutdown([]()
 			{
