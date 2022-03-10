@@ -261,7 +261,7 @@ namespace debug
             a.and_(ecx, 0x7F);
             a.push(ebx);
 
-            a.jmp(SELECT(0, 0x8F1C97));
+            a.jmp(0x8F1C97);
         }
 
         std::vector<scripting::thread> get_all_threads()
@@ -611,9 +611,9 @@ namespace debug
 
             if (game::environment::t6zm())
             {
-                alloc_child_variable_hook.create(SELECT(0, 0x8F19A0), alloc_child_variable_stub);
-                utils::hook::jump(SELECT(0, 0x8F1C90), utils::hook::assemble(free_child_variable_stub));
-                utils::hook::call(SELECT(0, 0x8F1A3F), exceeded_max_child_vars_error_stub);
+                alloc_child_variable_hook.create(0x8F19A0, alloc_child_variable_stub);
+                utils::hook::jump(0x8F1C90, utils::hook::assemble(free_child_variable_stub));
+                utils::hook::call(0x8F1A3F, exceeded_max_child_vars_error_stub);
 
                 command::add("printallocations", [](command::params& params)
                 {
