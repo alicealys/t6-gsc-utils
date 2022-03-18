@@ -91,7 +91,7 @@ namespace game
 
 	scr_entref_t Scr_GetEntityIdRef(unsigned int entId)
 	{
-		scr_entref_t entref;
+		scr_entref_t entref{};
 
 		const auto v2 = &game::scr_VarGlob->objectVariableValue[entId];
 
@@ -141,8 +141,8 @@ namespace game
 	{
 		bool is_up_to_date()
 		{
-			const auto value = *reinterpret_cast<DWORD*>(0x21600000);
-			return value == 0x9730166E;
+			const auto value = *reinterpret_cast<DWORD*>(0x21B00000);
+			return value == 0x64AA1902;
 		}
 	}
 }

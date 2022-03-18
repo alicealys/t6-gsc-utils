@@ -65,8 +65,6 @@ namespace scripting
 		const std::vector<script_value>& arguments)
 	{
 		const auto entref = entity.get_entity_reference();
-
-		const auto is_method_call = *reinterpret_cast<const int*>(&entref) != -1;
 		const auto function = find_function_ptr(name);
 		if (!function)
 		{

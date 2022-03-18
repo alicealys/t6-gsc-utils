@@ -263,11 +263,9 @@ namespace scripting
 		return {};
 	}
 
-	void array::set(const std::string& key, const script_value& _value) const
+	void array::set(const std::string& key, const script_value& value_) const
 	{
-		const auto value = _value.get_raw();
-
-		const auto string_value = game::SL_GetString(key.data(), 0);
+		const auto value = value_.get_raw();
 		const auto variable_id = this->get_value_id(key);
 
 		if (!variable_id)

@@ -11,7 +11,6 @@
 #include "json.hpp"
 #include "scripting.hpp"
 
-#include <json.hpp>
 #include <utils/io.hpp>
 
 namespace json
