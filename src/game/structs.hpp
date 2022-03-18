@@ -244,9 +244,12 @@ namespace game
 	struct scrVarGlob_t
 	{
 		ObjectVariableValue* objectVariableValue;
-		__declspec(align(128)) ObjectVariableChildren* objectVariableChildren;
-		__declspec(align(128)) unsigned __int16* childVariableBucket;
-		__declspec(align(128)) ChildVariableValue* childVariableValue;
+		char __pad0[0x7C];
+		ObjectVariableChildren* objectVariableChildren;
+		char __pad1[0x7C];
+		unsigned __int16* childVariableBucket;
+		char __pad2[0x7C];
+		ChildVariableValue* childVariableValue;
 	};
 
 	struct scr_classStruct_t

@@ -31,27 +31,17 @@ end
 dependencies.load()
 
 workspace "t6-gsc-utils"
-	startproject "t6-gsc-utils"
 	location "./build"
-	objdir "%{wks.location}/obj"
-	targetdir "%{wks.location}/bin/%{cfg.platform}/%{cfg.buildcfg}"
+	objdir "%{wks.location}/obj/%{cfg.buildcfg}"
+	targetdir "%{wks.location}/bin/%{cfg.buildcfg}"
+	targetname "%{prj.name}"
 
-	configurations { "Debug", "Release" }
+	configurations { "Debug", "Release", }
 
 	language "C++"
 	cppdialect "C++20"
 
 	architecture "x86"
-	platforms "Win32"
-
-	disablewarnings 
-	{
-		"4324",
-		"6031",
-		"6053",
-		"26495",
-		"26812",
-	}
 
 	systemversion "latest"
 	symbols "On"
@@ -64,23 +54,19 @@ workspace "t6-gsc-utils"
 	{
 		"NoIncrementalLink",
 		"MultiProcessorCompile",
-		"No64BitChecks",
 	}
-
-	filter "platforms:Win*"
-		defines { "_WINDOWS", "WIN32" }
-	filter {}
-
+	
 	filter "configurations:Release"
 		optimize "Full"
 		defines { "NDEBUG" }
-		flags { "LinkTimeOptimization" }
 	filter {}
 
 	filter "configurations:Debug"
 		optimize "Debug"
 		defines { "DEBUG", "_DEBUG" }
 	filter {}
+
+	startproject "t6-gsc-utils"
 
 	project "t6-gsc-utils"
 		kind "SharedLib"

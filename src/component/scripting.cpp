@@ -216,7 +216,7 @@ namespace scripting
 	{
 		for (const auto& file : script_function_table_sort)
 		{
-			for (auto i = file.second.begin(); std::next(i) != file.second.end(); ++i)
+			for (auto i = file.second.begin(); i != file.second.end() && std::next(i) != file.second.end(); ++i)
 			{
 				const auto next = std::next(i);
 				if (pos >= i->second && pos < next->second)
@@ -233,7 +233,7 @@ namespace scripting
 	{
 		for (const auto& file : script_function_table_sort)
 		{
-			for (auto i = file.second.begin(); std::next(i) != file.second.end(); ++i)
+			for (auto i = file.second.begin(); i != file.second.end() && std::next(i) != file.second.end(); ++i)
 			{
 				const auto next = std::next(i);
 				if (pos >= i->second && pos < next->second)
@@ -250,7 +250,7 @@ namespace scripting
 	{
 		for (const auto& file : script_function_table_sort)
 		{
-			for (auto i = file.second.begin(); std::next(i) != file.second.end(); ++i)
+			for (auto i = file.second.begin(); i != file.second.end() && std::next(i) != file.second.end(); ++i)
 			{
 				const auto next = std::next(i);
 				if (pos >= i->second && pos < next->second)
@@ -260,7 +260,7 @@ namespace scripting
 			}
 		}
 
-		return 0;
+		return nullptr;
 	}
 
 	void on_shutdown(const std::function<void()>& callback)
