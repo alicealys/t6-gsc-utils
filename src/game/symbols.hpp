@@ -19,6 +19,8 @@ namespace game
 
 	WEAK symbol<const dvar_t*(const char*)> Dvar_FindVar{0x563A70, 0x673C80};
 	WEAK symbol<int(const dvar_t*)> Dvar_GetInt{0x44DFC0, 0x6909F0};
+	WEAK symbol<dvar_t*(const char* dvarName, int value, int min, int max, 
+		unsigned int flags, const char* description)> Dvar_RegisterInt{0x5F24E0, 0x5A3D70};
 
 	WEAK symbol<XAssetHeader(XAssetType type, const char* name, bool errorIfMissing, int waitTime)> DB_FindXAssetHeader{0x6F9030, 0x43F460};
 
@@ -89,6 +91,7 @@ namespace game
 	WEAK symbol<void(int clientNum, int type, const char* command)> SV_GameSendServerCommand{0x45D7D0, 0x40D450};
 
 	WEAK symbol<void*(int valueIndex)> Sys_GetValue{0x5EFBA0, 0x59A740};
+	WEAK symbol<int()> Sys_Milliseconds{0x57EC40, 0x6F4C00};
 
 	WEAK symbol<void*(jmp_buf* Buf, int Value)> longjmp{0xA78870, 0xA71AD0};
 	WEAK symbol<int(jmp_buf* Buf, int a6, int a7, int a9)> _setjmp{0xA77B10, 0xA70D70};
@@ -101,6 +104,8 @@ namespace game
 	WEAK symbol<scrVmPub_t> scr_VmPub{0x2E1A5D0, 0x2DEA8D0};
 	WEAK symbol<scrVarGlob_t> scr_VarGlob{0x2E1A100, 0x2DEA400};
 	WEAK symbol<scrVarPub_t> scr_VarPub{0x2E1A500, 0x2DEA800};
+	WEAK symbol<int> scr_starttime{0x2E23C48, 0x2DF3F48};
+	WEAK symbol<function_stack_t> fs{0x2E23C08, 0x2DF3F08};
 
 	WEAK symbol<unsigned short> sv_configstrings{0x28E67AC, 0x28B70AC};
 
