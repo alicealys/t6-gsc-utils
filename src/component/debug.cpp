@@ -21,6 +21,7 @@ namespace debug
     namespace
     {
         const game::dvar_t* developer_script = nullptr;
+        game::dvar_t* scr_max_loop_time = nullptr;
 
         // gsc-tool
         std::unordered_map<game::opcode, std::string> opcode_map
@@ -163,7 +164,24 @@ namespace debug
             return "unknown";
         }
 
-        void print_error(const game::opcode opcode)
+        void print_error(const char* msg, ...)
+        {
+            char buffer[2048];
+
+            va_list ap;
+            va_start(ap, msg);
+
+            vsnprintf_s(buffer, sizeof(buffer), _TRUNCATE, msg, ap);
+
+            va_end(ap);
+
+            printf("******* script runtime error *******\n");
+            printf("%s\n", buffer);
+            printf(debug::get_call_stack().data());
+            printf("************************************\n");
+        }
+
+        void print_call_error(const game::opcode opcode)
         {
             if (!developer_script->current.enabled)
             {
@@ -193,19 +211,13 @@ namespace debug
                     ? "method" 
                     : "function";
 
-                printf("******* script runtime error *******\n");
-                printf("in call to builtin %s \"%s\": %s\n", type, name.data(), error);
-                printf(debug::get_call_stack().data());
-                printf("************************************\n");
+                print_error("in call to builtin %s \"%s\": %s", type, name.data(), error);
             }
             else
             {
                 const auto opcode_name = get_opcode_name(opcode);
 
-                printf("******* script runtime error *******\n");
-                printf("while processing instruction %s: %s\n", opcode_name.data(), error);
-                printf(debug::get_call_stack().data());
-                printf("************************************\n");
+                print_error("while processing instruction %s: %s", opcode_name.data(), error);
             }
         }
 
@@ -213,7 +225,7 @@ namespace debug
         {
             a.pushad();
             a.push(eax);
-            a.call(print_error);
+            a.call(print_call_error);
             a.pop(eax);
             a.popad();
 
@@ -306,6 +318,14 @@ namespace debug
             return count;
         }
 
+        void kill_current_thread()
+        {
+            for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
+            {
+                game::Scr_TerminateRunningThread(game::SCRIPTINSTANCE_SERVER, frame->fs.localId);
+            }
+        }
+
         void exceeded_max_child_vars_error_stub(int inst, const char* err)
         {
             const std::string name = utils::string::va("minidumps/child-var-allocations-%s.zip", 
@@ -318,6 +338,41 @@ namespace debug
             scr_terminal_error_stub(inst, 
                 utils::string::va("%s\na child variable dump has been written at %s", err, name.data()));
         }
+
+        bool check_infinite_loop()
+        {
+            const auto diff = game::Sys_Milliseconds() - *game::scr_starttime;
+            if (scr_max_loop_time->current.integer && diff > scr_max_loop_time->current.integer)
+            {
+                game::scr_VmPub->function_frame->fs.pos = game::fs->pos;
+                print_error("potential infinite loop in script - %ims elapsed. Killing thread.", diff);
+                kill_current_thread();
+                return true;
+            }
+
+            return false;
+        }
+
+        void vm_execute_jmp_stub(utils::hook::assembler& a)
+        {
+            const auto kill = a.newLabel();
+            const auto original = a.newLabel();
+
+            a.pushad();
+            a.call(check_infinite_loop);
+            a.cmp(al, 0);
+            a.jne(kill);
+
+            a.popad();
+            a.inc(ebx);
+            a.and_(ebx, 0xFFFFFFFE);
+            a.movzx(eax, word_ptr(ebx));
+            a.jmp(SELECT(0x8F891F, 0x8F767F));
+
+            a.bind(kill);
+            a.popad();
+            a.jmp(SELECT(0x8F7709, 0x8F6469));
+        }
     }
 
     std::string get_call_stack(bool print_local_vars)
@@ -328,8 +383,6 @@ namespace debug
             info.append(text);
             info.append("\r\n");
         };
-
-        [[maybe_unused]] const auto fs_pos = *reinterpret_cast<char**>(SELECT(0x2E23C08, 0x2DF3F08));
 
         for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
         {
@@ -420,7 +473,11 @@ namespace debug
         void post_unpack() override
         {
             developer_script = game::Dvar_FindVar("developer_script");
+            scr_max_loop_time = game::Dvar_RegisterInt("scr_maxLoopTime", 2500, 0, 
+                100000, 0, "Maximum loop time before a thread gets killed, 0: don't kill infinite loops");
+
             utils::hook::jump(SELECT(0x8F8A57, 0x8F77B7), utils::hook::assemble(vm_execute_error_stub));
+            utils::hook::jump(SELECT(0x8F8918, 0x8F7678), utils::hook::assemble(vm_execute_jmp_stub));
 
             scr_terminal_error_hook.create(SELECT(0x698C50, 0x410440), scr_terminal_error_stub);
 
@@ -488,15 +545,9 @@ namespace debug
                 }
 
                 const auto msg = args[0].as<std::string>();
-                printf("******* script runtime error *******\n");
-                printf("exception thrown: %s\n", msg.data());
-                printf(debug::get_call_stack().data());
-                printf("************************************\n");
+                print_error("exception thrown: %s", msg.data());
 
-                for (auto frame = game::scr_VmPub->function_frame; frame != game::scr_VmPub->function_frame_start; --frame)
-                {
-                    game::Scr_TerminateRunningThread(game::SCRIPTINSTANCE_SERVER, frame->fs.localId);
-                }
+                kill_current_thread();
 
                 return {};
             });
