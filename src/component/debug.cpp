@@ -356,7 +356,6 @@ namespace debug
         void vm_execute_jmp_stub(utils::hook::assembler& a)
         {
             const auto kill = a.newLabel();
-            const auto original = a.newLabel();
 
             a.pushad();
             a.call(check_infinite_loop);

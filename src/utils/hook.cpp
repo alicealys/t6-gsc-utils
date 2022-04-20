@@ -25,66 +25,6 @@ namespace utils::hook
 		} __;
 	}
 
-		void assembler::pushad64()
-	{
-		this->push(rax);
-		this->push(rcx);
-		this->push(rdx);
-		this->push(rbx);
-		this->push(rsp);
-		this->push(rbp);
-		this->push(rsi);
-		this->push(rdi);
-
-		this->sub(rsp, 0x40);
-	}
-
-	void assembler::popad64()
-	{
-		this->add(rsp, 0x40);
-
-		this->pop(rdi);
-		this->pop(rsi);
-		this->pop(rbp);
-		this->pop(rsp);
-		this->pop(rbx);
-		this->pop(rdx);
-		this->pop(rcx);
-		this->pop(rax);
-	}
-
-	void assembler::prepare_stack_for_call()
-	{
-		const auto reserve_callee_space = this->newLabel();
-		const auto stack_unaligned = this->newLabel();
-
-		this->test(rsp, 0xF);
-		this->jnz(stack_unaligned);
-
-		this->sub(rsp, 0x8);
-		this->push(rsp);
-
-		this->push(rax);
-		this->mov(rax, ptr(rsp, 8, 8));
-		this->add(rax, 0x8);
-		this->mov(ptr(rsp, 8, 8), rax);
-		this->pop(rax);
-
-		this->jmp(reserve_callee_space);
-
-		this->bind(stack_unaligned);
-		this->push(rsp);
-
-		this->bind(reserve_callee_space);
-		this->sub(rsp, 0x40);
-	}
-
-	void assembler::restore_stack_after_call()
-	{
-		this->lea(rsp, ptr(rsp, 0x40));
-		this->pop(rsp);
-	}
-
 	asmjit::Error assembler::call(void* target)
 	{
 		return Assembler::call(size_t(target));
