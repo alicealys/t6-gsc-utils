@@ -16,20 +16,6 @@ namespace utils::hook
 		using Assembler::call;
 		using Assembler::jmp;
 
-		void pushad64();
-		void popad64();
-
-		void prepare_stack_for_call();
-		void restore_stack_after_call();
-
-		template <typename T>
-		void call_aligned(T&& target)
-		{
-			this->prepare_stack_for_call();
-			this->call(std::forward<T>(target));
-			this->restore_stack_after_call();
-		}
-
 		asmjit::Error call(void* target);
 		asmjit::Error jmp(void* target);
 	};

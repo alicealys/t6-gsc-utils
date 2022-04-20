@@ -31,15 +31,18 @@ namespace bots
 			{
 				obj = nlohmann::json::parse(utils::io::read_file("bots/bots.json").data());
 			}
-			catch (nlohmann::json::parse_error&)
+			catch (const nlohmann::json::parse_error& ex)
 			{
-				printf("json parse error\n");
+				printf("%s\n", ex.what());
 				return;
 			}
 
 			for (const auto& [key, val] : obj["names"].items())
 			{
-				bot_names.emplace_back(std::make_pair(key, val.get<std::string>()));
+				if (val.is_string())
+				{
+					bot_names.emplace_back(std::make_pair(key, val.get<std::string>()));
+				}
 			}
 		}
 
@@ -51,7 +54,7 @@ namespace bots
 				load_bot_data();
 			}
 
-			static auto bot_id = 0;
+			static size_t bot_id = 0;
 			if (!bot_names.empty())
 			{
 				bot_id %= bot_names.size();
