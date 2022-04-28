@@ -80,7 +80,7 @@ namespace utils::http
 
 		if (curl_easy_perform(curl) == CURLE_OK)
 		{
-			return { std::move(buffer) };
+			return {std::move(buffer)};
 		}
 
 		if (helper.exception)
