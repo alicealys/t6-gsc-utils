@@ -55,10 +55,10 @@ namespace utils::http
 		}
 
 		auto _ = gsl::finally([&]()
-			{
-				curl_slist_free_all(header_list);
-				curl_easy_cleanup(curl);
-			});
+		{
+			curl_slist_free_all(header_list);
+			curl_easy_cleanup(curl);
+		});
 
 		for (const auto& header : headers)
 		{
@@ -94,8 +94,8 @@ namespace utils::http
 	std::future<std::optional<std::string>> get_data_async(const std::string& url, const headers& headers)
 	{
 		return std::async(std::launch::async, [url, headers]()
-			{
-				return get_data(url, headers);
-			});
+		{
+			return get_data(url, headers);
+		});
 	}
 }
