@@ -676,6 +676,22 @@ namespace debug
                     printf(get_child_var_allocations(limit).data());
                 });
             }
+
+            gsc::function::add("printcallstack", [](const gsc::function_args&) -> scripting::script_value
+            {
+                if (!developer_script->current.enabled)
+                {
+                    return {};
+                }
+
+                printf(debug::get_call_stack().data());
+                return {};
+            });
+
+            gsc::function::add("getcallstack", [](const gsc::function_args&) -> scripting::script_value
+            {
+                return debug::get_call_stack();
+            });
         }
     };
 }
