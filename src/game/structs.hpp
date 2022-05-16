@@ -274,25 +274,61 @@ namespace game
 		FL_SUPPORTS_LINKTO = 1 << 12,
 	}; // TODO: Finish
 
+	enum team_t
+	{
+		TEAM_FREE = 0x0,
+		TEAM_BAD = 0x0,
+		TEAM_ALLIES = 0x1,
+		TEAM_AXIS = 0x2,
+		TEAM_THREE = 0x3,
+		TEAM_FOUR = 0x4,
+		TEAM_FIVE = 0x5,
+		TEAM_SIX = 0x6,
+		TEAM_SEVEN = 0x7,
+		TEAM_EIGHT = 0x8,
+		TEAM_NUM_PLAYING_TEAMS = 0x9,
+		TEAM_SPECTATOR = 0x9,
+		TEAM_NUM_TEAMS = 0xA,
+		TEAM_LOCALPLAYERS = 0xB,
+		TEAM_FIRST_PLAYING_TEAM = 0x1,
+		TEAM_LAST_PLAYING_TEAM = 0x8,
+	};
+
+	enum sessionState_t
+	{
+		SESS_STATE_PLAYING = 0x0,
+		SESS_STATE_DEAD = 0x1,
+		SESS_STATE_SPECTATOR = 0x2,
+		SESS_STATE_INTERMISSION = 0x3,
+	};
+
 	struct gclient_s
 	{
 		char __pad0[0x18];
 		int eflags;
-		char __pad1[0x5668];
-		int flags;
+		char __pad1[0x14E7];
+		sessionState_t sessionState; // 5380
+		char __pad2[0x2];
+		clientConnected_t connected; // 5386
+		char __pad3[0x2F];
+		team_t team; // 5437
+		char __pad4[0x415E];
+		int flags; // 22121
 	};
 
 	struct gentity_s
 	{
 		int number;
-		char __pad0[0x150];
+		char __pad0[0xFA];
+		bool inuse; // 251
+		char __pad1[0x55];
 		gclient_s* client; // 340
-		char __pad1[0x30];
+		char __pad2[0x30];
 		int flags; // 392
-		char __pad2[0x190];
+		char __pad3[0x190];
 	};
 
-	static_assert(sizeof(gentity_s) == 0x31C);
+	static_assert(sizeof(gentity_s) == 0x31C); // 796
 
 	enum clientState_t
 	{
@@ -761,5 +797,12 @@ namespace game
 	union XAssetHeader
 	{
 		ScriptParseTree* scriptParseTree;
+	};
+
+	enum clientConnected_t
+	{
+		CON_DISCONNECTED = 0x0,
+		CON_CONNECTING = 0x1,
+		CON_CONNECTED = 0x2,
 	};
 }

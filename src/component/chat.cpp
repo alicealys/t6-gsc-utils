@@ -21,6 +21,9 @@ namespace chat
 		std::vector<scripting::function> say_callbacks;
 		utils::hook::detour g_say_hook;
 
+		game::dvar_t* g_dead_chat = nullptr;
+		utils::hook::detour g_say_to_hook;
+
 		userinfo_map userinfo_to_map(std::string userinfo)
 		{
 			userinfo_map map{};
@@ -102,6 +105,21 @@ namespace chat
 			}
 		}
 
+		void g_say_to_stub(game::gentity_s* ent, game::gentity_s* other, int mode, int color,
+			const char* teamString, const char* cleanName, const char* message)
+		{
+			if (other && other->inuse)
+			{
+				auto* target = other->client;
+				if (target && target->connected == game::CON_CONNECTED
+					&& (mode != 1 || game::OnSameTeam(ent, other))
+					&& (game::environment::t6zm() || g_dead_chat->current.enabled))
+				{
+					g_say_to_hook.invoke<void>(ent, other, mode, color, teamString, cleanName, message);
+				}
+			}
+		}
+
 		void client_clean_name(const char* in, char* out, int out_size)
 		{
 			utils::hook::invoke<void>(SELECT(0x424F00, 0x655010), out, in, out_size); // I_strncpyz
@@ -131,7 +149,10 @@ namespace chat
 	public:
 		void post_unpack() override
 		{
+			g_dead_chat = game::Dvar_RegisterBool("g_deadChat", false, 0, "Allow dead players to chat with living players");
+
 			g_say_hook.create(SELECT(0x6A7A40, 0x493DF0), g_say_stub);
+			g_say_to_hook.create(SELECT(0x82BB50, 0x82A3D0), g_say_to_stub);
 			sv_get_user_info_hook.create(SELECT(0x68BB90, 0x4C10F0), sv_get_user_info_stub);
 			client_connect_hook.create(SELECT(0x5EF5A0, 0x41BE10), client_connect_stub);
 			utils::hook::call(SELECT(0x4ED764, 0x427E84), client_clean_name_stub);

@@ -21,6 +21,8 @@ namespace game
 	WEAK symbol<int(const dvar_t*)> Dvar_GetInt{0x44DFC0, 0x6909F0};
 	WEAK symbol<dvar_t*(const char* dvarName, int value, int min, int max, 
 		unsigned int flags, const char* description)> Dvar_RegisterInt{0x5F24E0, 0x5A3D70};
+	WEAK symbol<dvar_t*(const char* dvarName, bool value, 
+		unsigned int flags, const char* description)> Dvar_RegisterBool{0x4E0170, 0x5FBCC0};
 
 	WEAK symbol<XAssetHeader(XAssetType type, const char* name, bool errorIfMissing, int waitTime)> DB_FindXAssetHeader{0x6F9030, 0x43F460};
 
@@ -83,6 +85,8 @@ namespace game
 	WEAK symbol<void(scriptInstance_t inst, const char* error)> Scr_ObjectError{0x561660, 0x6B67E0};
 
 	WEAK symbol<gentity_s*(scr_entref_t entref)> GetPlayerEntity{0x48B760, 0x4BF6F0};
+
+	WEAK symbol<bool(gentity_s* ent1, gentity_s* ent2)> OnSameTeam{0x56A7C0, 0x510B50};
 
 	WEAK symbol<unsigned int(scriptInstance_t inst, unsigned int localId, const char* pos, unsigned int paramcount)> VM_Execute{0x8F9550, 0x8F82B0};
 
