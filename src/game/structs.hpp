@@ -322,7 +322,7 @@ namespace game
 		char __pad1[0x58];
 		gclient_s* client; // 340
 		char __pad2[0x30];
-		int flags; // 352
+		int flags; // 392
 		char __pad3[0x190];
 	};
 
