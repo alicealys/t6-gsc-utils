@@ -294,41 +294,39 @@ namespace game
 		TEAM_LAST_PLAYING_TEAM = 0x8,
 	};
 
-	enum sessionState_t
+	enum clientConnected_t
 	{
-		SESS_STATE_PLAYING = 0x0,
-		SESS_STATE_DEAD = 0x1,
-		SESS_STATE_SPECTATOR = 0x2,
-		SESS_STATE_INTERMISSION = 0x3,
+		CON_DISCONNECTED = 0x0,
+		CON_CONNECTING = 0x1,
+		CON_CONNECTED = 0x2,
 	};
 
 	struct gclient_s
 	{
 		char __pad0[0x18];
-		int eflags;
-		char __pad1[0x14E7];
-		sessionState_t sessionState; // 5380
-		char __pad2[0x2];
-		clientConnected_t connected; // 5386
-		char __pad3[0x2F];
-		team_t team; // 5437
-		char __pad4[0x415E];
-		int flags; // 22121
+		int eflags; // 24
+		char __pad1[0x540C];
+		clientConnected_t connected; // 21544
+		char __pad2[0x258];
+		int flags; // 22148
 	};
+
+
+	static_assert(sizeof(gclient_s) == 0x5688);
 
 	struct gentity_s
 	{
 		int number;
-		char __pad0[0xFA];
+		char __pad0[0xF7];
 		bool inuse; // 251
-		char __pad1[0x55];
+		char __pad1[0x58];
 		gclient_s* client; // 340
 		char __pad2[0x30];
-		int flags; // 392
+		int flags; // 352
 		char __pad3[0x190];
 	};
 
-	static_assert(sizeof(gentity_s) == 0x31C); // 796
+	static_assert(sizeof(gentity_s) == 0x31C);
 
 	enum clientState_t
 	{
@@ -797,12 +795,5 @@ namespace game
 	union XAssetHeader
 	{
 		ScriptParseTree* scriptParseTree;
-	};
-
-	enum clientConnected_t
-	{
-		CON_DISCONNECTED = 0x0,
-		CON_CONNECTING = 0x1,
-		CON_CONNECTED = 0x2,
 	};
 }
