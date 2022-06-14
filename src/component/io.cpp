@@ -33,46 +33,23 @@ namespace io
 		scripting::script_value http_get(const gsc::function_args& args)
 		{
 			const auto url = args[0].as<std::string>();
-			const auto object = scripting::entity(scripting::make_object());
+			const scripting::object object{};
+			const auto object_id = object.get_entity_id();
 
-			scheduler::once([object, url]()
+			scheduler::once([object_id, url]()
 			{
 				const auto result = utils::http::get_data(url.data());
-				scheduler::once([object, result]()
+				scheduler::once([object_id, result]()
 				{
 					const auto value = result.has_value()
 						? result.value().substr(0, 0x5000)
 						: "";
-					scripting::notify(object, "done", {value});
+					scripting::notify(object_id, "done", {value});
 				});
 			}, scheduler::pipeline::async);
 
 			return object;
 		}
-	}
-
-	std::string execute_command(const std::string& cmd)
-	{
-		const auto handle = _popen(cmd.data(), "r");
-		char* buffer = (char*)calloc(256, sizeof(char));
-		std::string result;
-
-		if (!handle)
-		{
-			return "";
-		}
-
-		while (!feof(handle))
-		{
-			if (fgets(buffer, 256, handle))
-			{
-			result += buffer;
-			}
-		}
-
-		_pclose(handle);
-
-		return result;
 	}
 
 	class component final : public component_interface
