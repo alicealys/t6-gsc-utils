@@ -21,12 +21,12 @@ namespace int64
 
 			if (args[index].is<int>())
 			{
-				return static_cast<int64_t>(args[index].as<int>());
+				return args[index].as<int>();
 			}
 
 			if (args[index].is<const char*>())
 			{
-				return static_cast<int64_t>(strtoll(args[index].as<const char*>(), nullptr, 10));
+				return std::strtoll(args[index].as<const char*>(), nullptr, 0);
 			}
 
 			throw std::runtime_error(utils::string::va("parameter %d does not have type 'string' or 'int'", index));
@@ -40,8 +40,9 @@ namespace int64
 			{"/",  INT64_OPERATION(a / b)},
 			{"&",  INT64_OPERATION(a & b)},
 			{"^",  INT64_OPERATION(a ^ b)},
-			{"%",  INT64_OPERATION(a % b)},
+			{"|",  INT64_OPERATION(a | b)},
 			{"~",  INT64_OPERATION(~a)},
+			{"%",  INT64_OPERATION(a % b)},
 			{">>", INT64_OPERATION(a >> b)},
 			{"<<", INT64_OPERATION(a << b)},
 			{"++", INT64_OPERATION(a + 1)},
