@@ -127,9 +127,4 @@ namespace game
 	WEAK symbol<unsigned int> levelEntityId{0x2E1A51C, 0x2DEA81C};
 
 	WEAK symbol<client_s> svs_clients{0x291C0C0, 0x28EC9C0};
-
-	namespace plutonium
-	{
-		WEAK symbol<int(const char* fmt, ...)> printf{0x209F30F0, 0x209F30F0};
-	}
 }

@@ -415,6 +415,18 @@ namespace gsc
                 const auto function = args[0].as<scripting::function>();
                 return function.get_name();
             });
+            
+            function::add("getfunctionargcount", [](const function_args& args)
+            {
+                const auto function = args[0].as<scripting::function>();
+                const auto pos = function.get_pos();
+                if (*pos != 0x17) // OP_SafeCreateLocalVariables
+                {
+                    return 0;
+                }
+
+                return static_cast<int>(pos[1]);
+            });
 
             function::add("arrayremovekey", [](const function_args& args) -> scripting::script_value
             {
