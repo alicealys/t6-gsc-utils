@@ -73,20 +73,6 @@ namespace io
 				return fmt;
 			});
 
-			gsc::function::add("print", [](const gsc::function_args& args) -> scripting::script_value
-			{
-				const auto args_ = args.get_raw();
-
-				for (const auto arg : args_)
-				{
-					printf("%s\t", arg.to_string().data());
-				}
-
-				printf("\n");
-
-				return {};
-			});
-
 			gsc::function::add("jsonprint", [](const gsc::function_args& args) -> scripting::script_value
 			{
 				std::string buffer;
