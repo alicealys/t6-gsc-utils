@@ -76,15 +76,7 @@ namespace logfile
 			filename = utils::string::va("logs/console-%s.log",
 				utils::string::get_timestamp().data());
 
-			if (game::plutonium::is_up_to_date())
-			{
-				printf_hook.create(game::plutonium::printf.get(), printf_stub);
-				printf_hook2.create(printf, printf_stub);
-			}
-			else
-			{
-				printf_hook.create(printf, printf_stub);
-			}
+			printf_hook.create(printf, printf_stub);
 		}
 	};
 }
