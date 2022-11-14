@@ -14,7 +14,6 @@ namespace logfile
 	namespace
 	{
 		utils::hook::detour printf_hook;
-		utils::hook::detour printf_hook2;
 		std::string filename;
 		std::mutex mutex;
 
