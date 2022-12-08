@@ -251,8 +251,11 @@ namespace debug
         int* alloc_child_variable_stub(int inst, unsigned int* index)
         {
             const auto result = alloc_child_variable_hook.invoke<int*>(inst, index);
-            const auto pos = game::fs->pos;
-            allocations[*index] = pos;
+            if (game::scr_VmPub[inst].function_count)
+            {
+                const auto pos = game::fs->pos;
+                allocations[*index] = pos;
+            }
             return result;
         }
 
