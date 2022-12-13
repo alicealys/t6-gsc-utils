@@ -20,20 +20,45 @@ namespace notifies
         };
 
         using notify_groups_t = std::vector<notify_group>;
+
+        std::atomic_bool in_notify_queue;
         utils::concurrency::container<notify_groups_t> notify_groups_queue;
 
         utils::hook::detour vm_notify_hook;
 
-        void vm_notify_stub(int inst, unsigned int notify_list_owner_id, unsigned int string_value, game::VariableValue* top)
+        void push_sl_string(unsigned int value)
         {
+            game::VariableValue var{};
+            var.type = game::SCRIPT_STRING;
+            var.u.stringValue = value;
+            scripting::push_value(var);
+        }
+
+        void vm_notify_stub(game::scriptInstance_t inst, unsigned int notify_list_owner_id, 
+            unsigned int string_value, game::VariableValue* top)
+        {
+            vm_notify_hook.invoke<void>(inst, notify_list_owner_id, string_value, top);
+
+            if (in_notify_queue)
+            {
+                return;
+            }
+
             notify_groups_queue.access([&](notify_groups_t& groups)
             {
+                in_notify_queue = true;
+                const auto _0 = gsl::finally([]
+                {
+                    in_notify_queue = false;
+                });
+
                 for (auto i = groups.begin(); i != groups.end(); )
                 {
                     if (i->owner_id == notify_list_owner_id &&
                         i->sub_notifies.find(string_value) != i->sub_notifies.end())
                     {
-                        vm_notify_hook.invoke<void>(inst, i->notify_target, i->main_notify, top);
+                        push_sl_string(string_value);
+                        game::Scr_NotifyId(inst, 0, i->notify_target, i->main_notify, 1);
                         i = groups.erase(i);
                     }
                     else
@@ -42,8 +67,6 @@ namespace notifies
                     }
                 }
             });
-
-            vm_notify_hook.invoke<void>(inst, notify_list_owner_id, string_value, top);
         }
 	}
 
@@ -96,7 +119,7 @@ namespace notifies
                             notifies.insert(game::SL_GetString(str.data(), 0));
                         }
                     }
-                    else
+                    else if (arg.is<std::string>())
                     {
                         const auto str = arg.as<std::string>();
                         notifies.insert(game::SL_GetString(str.data(), 0));
