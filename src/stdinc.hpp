@@ -29,6 +29,7 @@
 #include <atlcomcli.h>
 #include <variant>
 #include <optional>
+#include <Psapi.h>
 
 #ifdef max
 #undef max

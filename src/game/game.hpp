@@ -41,6 +41,12 @@ namespace game
 			return t6zm_;
 		}
 
+		void set(const size_t ptr)
+		{
+			this->t6mp_ = reinterpret_cast<T*>(ptr);
+			this->t6zm_ = reinterpret_cast<T*>(ptr);
+		}
+
 		operator T* () const
 		{
 			return this->get();
