@@ -2,6 +2,7 @@
 #include "loader/component_loader.hpp"
 
 #include "gsc.hpp"
+#include "scripting.hpp"
 
 #include <utils/io.hpp>
 #include <utils/hook.hpp>
@@ -76,6 +77,14 @@ namespace notifies
 		void post_unpack() override
 		{
             vm_notify_hook.create(SELECT(0x8F48C0, 0x8F3620), vm_notify_stub);
+
+            scripting::on_shutdown([]
+            {
+                notify_groups_queue.access([&](notify_groups_t& groups)
+                {
+                    groups.clear();
+                });
+            });
 
             gsc::function::add("createnotifygroup", [](const gsc::function_args& args) 
                 -> scripting::script_value
