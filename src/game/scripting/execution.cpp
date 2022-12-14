@@ -83,7 +83,8 @@ namespace scripting
 
 		if (!safe_execution::call(function, entref))
 		{
-			throw std::runtime_error("Error executing function '" + name + "'");
+			const auto error = reinterpret_cast<const char*>(SELECT(0x2E27C70, 0x2DF7F70));
+			throw std::runtime_error(error);
 		}
 
 		return get_return_value();

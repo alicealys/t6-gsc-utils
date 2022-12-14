@@ -75,12 +75,7 @@ namespace notifies
 	public:
 		void post_unpack() override
 		{
-            if (!game::environment::t6zm())
-            {
-                return;
-            }
-
-            vm_notify_hook.create(0x8F3620, vm_notify_stub);
+            vm_notify_hook.create(SELECT(0x8F48C0, 0x8F3620), vm_notify_stub);
 
             gsc::function::add("createnotifygroup", [](const gsc::function_args& args) 
                 -> scripting::script_value

@@ -1,4 +1,5 @@
 #pragma once
+
 #include "game/scripting/array.hpp"
 #include "game/scripting/execution.hpp"
 
@@ -51,4 +52,7 @@ namespace gsc
 	{
 		void add(const std::string& name, const script_method& function);
 	}
+
+	bool call_method(unsigned int ptr, game::scr_entref_t ent_ref);
+	bool call_function(unsigned int ptr);
 }
