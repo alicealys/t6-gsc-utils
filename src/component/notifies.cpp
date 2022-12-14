@@ -3,6 +3,8 @@
 
 #include "gsc.hpp"
 #include "scripting.hpp"
+#include "scheduler.hpp"
+#include "game/scripting/stack_isolation.hpp"
 
 #include <utils/io.hpp>
 #include <utils/hook.hpp>
@@ -22,8 +24,8 @@ namespace notifies
 
         using notify_groups_t = std::vector<notify_group>;
 
-        std::atomic_bool in_notify_queue;
-        utils::concurrency::container<notify_groups_t> notify_groups_queue;
+        bool in_notify_queue;
+        notify_groups_t notify_groups_queue;
 
         utils::hook::detour vm_notify_hook;
 
@@ -45,29 +47,82 @@ namespace notifies
                 return;
             }
 
-            notify_groups_queue.access([&](notify_groups_t& groups)
-            {
-                in_notify_queue = true;
-                const auto _0 = gsl::finally([]
-                {
-                    in_notify_queue = false;
-                });
+            const auto disconnect_str = *reinterpret_cast<unsigned short*>(0x24B71CE);
 
-                for (auto i = groups.begin(); i != groups.end(); )
+            in_notify_queue = true;
+            const auto _0 = gsl::finally([]
+            {
+                in_notify_queue = false;
+            });
+
+            std::unordered_map<unsigned int, std::unordered_set<unsigned int>> notified;
+
+            for (auto i = notify_groups_queue.begin(); i != notify_groups_queue.end(); )
+            {
+                if (i->owner_id == notify_list_owner_id)
                 {
-                    if (i->owner_id == notify_list_owner_id &&
-                        i->sub_notifies.find(string_value) != i->sub_notifies.end())
+                    const auto should_notify = i->sub_notifies.find(string_value) != i->sub_notifies.end();
+                    const auto should_delete = string_value == disconnect_str || notified[i->notify_target].contains(i->main_notify);
+                    const auto object_type = game::scr_VarGlob->objectVariableValue[i->notify_target].w.type;
+
+                    if (object_type != game::SCRIPT_FREE && should_notify)
                     {
+                        scripting::stack_isolation _1;
                         push_sl_string(string_value);
                         game::Scr_NotifyId(inst, 0, i->notify_target, i->main_notify, 1);
-                        i = groups.erase(i);
+                        notified[i->notify_target].insert(i->main_notify);
                     }
-                    else
+
+                    if (should_notify || should_delete)
                     {
-                        ++i;
+                        i = notify_groups_queue.erase(i);
+                        continue;
                     }
                 }
-            });
+
+                ++i;
+            }
+        }
+
+        void clear_notify_group(unsigned int id)
+        {
+            for (auto i = notify_groups_queue.begin(); i != notify_groups_queue.end(); )
+            {
+                if (i->owner_id == id)
+                {
+                    i = notify_groups_queue.erase(i);
+                }
+                else
+                {
+                    ++i;
+                }
+            }
+        }
+
+        void free_variable_stub_1(utils::hook::assembler& a)
+        {
+            a.pushad();
+            a.push(ebx);
+            a.call(clear_notify_group);
+            a.pop(ebx);
+            a.popad();
+            
+            a.movzx(ecx, word_ptr(edi, 2));
+            a.xor_(edx, edx);
+            a.jmp(0x550EA5);
+        }
+
+        void free_variable_stub_2(utils::hook::assembler& a)
+        {
+            a.pushad();
+            a.push(edi);
+            a.call(clear_notify_group);
+            a.pop(edi);
+            a.popad();
+
+            a.mov(word_ptr(esi, 2), di);
+            a.pop(edi);
+            a.jmp(0x415EA2);
         }
 	}
 
@@ -76,14 +131,19 @@ namespace notifies
 	public:
 		void post_unpack() override
 		{
-            vm_notify_hook.create(SELECT(0x8F48C0, 0x8F3620), vm_notify_stub);
+            if (!game::environment::t6zm())
+            {
+                return;
+            }
+
+            vm_notify_hook.create(0x8F3620, vm_notify_stub);
+
+            utils::hook::jump(0x550E9F, utils::hook::assemble(free_variable_stub_1));
+            utils::hook::jump(0x415E9D, utils::hook::assemble(free_variable_stub_2));
 
             scripting::on_shutdown([]
             {
-                notify_groups_queue.access([&](notify_groups_t& groups)
-                {
-                    groups.clear();
-                });
+                notify_groups_queue.clear();
             });
 
             gsc::function::add("createnotifygroup", [](const gsc::function_args& args) 
@@ -135,11 +195,8 @@ namespace notifies
                     throw std::runtime_error("must pass atleast 1 notify");
                 }
 
-                notify_groups_queue.access([&](notify_groups_t& groups)
-                {
-                    groups.emplace_back(entity.u.uintValue, entity_target.u.uintValue, 
-                        main_notify, notifies);
-                });
+                notify_groups_queue.emplace_back(entity.u.uintValue, entity_target.u.uintValue,
+                    main_notify, notifies);
 
                 return {};
             });
