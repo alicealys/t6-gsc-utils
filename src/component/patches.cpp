@@ -3,6 +3,7 @@
 
 #include "game/game.hpp"
 #include "game/scripting/safe_execution.hpp"
+#include "component/gsc.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
@@ -24,8 +25,23 @@ namespace patches
 		}
 
 		void execute_with_seh_wrap(const scripting::safe_execution::script_function function, 
-			const game::scr_entref_t entref)
+			const game::scr_entref_t entref, int is_method)
 		{
+			if (is_method)
+			{
+				if (gsc::call_method(reinterpret_cast<unsigned int>(function), entref))
+				{
+					return;
+				}
+			}
+			else
+			{
+				if (gsc::call_function(reinterpret_cast<unsigned int>(function)))
+				{
+					return;
+				}
+			}
+
 			if (!scripting::safe_execution::execute_with_seh(function, entref))
 			{
 				game::Scr_Error(game::SCRIPTINSTANCE_SERVER, "exception handled", 0);
@@ -39,9 +55,10 @@ namespace patches
 			a.pushad();
 			a.push(0);
 			a.push(0);
+			a.push(0);
 			a.push(ecx);
 			a.call(execute_with_seh_wrap);
-			a.add(esp, 0xC);
+			a.add(esp, 0x10);
 			a.popad();
 
 			a.jmp(SELECT(0x8F6401, 0x8F5161));
@@ -52,11 +69,12 @@ namespace patches
 			a.mov(dword_ptr(edx), ebx);
 
 			a.pushad();
+			a.push(1);
 			a.push(eax);
 			a.push(esi);
 			a.push(dword_ptr(ebp, 0x2C));
 			a.call(execute_with_seh_wrap);
-			a.add(esp, 0xC);
+			a.add(esp, 0x10);
 			a.popad();
 
 			a.add(esp, 0x18);
