@@ -413,16 +413,29 @@ namespace gsc
                 hooked_builtins.clear();
             });
 
-            field::add(classid::entity, "flags",
+            field::add(classid::entity, "eflags",
                 [](unsigned int entnum) -> scripting::script_value
                 {
                     const auto entity = &game::g_entities[entnum];
-                    return entity->client->eflags;
+                    return entity->flags;
                 },
                 [](unsigned int entnum, const scripting::script_value& value)
                 {
                     const auto entity = &game::g_entities[entnum];
-                    entity->client->eflags = value.as<int>();
+                    entity->flags = value.as<int>();
+                }
+            );
+
+            field::add(classid::entity, "eflags2",
+                [](unsigned int entnum) -> scripting::script_value
+                {
+                    const auto entity = &game::g_entities[entnum];
+                    return entity->eFlags2;
+                },
+                    [](unsigned int entnum, const scripting::script_value& value)
+                {
+                    const auto entity = &game::g_entities[entnum];
+                    entity->eFlags2 = value.as<int>();
                 }
             );
 
