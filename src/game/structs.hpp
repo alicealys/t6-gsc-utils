@@ -285,11 +285,16 @@ namespace game
 	struct gentity_s
 	{
 		int number;
-		char __pad0[0x150];
+		char __pad0[4];
+		int eFlags2;
+		char __pad1[328];
 		gclient_s* client; // 340
-		char __pad1[0x30];
+		char __pad2[0x4];
+		char __pad3[0x4];
+		TurretInfo* pTurretInfo;
+		char __pad4[0x24];
 		int flags; // 392
-		char __pad2[0x190];
+		char __pad5[0x190];
 	};
 
 	static_assert(sizeof(gentity_s) == 0x31C);

@@ -153,6 +153,24 @@ namespace scripting
 	}
 
 	template <>
+	bool script_value::is<unsigned short>() const
+	{
+		return this->is<int>();
+	}
+
+	template <>
+	bool script_value::is<short>() const
+	{
+		return this->is<int>();
+	}
+
+	template <>
+	bool script_value::is<char>() const
+	{
+		return this->is<int>();
+	}
+
+	template <>
 	bool script_value::is<bool>() const
 	{
 		return this->is<int>();
@@ -176,6 +194,24 @@ namespace scripting
 		return this->get_raw().u.uintValue != 0;
 	}
 
+	template <>
+	unsigned short script_value::get() const
+	{
+		return static_cast<unsigned short>(this->get_raw().u.uintValue);
+	}
+
+	template <>
+	short script_value::get() const
+	{
+		return static_cast<short>(this->get_raw().u.intValue);
+	}
+
+	template <>
+	char script_value::get() const
+	{
+		return static_cast<char>(this->get_raw().u.intValue);
+	}
+
 	/***********************************************
 	 * Float
 	 **********************************************/
@@ -183,7 +219,8 @@ namespace scripting
 	template <>
 	bool script_value::is<float>() const
 	{
-		return this->get_raw().type == game::SCRIPT_FLOAT;
+		const auto type = this->get_raw().type;
+		return type == game::SCRIPT_FLOAT || type == game::SCRIPT_INTEGER;
 	}
 
 	template <>
@@ -195,12 +232,24 @@ namespace scripting
 	template <>
 	float script_value::get() const
 	{
+		const auto type = this->get_raw().type;
+		if (type == game::SCRIPT_INTEGER)
+		{
+			return static_cast<float>(this->get_raw().u.intValue);
+		}
+
 		return this->get_raw().u.floatValue;
 	}
 
 	template <>
 	double script_value::get() const
 	{
+		const auto type = this->get_raw().type;
+		if (type == game::SCRIPT_INTEGER)
+		{
+			return static_cast<double>(this->get_raw().u.intValue);
+		}
+
 		return static_cast<double>(this->get_raw().u.floatValue);
 	}
 
@@ -322,6 +371,12 @@ namespace scripting
 	bool script_value::is<vector>() const
 	{
 		return this->get_raw().type == game::SCRIPT_VECTOR;
+	}
+
+	template <>
+	bool script_value::is<float*>() const
+	{
+		return this->is<vector>();
 	}
 
 	template <>
