@@ -24,10 +24,14 @@
 #define TURRET_ADD_FIELD(__name__) \
 	TURRET_ADD_FIELD_INTERNAL(__name__, get_default_getter(dummy_info.__name__, offsetof(game::TurretInfo, __name__)), get_default_setter(dummy_info.__name__, #__name__, offsetof(game::TurretInfo, __name__))) \
 
+#define NEW_MAX_TURRETS 255
+
 namespace turret
 {
 	namespace
 	{
+		game::TurretInfo turret_info_store_relocated[256];
+
 		game::TurretInfo dummy_info{};
 
 		using getter_t = std::function<scripting::script_value(game::TurretInfo* info)>;
@@ -185,6 +189,77 @@ namespace turret
 
 			return asset;
 		}
+
+		void g_init_turrets_stub()
+		{
+			for (int i = 0; i < NEW_MAX_TURRETS; ++i)
+			{
+				turret_info_store_relocated[i].inuse = 0;
+			}
+			//level.turrets = turret_info_store_relocated;
+			utils::hook::set<game::TurretInfo*>(0x233CAB8, turret_info_store_relocated);
+		}
+
+		int turret_index = 0;
+
+		int* turret_index_ptr = &turret_index;
+
+		game::TurretInfo* g_spawn_turret_relocate()
+		{
+			turret_index = 0;
+			game::TurretInfo* turretInfo = 0;
+			int i = 0;
+			for (; i < NEW_MAX_TURRETS; ++i)
+			{
+				turretInfo = &turret_info_store_relocated[i];
+				if (!turretInfo->inuse)
+				{
+					break;
+				}
+				turret_index++;
+			}
+			return turretInfo;
+		}
+
+		void __declspec(naked) g_spawn_turret_stub()
+		{
+			__asm
+			{
+				push esi;
+				pushad;
+				call g_spawn_turret_relocate;
+				mov[esp + 0x20], eax;
+				popad;
+				pop esi;
+				mov ecx, [turret_index_ptr];
+				push 0x60AE90;
+				retn;
+			}
+		}
+
+		game::gentity_s* g_spawn_turret_static_entity_stub(int a3)
+		{
+			return utils::hook::invoke<game::gentity_s*>(0x54FCC0);
+		}
+
+		void relocate_turrets()
+		{
+			//Modify G_InitTurrets to initialize more tuurets
+			utils::hook::jump(0x61E850, g_init_turrets_stub);
+			//Modify G_SpawnTurret to check for a larger amount of turretInfoStore
+			utils::hook::jump(0x60AE3B, g_spawn_turret_stub);
+			//Modify G_SpawnturetStaticEntity to call G_Spawn instead
+			utils::hook::jump(0x6E1B00, g_spawn_turret_static_entity_stub);
+			//Patch G_SpawnTurret com_error to happen at a higher limit(255)
+			utils::hook::set<std::uint8_t>(0x60AE92, NEW_MAX_TURRETS);
+
+			//Patch level.num_gentities to min of 78 to not preallocate turret slots
+			utils::hook::set<int>(0x67EEA2 + 6, 78);
+			//Patch SV_LocateGameData arg so sv.num_entities is the same as the above
+			utils::hook::set<std::uint8_t>(0x67EE9F + 1, 78);
+			//G_FreeEntity remove turrets from slot calculations
+			utils::hook::set<std::uint8_t>(0x6658E7 + 2, 78);
+		}
 	}
 
 	class component final : public component_interface
@@ -335,6 +410,9 @@ namespace turret
 
 			// Don't use weapon def value for turrets turnspeed
 			bg_get_weapon_def_hook.create(0x5906B0, bg_get_weapon_def_stub);
+
+			//Relocate turrets to NEW_MAX_TURRETS
+			relocate_turrets();
 		}
 	};
 }
