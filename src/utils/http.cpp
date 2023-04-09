@@ -80,8 +80,18 @@ namespace utils::http
 
 		if (curl_easy_perform(curl) == CURLE_OK)
 		{
-			return {std::move(buffer)};
-	std::optional<std::string> post_data(const std::string& url, const std::string& data, const std::function<void(size_t)>& callback)
+			return { std::move(buffer) };
+		}
+
+		if (helper.exception)
+		{
+			std::rethrow_exception(helper.exception);
+		}
+
+		return {};
+	}
+
+	std::optional<std::string> post_data(const std::string& url, const std::string& data, const headers& headers, const std::function<void(size_t)>& callback)
 	{
 		curl_slist* header_list = nullptr;
 
@@ -94,7 +104,11 @@ namespace utils::http
 			curl_easy_cleanup(curl);
 		});
 
-		header_list = curl_slist_append(header_list, "Content-Type: application/json");
+		for (const auto& header : headers)
+		{
+			auto data = header.first + ": " + header.second;
+			header_list = curl_slist_append(header_list, data.data());
+		}
 
 		std::string buffer{};
 		progress_helper helper{};
@@ -135,7 +149,7 @@ namespace utils::http
 	{
 		return std::async(std::launch::async, [url, data, headers]()
 		{
-			return post_data(url, data);
+			return post_data(url, data, headers);
 		});
 	}
 }
