@@ -54,8 +54,20 @@ namespace io
 		scripting::script_value http_post(const gsc::function_args& args)
 		{
 			const auto url = args[0].as<std::string>();
-			const auto headers = args[1].as<utils::http::headers>();
-			const auto data = args[2].as<std::string>();
+			const auto data = args[1].as<std::string>();
+			const auto headers_array = args[2].as<scripting::array>();
+
+			utils::http::headers headers;
+			for (const auto& key : headers_array.get_keys())
+			{
+				const auto value = headers_array[key];
+				if (!key.is<std::string>() || !value.is<std::string>())
+				{
+					continue;
+				}
+
+				headers[key.as<std::string>()] = value.as<std::string>();
+			}
 
 			const scripting::object object{};
 			const auto object_id = object.get_entity_id();

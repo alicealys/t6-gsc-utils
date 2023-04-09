@@ -106,8 +106,8 @@ namespace utils::http
 
 		for (const auto& header : headers)
 		{
-			auto data = header.first + ": " + header.second;
-			header_list = curl_slist_append(header_list, data.data());
+			const auto header_string = header.first + ": " + header.second;
+			header_list = curl_slist_append(header_list, header_string.data());
 		}
 
 		std::string buffer{};
