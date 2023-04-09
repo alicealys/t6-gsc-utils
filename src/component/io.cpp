@@ -50,6 +50,27 @@ namespace io
 
 			return object;
 		}
+
+		scripting::script_value http_post(const gsc::function_args& args)
+		{
+			const auto url = args[0].as<std::string>();
+			const auto data = args[1].as<std::string>();
+
+			const scripting::object object{};
+			const auto object_id = object.get_entity_id();
+
+			scheduler::once([object_id, url, data]()
+			{
+				const auto result = utils::http::post_data(url.data(), data);
+				scheduler::once([object_id, result]()
+				{
+					const auto value = result.has_value() ? result.value().substr(0, 0x5000) : "";
+					scripting::notify(object_id, "done", { value });
+				});
+			}, scheduler::pipeline::async);
+
+			return object;
+		}
 	}
 
 	class component final : public component_interface
@@ -232,6 +253,7 @@ namespace io
 
 			gsc::function::add("httpget", http_get);
 			gsc::function::add("curl", http_get);
+			gsc::function::add("httppost", http_post);
 		}
 	};
 }
