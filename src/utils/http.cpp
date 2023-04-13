@@ -80,7 +80,53 @@ namespace utils::http
 
 		if (curl_easy_perform(curl) == CURLE_OK)
 		{
-			return {std::move(buffer)};
+			return { std::move(buffer) };
+		}
+
+		if (helper.exception)
+		{
+			std::rethrow_exception(helper.exception);
+		}
+
+		return {};
+	}
+
+	std::optional<std::string> post_data(const std::string& url, const std::string& data, const headers& headers, const std::function<void(size_t)>& callback)
+	{
+		curl_slist* header_list = nullptr;
+
+		auto* curl = curl_easy_init();
+		if (!curl) return {};
+
+		auto _ = gsl::finally([&]()
+		{
+			curl_slist_free_all(header_list);
+			curl_easy_cleanup(curl);
+		});
+
+		for (const auto& header : headers)
+		{
+			const auto header_string = header.first + ": " + header.second;
+			header_list = curl_slist_append(header_list, header_string.data());
+		}
+
+		std::string buffer{};
+		progress_helper helper{};
+		helper.callback = &callback;
+
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_list);
+		curl_easy_setopt(curl, CURLOPT_URL, url.data());
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+		curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
+		curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &helper);
+		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+
+		if (curl_easy_perform(curl) == CURLE_OK)
+		{
+			return { std::move(buffer) };
 		}
 
 		if (helper.exception)
@@ -96,6 +142,14 @@ namespace utils::http
 		return std::async(std::launch::async, [url, headers]()
 		{
 			return get_data(url, headers);
+		});
+	}
+
+	std::future<std::optional<std::string>> post_data_async(const std::string& url, const std::string& data, const headers& headers)
+	{
+		return std::async(std::launch::async, [url, data, headers]()
+		{
+			return post_data(url, data, headers);
 		});
 	}
 }
