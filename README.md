@@ -431,6 +431,19 @@ The basepath for all IO functions is `Plutonium/storage/t6`
         print(result);
     }
     ```
+ * `httpPost(url, data, headers)`: Creates a [POST HTTP request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST) ->
+    
+    ```c
+    headers = [];
+    headers["Content-Type"] = "application/json";
+    
+    data = [];
+    data["test_key"] = "test_value";
+    
+    req = httpPost("https://example.com", jsonSerialize(data, 0), headers);
+    req waittill("done", result);
+    print(result);
+    ```
 # JSON
 
 * `jsonSerialize(variable[, indent])`: Converts GSC variables (such as arrays) into JSON:
