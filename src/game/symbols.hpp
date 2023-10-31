@@ -21,6 +21,7 @@ namespace game
 	WEAK symbol<int(const dvar_t*)> Dvar_GetInt{0x44DFC0, 0x6909F0};
 	WEAK symbol<dvar_t*(const char* dvarName, int value, int min, int max, 
 		unsigned int flags, const char* description)> Dvar_RegisterInt{0x5F24E0, 0x5A3D70};
+	WEAK symbol<dvar_t*(const char* dvarName, bool value, unsigned int flags, const char* description)> Dvar_RegisterBool{0x4E0170, 0x5FBCC0};
 
 	WEAK symbol<XAssetHeader(XAssetType type, const char* name, bool errorIfMissing, int waitTime)> DB_FindXAssetHeader{0x6F9030, 0x43F460};
 

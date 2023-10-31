@@ -23,7 +23,7 @@ namespace utils::http
 			{
 				if (*helper->callback)
 				{
-					(*helper->callback)(dlnow);
+					(*helper->callback)(static_cast<size_t>(dlnow));
 				}
 			}
 			catch (...)
@@ -116,7 +116,7 @@ namespace utils::http
 
 		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_list);
 		curl_easy_setopt(curl, CURLOPT_URL, url.data());
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.data());
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
