@@ -200,6 +200,7 @@ namespace command
 		if (handlers_sv.find(command) != handlers_sv.end())
 		{
 			handlers_sv[command](client_num, params);
+			return;
 		}
 
 		client_command_hook.invoke<void>(client_num);
