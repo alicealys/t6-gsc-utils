@@ -54,7 +54,7 @@ namespace turret
 		}
 
 		template <typename T> 
-		std::enable_if<std::is_same<T, float*>::value, setter_t>::type
+		typename std::enable_if<std::is_same<T, float*>::value, setter_t>::type
 		get_default_setter([[maybe_unused]] T, const std::string& name, const size_t offset)
 		{
 			return [=](game::TurretInfo* info, const scripting::value_wrap& value)
@@ -74,7 +74,7 @@ namespace turret
 		}
 
 		template <typename T> 
-		std::enable_if<!std::is_same<T, float*>::value, setter_t>::type
+		typename std::enable_if<!std::is_same<T, float*>::value, setter_t>::type
 		get_default_setter([[maybe_unused]] T, const std::string& name, const size_t offset)
 		{
 			return [=](game::TurretInfo* info, const scripting::value_wrap& value)
@@ -237,7 +237,7 @@ namespace turret
 			}
 		}
 
-		game::gentity_s* g_spawn_turret_static_entity_stub(int a3)
+		game::gentity_s* g_spawn_turret_static_entity_stub(int /*unk1*/)
 		{
 			return utils::hook::invoke<game::gentity_s*>(0x54FCC0);
 		}

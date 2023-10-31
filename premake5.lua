@@ -92,7 +92,6 @@ workspace "t6-gsc-utils"
 	
 		pchheader "stdinc.hpp"
 		pchsource "src/stdinc.cpp"
-		buildoptions { "/Zm100 -Zm100" }
 
 		dependencies.imports()
 
