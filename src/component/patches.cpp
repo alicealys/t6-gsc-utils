@@ -12,13 +12,25 @@ namespace patches
 {
 	namespace
 	{
+		const game::dvar_t* sv_display_clan_tag;
+
+		char* cs_display_name_stub(const void* client_state, int type)
+		{
+			if (!sv_display_clan_tag->current.enabled)
+			{
+				type = 1;
+			}
+
+			return utils::hook::invoke<char*>(SELECT(0x59AE90, 0x563AD0), client_state, type);
+		}
+
 		void* bg_get_client_field_stub(int a1, const char* a2)
 		{
 			const auto result = utils::hook::invoke<void*>(0x5B4220, a1, a2);
 			if (!result)
 			{
 				const auto err = utils::string::va("No client field named %s found", a2);
-				game::Scr_Error(game::SCRIPTINSTANCE_SERVER, err, 0);
+				game::Scr_Error(game::SCRIPTINSTANCE_SERVER, err, false);
 			}
 
 			return result;
@@ -44,7 +56,7 @@ namespace patches
 
 			if (!scripting::safe_execution::execute_with_seh(function, entref))
 			{
-				game::Scr_Error(game::SCRIPTINSTANCE_SERVER, "exception handled", 0);
+				game::Scr_Error(game::SCRIPTINSTANCE_SERVER, "exception handled", false);
 			}
 		}
 
@@ -100,6 +112,9 @@ namespace patches
 		{
 			utils::hook::jump(SELECT(0x8F63F9, 0x8F5159), utils::hook::assemble(call_builtin_stub));
 			utils::hook::jump(SELECT(0x8F6490, 0x8F51F0), utils::hook::assemble(call_builtin_method_stub));
+
+			sv_display_clan_tag = game::Dvar_RegisterBool("sv_display_clan_tag", false, 0, "Display the clan tag in the game log");
+			utils::hook::call(SELECT(0x820F1C, 0x81F91C), cs_display_name_stub);
 		}
 
 		void patch_zm()

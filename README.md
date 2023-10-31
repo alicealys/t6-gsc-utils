@@ -593,18 +593,14 @@ Additionally, running the server with the `--gsc-debug` flag will set a custom c
 
 # Bots
 
-Custom bot names and clantags can be set by creating a file in `Plutonium/storage/t6/bots/bots.json` (create the folders if they don't exist) with the following json:
-
-```json
-{
-    "names": {
-        "name": "clantag",
-        "name2": "clantag2"
-    }
-}
-```
-
-As shown by this example the pairs of name and clantag must be stored in an object called `names`.  
-When a bot connects it will assign the pair of name and clantag based on the order they are in the object starting from the top.
+Custom bot names and clantags can be set by creating a file in `Plutonium/storage/t6/bots.txt`
+This feature is now supported by Plutonium and you should refer to the official forum for assistance.
 
 * `dropAllBots()`: Kick all test clients from the lobby.
+
+# GameLog
+
+Remove the clan tag from the name of a player from the game log. This fixes IW4M erroneously thining the full name of a player is made of the clan tag plus the name instead of just the name.
+This also patches the behaviour of the .name getter function for players for GSC scripts. In short, this only affects GSC and the game log.
+
+* `sv_display_clan_tag`: This dvar toggles the patch
