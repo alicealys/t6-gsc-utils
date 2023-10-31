@@ -35,20 +35,20 @@ namespace utils::string
 
 	std::string to_lower(std::string text)
 	{
-		std::transform(text.begin(), text.end(), text.begin(), [](const char input)
-			{
+		std::transform(text.begin(), text.end(), text.begin(), [](const unsigned char input)
+		{
 				return static_cast<char>(tolower(input));
-			});
+		});
 
 		return text;
 	}
 
 	std::string to_upper(std::string text)
 	{
-		std::transform(text.begin(), text.end(), text.begin(), [](const char input)
-			{
+		std::transform(text.begin(), text.end(), text.begin(), [](const unsigned char input)
+		{
 				return static_cast<char>(toupper(input));
-			});
+		});
 
 		return text;
 	}
@@ -66,7 +66,12 @@ namespace utils::string
 
 	bool is_numeric(const std::string& text)
 	{
-		return std::to_string(atoi(text.data())) == text;
+		return !text.empty() && std::find_if(text.begin(),
+			text.end(),
+			[](unsigned char input)
+		{
+			return !std::isdigit(input);
+		}) == text.end();
 	}
 
 	std::string dump_hex(const std::string& data, const std::string& separator)
@@ -86,34 +91,6 @@ namespace utils::string
 		return result;
 	}
 
-	void strip(const char* in, char* out, int max)
-	{
-		if (!in || !out) return;
-
-		max--;
-		auto current = 0;
-		while (*in != 0 && current < max)
-		{
-			const auto color_index = (*(in + 1) - 48) >= 0xC ? 7 : (*(in + 1) - 48);
-
-			if (*in == '^' && (color_index != 7 || *(in + 1) == '7'))
-			{
-				++in;
-			}
-			else
-			{
-				*out = *in;
-				++out;
-				++current;
-			}
-
-			++in;
-		}
-		*out = '\0';
-	}
-
-#pragma warning(push)
-#pragma warning(disable: 4100)
 	std::string convert(const std::wstring& wstr)
 	{
 		std::string result;
@@ -139,7 +116,6 @@ namespace utils::string
 
 		return result;
 	}
-#pragma warning(pop)
 
 	std::string replace(std::string str, const std::string& from, const std::string& to)
 	{
