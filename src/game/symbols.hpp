@@ -99,6 +99,8 @@ namespace game
 
 	// Variables
 
+	WEAK symbol<CmdArgs> sv_cmd_args{0x255DD48, 0x252F8C8};
+
 	WEAK symbol<int> g_script_error_level{0x2E23BC8, 0x2DF3EC8};
 	WEAK symbol<jmp_buf> g_script_error{0x2E22B48, 0x2DF2E48};
 

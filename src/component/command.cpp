@@ -5,21 +5,27 @@
 
 #include "command.hpp"
 #include "gsc.hpp"
+#include "scheduler.hpp"
 #include "scripting.hpp"
 
+#include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/memory.hpp>
 
 namespace command
 {
 	std::unordered_map<std::string, std::function<void(params&)>> handlers;
+	std::unordered_map<std::string, std::function<void(int, params_sv&)>> handlers_sv;
 
 	std::vector<std::string> script_commands;
+	std::vector<std::string> script_sv_commands;
 	utils::memory::allocator allocator;
+
+	utils::hook::detour client_command_hook;
 
 	game::CmdArgs* get_cmd_args()
 	{
-		return reinterpret_cast<game::CmdArgs*>(game::Sys_GetValue(4));
+		return static_cast<game::CmdArgs*>(game::Sys_GetValue(4));
 	}
 
 	void main_handler()
@@ -42,7 +48,7 @@ namespace command
 	int params::size() const
 	{
 		const auto cmd_args = get_cmd_args();
-		return cmd_args->argc[cmd_args->nesting];
+		return cmd_args->argc[this->nesting_];
 	}
 
 	const char* params::get(int index) const
@@ -69,12 +75,59 @@ namespace command
 		return result;
 	}
 
+	params_sv::params_sv()
+		: nesting_(game::sv_cmd_args->nesting)
+	{
+	}
+
+	int params_sv::size() const
+	{
+		return game::sv_cmd_args->argc[this->nesting_];
+	}
+
+	const char* params_sv::get(const int index) const
+	{
+		if (index >= this->size())
+		{
+			return "";
+		}
+
+		return game::sv_cmd_args->argv[this->nesting_][index];
+	}
+
+	std::string params_sv::join(const int index) const
+	{
+		std::string result = {};
+
+		for (auto i = index; i < this->size(); i++)
+		{
+			if (i > index)
+			{
+				result.append(" ");
+			}
+
+			result.append(this->get(i));
+		}
+
+		return result;
+	}
+
+	std::vector<std::string> params_sv::get_all() const
+	{
+		std::vector<std::string> params_;
+		for (auto i = 0; i < this->size(); i++)
+		{
+			params_.emplace_back(this->get(i));
+		}
+		return params_;
+	}
+
 	void add_raw(const char* name, void (*callback)())
 	{
 		game::Cmd_AddCommandInternal(name, callback, utils::memory::get_allocator()->allocate<game::cmd_function_t>());
 	}
 
-	void add(const char* name, std::function<void(params&)> callback)
+	void add(const char* name, const std::function<void(params&)>& callback)
 	{
 		const auto command = utils::string::to_lower(name);
 
@@ -86,11 +139,25 @@ namespace command
 		handlers[command] = callback;
 	}
 
+	void add_sv(const std::string& name, const std::function<void(int, const params_sv&)>& callback)
+	{
+		const auto command = utils::string::to_lower(name);
+		if (handlers_sv.find(command) == handlers_sv.end())
+		{
+			handlers_sv[command] = callback;
+		}
+	}
+
 	void add_script_command(const std::string& name, const std::function<void(const params&)>& callback)
 	{
 		script_commands.push_back(name);
-		const auto _name = allocator.duplicate_string(name);
-		add(_name, callback);
+		add(allocator.duplicate_string(name), callback);
+	}
+
+	void add_script_sv_command(const std::string& name, const std::function<void(int, const params_sv&)>& callback)
+	{
+		script_sv_commands.push_back(name);
+		add_sv(name, callback);
 	}
 
 	void clear_script_commands()
@@ -101,8 +168,14 @@ namespace command
 			game::Cmd_RemoveCommand(name.data());
 		}
 
+		for (const auto& name : script_sv_commands)
+		{
+			handlers_sv.erase(name);
+		}
+
 		allocator.clear();
 		script_commands.clear();
+		script_sv_commands.clear();
 	}
 
 	void execute(std::string command, const bool sync)
@@ -119,6 +192,19 @@ namespace command
 		}
 	}
 
+	void client_command_stub(const int client_num)
+	{
+		params_sv params = {};
+
+		const auto command = utils::string::to_lower(params[0]);
+		if (handlers_sv.find(command) != handlers_sv.end())
+		{
+			handlers_sv[command](client_num, params);
+		}
+
+		client_command_hook.invoke<void>(client_num);
+	}
+
 	class component final : public component_interface
 	{
 	public:
@@ -126,7 +212,9 @@ namespace command
 		{
 			scripting::on_shutdown(clear_script_commands);
 
-			command::add("notifylevel", [](command::params& params)
+			client_command_hook.create(SELECT(0x47E590, 0x4490C0), client_command_stub);
+
+			add("notifylevel", [](const params& params)
 			{
 				if (params.size() < 2)
 				{
@@ -152,7 +240,7 @@ namespace command
 				game::Scr_NotifyId(game::SCRIPTINSTANCE_SERVER, 0, *game::levelEntityId, name, argc - 2);
 			});
 
-			command::add("notifynum", [](command::params& params)
+			add("notifynum", [](const params& params)
 			{
 				if (params.size() < 3)
 				{
@@ -202,7 +290,8 @@ namespace command
 			{
 				const auto name = args[0].as<std::string>();
 				const auto function = args[1].as<scripting::function>();
-				command::add_script_command(name, [function](const command::params& params)
+
+				add_script_command(name, [function](const params& params)
 				{
 					scripting::array array;
 
@@ -216,6 +305,33 @@ namespace command
 
 				return {};
 			});
+
+			gsc::function::add("addclientcommand", [](const gsc::function_args& args) -> scripting::script_value
+			{
+				const auto name = args[0].as<std::string>();
+				const auto function = args[1].as<scripting::function>();
+
+				add_script_sv_command(name, [function](const int client_num, const params_sv& params)
+				{
+					const auto params_ = params.get_all();
+					scheduler::once([=]()
+					{
+						const scripting::entity player = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, client_num, 0, 0);
+
+						scripting::array array;
+
+						for (auto i = 0; i < params.size(); i++)
+						{
+							array.push(params[i]);
+						}
+
+						function(player, {array});
+					}, scheduler::pipeline::server);
+				});
+
+				return {};
+			});
+
 		}
 	};
 }
