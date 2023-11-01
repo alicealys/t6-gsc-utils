@@ -7,6 +7,7 @@
 #include "scripting.hpp"
 
 #include <utils/hook.hpp>
+#include <utils/info_string.hpp>
 #include <utils/string.hpp>
 
 namespace chat
@@ -21,64 +22,32 @@ namespace chat
 		std::vector<scripting::function> say_callbacks;
 		utils::hook::detour g_say_hook;
 
-		userinfo_map userinfo_to_map(std::string userinfo)
+		void sv_get_user_info_stub(int index, char* buffer, int buffer_size)
 		{
-			userinfo_map map{};
+			sv_get_user_info_hook.invoke<void>(index, buffer, buffer_size);
 
-			if (userinfo[0] == '\\')
+			utils::info_string map(buffer);
+
+			for (const auto& [key, val] : userinfo_overrides[index])
 			{
-				userinfo = userinfo.substr(1);
-			}
-
-			const auto args = utils::string::split(userinfo, '\\');
-			for (size_t i = 0; !args.empty() && i < (args.size() - 1); i += 2)
-			{
-				map[args[i]] = args[i + 1];
-			}
-
-			return map;
-		}
-
-		std::string map_to_userinfo(const userinfo_map& map)
-		{
-			std::string buffer{};
-
-			for (const auto& value : map)
-			{
-				buffer.append("\\");
-				buffer.append(value.first);
-				buffer.append("\\");
-				buffer.append(value.second);
-			}
-
-			return buffer;
-		}
-
-		void sv_get_user_info_stub(int index, char* buffer, int bufferSize)
-		{
-			sv_get_user_info_hook.invoke<void>(index, buffer, bufferSize);
-			auto map = userinfo_to_map(buffer);
-
-			for (const auto& values : userinfo_overrides[index])
-			{
-				if (values.second.empty())
+				if (val.empty())
 				{
-					map.erase(values.first);
+					map.remove(key);
 				}
 				else
 				{
-					map[values.first] = values.second;
+					map.set(key, val);
 				}
 			}
 
-			const auto userinfo = map_to_userinfo(map);
-			strcpy_s(buffer, 1024, userinfo.data());
+			const auto userinfo = map.build();
+			strncpy_s(buffer, 1024, userinfo.data(), _TRUNCATE);
 		}
 
-		const char* client_connect_stub(int client, unsigned int scriptPersId)
+		const char* client_connect_stub(int client, unsigned int script_pers_id)
 		{
 			userinfo_overrides[client].clear();
-			return client_connect_hook.invoke<const char*>(client, scriptPersId);
+			return client_connect_hook.invoke<const char*>(client, script_pers_id);
 		}
 
 		void g_say_stub(game::gentity_s* ent, game::gentity_s* target, int mode, const char* chatText)
