@@ -3,12 +3,9 @@
 
 #include "game/game.hpp"
 
+#include "gsc.hpp"
 #include "io.hpp"
-#include "gsc.hpp"
 #include "scheduler.hpp"
-
-#include "gsc.hpp"
-#include "json.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/http.hpp>
@@ -18,18 +15,6 @@ namespace io
 {
 	namespace
 	{
-		void replace(std::string& str, const std::string& from, const std::string& to) 
-		{
-			const auto start_pos = str.find(from);
-
-			if (start_pos == std::string::npos)
-			{
-				return;
-			}
-
-			str.replace(start_pos, from.length(), to);
-		}
-
 		scripting::script_value http_get(const gsc::function_args& args)
 		{
 			const auto url = args[0].as<std::string>();
@@ -38,12 +23,12 @@ namespace io
 
 			scheduler::once([object_id, url]()
 			{
-				const auto result = utils::http::get_data(url.data());
+				const auto result = utils::http::get_data(url);
 				scheduler::once([object_id, result]()
 				{
 					const auto value = result.has_value()
 						? result.value().substr(0, 0x5000)
-						: "";
+						: ""s;
 					scripting::notify(object_id, "done", {value});
 				});
 			}, scheduler::pipeline::async);
@@ -74,10 +59,10 @@ namespace io
 
 			scheduler::once([object_id, url, data, headers]()
 			{
-				const auto result = utils::http::post_data(url.data(), data, headers);
+				const auto result = utils::http::post_data(url, data, headers);
 				scheduler::once([object_id, result]()
 				{
-					const auto value = result.has_value() ? result.value().substr(0, 0x5000) : "";
+					const auto value = result.has_value() ? result.value().substr(0, 0x5000) : ""s;
 					scripting::notify(object_id, "done", { value });
 				});
 			}, scheduler::pipeline::async);
@@ -93,33 +78,6 @@ namespace io
 		{
 			const auto path = game::Dvar_FindVar("fs_homepath")->current.string;
 			std::filesystem::current_path(path);
-
-			gsc::function::add("va", [](const gsc::function_args& args)
-			{
-				auto fmt = args[0].as<std::string>();
-
-				for (auto i = 1u; i < args.size(); i++)
-				{
-					const auto arg = args[i].to_string();
-					replace(fmt, "%s", arg);
-				}
-
-				return fmt;
-			});
-
-			gsc::function::add("jsonprint", [](const gsc::function_args& args) -> scripting::script_value
-			{
-				std::string buffer;
-
-				for (const auto arg : args.get_raw())
-				{
-					buffer.append(json::gsc_to_string(arg));
-					buffer.append("\t");
-				}
-
-				printf("%s\n", buffer.data());
-				return {};
-			});
 
 			gsc::function::add("fremove", [](const gsc::function_args& args)
 			{
@@ -217,6 +175,19 @@ namespace io
 				return utils::io::create_directory(path);
 			});
 
+			gsc::function::add("deletedirectory", [](const gsc::function_args& args)
+			{
+				const auto path = args[0].as<std::string>();
+				auto recursive = false;
+
+				if (args.size() == 2)
+				{
+					recursive = args[1].as<bool>();
+				}
+
+				return utils::io::remove_directory(path, recursive);
+			});
+
 			gsc::function::add("directoryexists", [](const gsc::function_args& args)
 			{
 				const auto path = args[0].as<std::string>();
@@ -260,8 +231,8 @@ namespace io
 
 			gsc::function::add("hashstring", [](const gsc::function_args& args)
 			{
-				const auto str = args[0].as<std::string>();
-				return game::BG_StringHashValue(str.data());
+				const auto* str = args[0].as<const char*>();
+				return game::BG_StringHashValue(str);
 			});
 
 			gsc::function::add("httpget", http_get);

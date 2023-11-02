@@ -99,6 +99,19 @@ namespace utils::io
 		return std::filesystem::is_empty(directory);
 	}
 
+	bool remove_directory(const std::string& directory, const bool recursive)
+	{
+		std::error_code ec;
+
+		if (recursive)
+		{
+			std::uintmax_t n{ std::filesystem::remove_all(directory, ec) };
+			return (n && (n != static_cast<std::uintmax_t>(-1))); // Why did they make it this way?
+		}
+
+		return std::filesystem::remove(directory, ec);
+	}
+
 	std::vector<std::string> list_files(const std::string& directory)
 	{
 		std::vector<std::string> files;

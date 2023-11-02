@@ -1,8 +1,6 @@
 #include <stdinc.hpp>
 #include "loader/component_loader.hpp"
 
-#include "scheduler.hpp"
-
 #include "game/scripting/event.hpp"
 #include "game/scripting/execution.hpp"
 #include "game/scripting/array.hpp"
@@ -19,7 +17,7 @@ namespace json
 	{
 		std::unordered_set<unsigned int> dumped_objects;
 
-		nlohmann::json gsc_to_json(scripting::script_value value, bool print_id);
+		nlohmann::json gsc_to_json(const scripting::script_value& value, bool print_id);
 
 		nlohmann::json array_to_json(const scripting::array& array, bool print_id)
 		{
@@ -92,7 +90,7 @@ namespace json
 			return obj;
 		}
 
-		nlohmann::json gsc_to_json(scripting::script_value value, bool print_id)
+		nlohmann::json gsc_to_json(const scripting::script_value& value, bool print_id)
 		{
 			const auto variable = value.get_raw();
 
@@ -278,6 +276,20 @@ namespace json
 
 				dumped_objects = {};
 				return utils::io::write_file(file, gsc_to_json(value, print_id).dump(indent));
+			});
+
+			gsc::function::add("jsonprint", [](const gsc::function_args& args) -> scripting::script_value
+			{
+				std::string buffer;
+
+				for (const auto& arg : args.get_raw())
+				{
+					buffer.append(gsc_to_string(arg));
+					buffer.append("\t");
+				}
+
+				printf("%s\n", buffer.data());
+				return {};
 			});
 		}
 	};
