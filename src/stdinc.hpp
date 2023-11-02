@@ -11,25 +11,27 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include <vector>
 #include <cassert>
-#include <mutex>
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <algorithm>
-#include <functional>
-#include <regex>
-#include <queue>
-#include <unordered_set>
-#include <filesystem>
-#include <map>
 #include <csetjmp>
+
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <map>
+#include <mutex>
+#include <queue>
+#include <regex>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
 #include <atlcomcli.h>
 #include <variant>
 #include <optional>
-#include <Psapi.h>
 
 #ifdef max
 #undef max

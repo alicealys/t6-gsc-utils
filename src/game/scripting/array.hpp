@@ -17,7 +17,7 @@ namespace scripting
 	{
 	public:
 		array();
-		array(const unsigned int);
+		array(unsigned int);
 
 		array(std::vector<script_value>);
 		array(std::unordered_map<std::string, script_value>);
@@ -49,7 +49,7 @@ namespace scripting
 		unsigned int get_entity_id() const;
 
 		unsigned int get_value_id(const std::string&) const;
-		unsigned int get_value_id(const unsigned int) const;
+		unsigned int get_value_id(unsigned int) const;
 
 		entity get_raw() const;
 

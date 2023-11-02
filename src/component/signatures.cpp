@@ -6,6 +6,8 @@
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 
+#include <Psapi.h>
+
 namespace signatures
 {
 	size_t load_image_size()
