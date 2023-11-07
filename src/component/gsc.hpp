@@ -85,13 +85,13 @@ namespace gsc
 		template <typename F, auto = []{}>
 		void add_internal(const std::string& name, F function)
 		{
-			static auto name_ = name;
-			static auto done = false;
-			if (done)
-			{
-				printf("already added %s (%s)\n", name.data(), name_.data());
-			}
-			done = true;
+			static auto called = false;
+			assert(!called);
+			called = true;
+
+#ifdef DEBUG
+			printf("[function] %s\n", name.data());
+#endif
 
 			static const auto lower = utils::string::to_lower(name);
 			static const auto [iterator, was_inserted] = functions.insert(std::make_pair(lower, function));
@@ -121,13 +121,13 @@ namespace gsc
 		template <typename F, auto = []{}>
 		void add_internal(const std::string& name, F function)
 		{
-			static auto name_ = name;
-			static auto done = false;
-			if (done)
-			{
-				printf("already added %s (%s)\n", name.data(), name_.data());
-			}
-			done = true;
+			static auto called = false;
+			assert(!called);
+			called = true;
+
+#ifdef DEBUG
+			printf("[method] %s\n", name.data());
+#endif
 
 			static const auto lower = utils::string::to_lower(name);
 			static const auto [iterator, was_inserted] = functions.insert(std::make_pair(lower, function));
