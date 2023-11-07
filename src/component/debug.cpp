@@ -493,11 +493,11 @@ namespace debug
                 *reinterpret_cast<int*>(0) = 1;
             });
 
-            gsc::function::add("breakpoint", [](const scripting::variadic_args& args) -> scripting::script_value
+            gsc::function::add("breakpoint", [](const scripting::variadic_args& args)
             {
                 if (!developer_script->current.enabled)
                 {
-                    return {};
+                    return;
                 }
 
                 std::string msg;
