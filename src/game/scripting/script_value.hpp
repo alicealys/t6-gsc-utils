@@ -11,7 +11,7 @@ namespace scripting
 	class array;
 	class object;
 	class function;
-	class value_wrap;
+	class script_value;
 
 	namespace
 	{
@@ -102,12 +102,13 @@ namespace scripting
 		}
 	}
 
+	using arguments = std::vector<script_value>;
+
 	class script_value
 	{
 	public:
 		script_value() = default;
 		script_value(const game::VariableValue& value);
-		script_value(const value_wrap& value);
 
 		script_value(void* value);
 
@@ -129,15 +130,70 @@ namespace scripting
 
 		script_value(const vector& value);
 
+	private:
 		template <typename T>
-		bool is() const;
-
-		std::string type_name() const
+		T get() const
 		{
-			return get_typename(this->get_raw());
+			if constexpr (std::is_pointer<T>::value)
+			{
+				if (this->is<unsigned int>())
+				{
+					return reinterpret_cast<T>(this->as<unsigned int>());
+				}
+			}
+
+			if constexpr (std::is_constructible<T, std::string>::value)
+			{
+				if (this->is<std::string>())
+				{
+					return T(this->as<std::string>());
+				}
+			}
+
+			throw std::runtime_error("Invalid type");
+		}
+	public:
+
+#define ADD_TYPE(type) \
+		template <> \
+		bool is<type>() const; \
+private: \
+		template <> \
+		type get<>() const; \
+public: \
+
+		template <typename T>
+		bool is() const
+		{
+			if (std::is_pointer<T>::value && this->is<unsigned int>())
+			{
+				return true;
+			}
+
+			if (std::is_constructible<T, std::string>::value && this->is<std::string>())
+			{
+				return true;
+			}
+
+			return false;
 		}
 
-		std::string to_string() const;
+		ADD_TYPE(bool)
+		ADD_TYPE(int)
+		ADD_TYPE(unsigned int)
+		ADD_TYPE(unsigned short)
+		ADD_TYPE(float)
+		ADD_TYPE(float*)
+		ADD_TYPE(double)
+		ADD_TYPE(const char*)
+		ADD_TYPE(std::string)
+
+		ADD_TYPE(vector)
+		ADD_TYPE(array)
+		ADD_TYPE(object)
+		ADD_TYPE(function)
+		ADD_TYPE(entity)
+		ADD_TYPE(script_value)
 
 		template <typename T>
 		T as() const
@@ -146,16 +202,88 @@ namespace scripting
 			{
 				const auto type = get_typename(this->get_raw());
 				const auto c_type = get_c_typename<T>();
-				throw std::runtime_error(std::string("has type '" + type + "' but should be '" + c_type + "'"));
+				throw std::runtime_error(utils::string::va("has type '%s' but should be '%s'", type.data(), c_type.data()));
 			}
 
 			return get<T>();
 		}
 
+		std::string type_name() const
+		{
+			return get_typename(this->get_raw());
+		}
+
+		template <template<class, class> class C, class T, typename ArrayType = array>
+		script_value(const C<T, std::allocator<T>>& container)
+		{
+			ArrayType array_{};
+
+			for (const auto& value : container)
+			{
+				array_.push(value);
+			}
+
+			game::VariableValue value{};
+			value.type = game::SCRIPT_OBJECT;
+			value.u.pointerValue = array_.get_entity_id();
+
+			this->value_ = value;
+		}
+
+		template<class ...T>
+		arguments operator()(T... arguments) const
+		{
+			return this->as<function>().call({arguments...});
+		}
+
+		std::string to_string() const;
+
+		const game::VariableValue& get_raw() const;
+
+		variable_value value_{};
+
+	};
+
+	class function_argument;
+
+	class variadic_args : public std::vector<function_argument>
+	{
+	public:
+		variadic_args(const size_t begin);
+
+		function_argument operator[](size_t index) const;
+	private:
+		size_t begin_;
+	};
+
+	class function_argument : public script_value
+	{
+	public:
+		function_argument(const arguments& args, const script_value& value, const size_t index, const bool exists);
+
+		template <typename T>
+		T as() const
+		{
+			if (!this->exists_)
+			{
+				throw std::runtime_error(utils::string::va("parameter %d does not exist", this->index_));
+			}
+
+			try
+			{
+				return script_value::as<T>();
+			}
+			catch (const std::exception& e)
+			{
+				throw std::runtime_error(utils::string::va("parameter %d %s",
+					this->index_, e.what()));
+			}
+		}
+
 		template <typename T, typename I = int>
 		T* as_ptr() const
 		{
-			const auto value = this->get<I>();
+			const auto value = script_value::as<I>();
 
 			if (!value)
 			{
@@ -165,69 +293,78 @@ namespace scripting
 			return reinterpret_cast<T*>(value);
 		}
 
-		const game::VariableValue& get_raw() const;
+		template <>
+		variadic_args as() const
+		{
+			variadic_args args{this->index_};
+			for (auto i = this->index_; i < this->values_.size(); i++)
+			{
+				args.push_back({this->values_, this->values_[i], i, true});
+			}
+			return args;
+		}
 
-		variable_value value_{};
+		operator variadic_args() const
+		{
+			return this->as<variadic_args>();
+		}
+
+		template <template<class, class> class C, class T, class ArrayType = array>
+		operator C<T, std::allocator<T>>() const
+		{
+			const auto container_type = get_c_typename<C<T, std::allocator<T>>>();
+			if (!script_value::as<ArrayType>())
+			{
+				const auto type = get_typename(this->get_raw());
+
+				throw std::runtime_error(utils::string::va("has type '%s' but should be '%s'",
+					type.data(),
+					container_type.data()
+				));
+			}
+
+			C<T, std::allocator<T>> container{};
+			const auto array = script_value::as<ArrayType>();
+			for (auto i = 0; i < array.size(); i++)
+			{
+				try
+				{
+					container.push_back(array.get(i).as<T>());
+				}
+				catch (const std::exception& e)
+				{
+					throw std::runtime_error(utils::string::va("element %d of parameter %d of type '%s' %s",
+						i, this->index_, container_type.data(), e.what()));
+				}
+			}
+
+			return container;
+		}
+
+		template <typename T>
+		operator T() const
+		{
+			return this->as<T>();
+		}
 
 	private:
-		template <typename T>
-		T get() const;
-
+		arguments values_{};
+		size_t index_{};
+		bool exists_{};
 	};
 
-	class value_wrap
+	class function_arguments
 	{
 	public:
-		value_wrap(const scripting::script_value& value, int argument_index);
+		function_arguments(const arguments& values);
 
-		std::string to_string() const
-		{
-			return this->value_.to_string();
-		}
+		function_argument operator[](const size_t index) const;
 
-		std::string type_name() const
-		{
-			return this->value_.type_name();
-		}
+		arguments get_raw() const;
 
-		template <typename T>
-		T as() const
-		{
-			try
-			{
-				return this->value_.as<T>();
-			}
-			catch (const std::exception& e)
-			{
-				throw std::runtime_error(utils::string::va("parameter %d %s", this->argument_index_, e.what()));
-			}
-		}
+		size_t size() const;
 
-		template <typename T, typename I = int>
-		T* as_ptr() const
-		{
-			try
-			{
-				return this->value_.as_ptr<T>();
-			}
-			catch (const std::exception& e)
-			{
-				throw std::runtime_error(utils::string::va("parameter %d %s", this->argument_index_, e.what()));
-			}
-		}
-
-		template <typename T>
-		bool is() const
-		{
-			return this->value_.is<T>();
-		}
-
-		const game::VariableValue& get_raw() const
-		{
-			return this->value_.get_raw();
-		}
-
-		int argument_index_{};
-		scripting::script_value value_;
+	private:
+		arguments values_{};
 	};
 }

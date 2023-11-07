@@ -648,6 +648,15 @@ namespace game
 		char flags;
 	};
 
+	struct GSC_IMPORT_ITEM
+	{
+		unsigned __int16 name;
+		unsigned __int16 name_space;
+		unsigned __int16 num_address;
+		char param_count;
+		char flags;
+	};
+
 	// gsc-tool
 	enum class opcode : std::uint8_t
 	{

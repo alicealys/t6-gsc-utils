@@ -9,6 +9,11 @@ namespace utils::io
 		return DeleteFileA(file.data()) == TRUE;
 	}
 
+	bool move_file(const std::string& src, const std::string& target)
+	{
+		return MoveFileA(src.data(), target.data()) == TRUE;
+	}
+
 	bool file_exists(const std::string& file)
 	{
 		return std::ifstream(file).good();

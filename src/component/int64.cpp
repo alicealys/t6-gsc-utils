@@ -12,7 +12,7 @@ namespace int64
 {
 	namespace
 	{
-		int64_t get_int64_arg(const gsc::function_args& args, int index, bool optional)
+		int64_t get_int64_arg(const scripting::variadic_args& args, int index, bool optional)
 		{
 			if (optional && index >= static_cast<int>(args.size()))
 			{
@@ -64,18 +64,18 @@ namespace int64
 	public:
 		void post_unpack() override
 		{
-			gsc::function::add("int64_is_int", [](const gsc::function_args& args)
+			gsc::function::add("int64_is_int", [](const scripting::variadic_args& args)
 			{
 				auto value = get_int64_arg(args, 0, false);
 				return value <= std::numeric_limits<int32_t>::max() && value >= std::numeric_limits<int32_t>::min();
 			});
 
-			gsc::function::add("int64_to_int", [](const gsc::function_args& args)
+			gsc::function::add("int64_to_int", [](const scripting::variadic_args& args)
 			{
 				return static_cast<int32_t>(get_int64_arg(args, 0, false));
 			});
 
-			gsc::function::add("int64_op", [](const gsc::function_args& args) -> scripting::script_value
+			gsc::function::add("int64_op", [](const scripting::variadic_args& args) -> scripting::script_value
 			{
 				auto a = get_int64_arg(args, 0, false);
 				const auto op = args[1].as<std::string>();

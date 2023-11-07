@@ -16,11 +16,6 @@ namespace scripting
 	{
 	}
 
-	script_value::script_value(const value_wrap& value)
-		: value_(value.get_raw())
-	{
-	}
-
 	script_value::script_value(void* value)
 	{
 		game::VariableValue variable{};
@@ -431,9 +426,53 @@ namespace scripting
 		return this->type_name();
 	}
 
-	value_wrap::value_wrap(const scripting::script_value& value, int argument_index)
-		: value_(value)
-		, argument_index_(argument_index)
+	function_argument::function_argument(const arguments& args, const script_value& value, const size_t index, const bool exists)
+		: script_value(value)
+		, values_(args)
+		, index_(index)
+		, exists_(exists)
 	{
+
+	}
+
+	function_arguments::function_arguments(const arguments& values)
+		: values_(values)
+	{
+	}
+
+	variadic_args::variadic_args(const size_t begin)
+		: std::vector<function_argument>({})
+		, begin_(begin)
+	{
+	}
+
+	function_argument variadic_args::operator[](size_t index) const
+	{
+		if (index >= this->size())
+		{
+			throw std::runtime_error(utils::string::va("parameter %d does not exist", this->begin_ + index));
+		}
+
+		return std::vector<function_argument>::operator[](index);
+	}
+
+	function_argument function_arguments::operator[](const size_t index) const
+	{
+		if (index >= values_.size())
+		{
+			return {values_, {}, index, false};
+		}
+
+		return {values_, values_[index], index, true};
+	}
+
+	arguments function_arguments::get_raw() const
+	{
+		return this->values_;
+	}
+
+	size_t function_arguments::size() const
+	{
+		return this->values_.size();
 	}
 }

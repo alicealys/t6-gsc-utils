@@ -10,67 +10,10 @@
 #include <utils/hook.hpp>
 #include <utils/http.hpp>
 #include <utils/io.hpp>
+#include <curl/curl.h>
 
 namespace io
 {
-	namespace
-	{
-		scripting::script_value http_get(const gsc::function_args& args)
-		{
-			const auto url = args[0].as<std::string>();
-			const scripting::object object{};
-			const auto object_id = object.get_entity_id();
-
-			scheduler::once([object_id, url]()
-			{
-				const auto result = utils::http::get_data(url);
-				scheduler::once([object_id, result]()
-				{
-					const auto value = result.has_value()
-						? result.value().substr(0, 0x5000)
-						: ""s;
-					scripting::notify(object_id, "done", {value});
-				});
-			}, scheduler::pipeline::async);
-
-			return object;
-		}
-
-		scripting::script_value http_post(const gsc::function_args& args)
-		{
-			const auto url = args[0].as<std::string>();
-			const auto data = args[1].as<std::string>();
-			const auto headers_array = args[2].as<scripting::array>();
-
-			utils::http::headers headers;
-			for (const auto& key : headers_array.get_keys())
-			{
-				const auto value = headers_array[key];
-				if (!key.is<std::string>() || !value.is<std::string>())
-				{
-					continue;
-				}
-
-				headers[key.as<std::string>()] = value.as<std::string>();
-			}
-
-			const scripting::object object{};
-			const auto object_id = object.get_entity_id();
-
-			scheduler::once([object_id, url, data, headers]()
-			{
-				const auto result = utils::http::post_data(url, data, headers);
-				scheduler::once([object_id, result]()
-				{
-					const auto value = result.has_value() ? result.value().substr(0, 0x5000) : ""s;
-					scripting::notify(object_id, "done", { value });
-				});
-			}, scheduler::pipeline::async);
-
-			return object;
-		}
-	}
-
 	class component final : public component_interface
 	{
 	public:
@@ -79,17 +22,13 @@ namespace io
 			const auto path = game::Dvar_FindVar("fs_homepath")->current.string;
 			std::filesystem::current_path(path);
 
-			gsc::function::add("fremove", [](const gsc::function_args& args)
+			gsc::function::add("fremove", [](const char* path)
 			{
-				const auto path = args[0].as<const char*>();
 				return std::remove(path);
 			});
 
-			gsc::function::add("fopen", [](const gsc::function_args& args)
+			gsc::function::add("fopen", [](const char* path, const char* mode)
 			{
-				const auto* path = args[0].as<const char*>();
-				const auto* mode = args[1].as<const char*>();
-
 				FILE* handle = nullptr;
 				if (fopen_s(&handle, path, mode) != 0)
 				{
@@ -104,24 +43,18 @@ namespace io
 				return handle;
 			});
 
-			gsc::function::add("fclose", [](const gsc::function_args& args)
+			gsc::function::add("fclose", [](FILE* handle)
 			{
-				const auto handle = args[0].as_ptr<FILE>();
 				return fclose(handle);
 			});
 
-			gsc::function::add("fwrite", [](const gsc::function_args& args)
+			gsc::function::add("fwrite", [](FILE* handle, const char* text)
 			{
-				const auto handle = args[0].as_ptr<FILE>();
-				const auto text = args[1].as<const char*>();
-
-				return fprintf(handle, text);
+				return fprintf(handle, "%s", text);
 			});
 
-			gsc::function::add("fread", [](const gsc::function_args& args)
+			gsc::function::add("fread", [](FILE* handle)
 			{
-				const auto handle = args[0].as_ptr<FILE>();
-
 				fseek(handle, 0, SEEK_END);
 				const auto length = ftell(handle);
 
@@ -137,107 +70,52 @@ namespace io
 				return result;
 			});
 
-			gsc::function::add("fileexists", [](const gsc::function_args& args)
+			gsc::function::add("hashstring", [](const char* str)
 			{
-				const auto path = args[0].as<std::string>();
-				return utils::io::file_exists(path);
-			});
-
-			gsc::function::add("writefile", [](const gsc::function_args& args)
-			{
-				const auto path = args[0].as<std::string>();
-				const auto data = args[1].as<std::string>();
-
-				auto append = false;
-				if (args.size() > 2)
-				{
-					append = args[2].as<bool>();
-				}
-
-				return utils::io::write_file(path, data, append);
-			});
-
-			gsc::function::add("readfile", [](const gsc::function_args& args)
-			{
-				const auto path = args[0].as<std::string>();
-				return utils::io::read_file(path);
-			});
-
-			gsc::function::add("filesize", [](const gsc::function_args& args)
-			{
-				const auto path = args[0].as<std::string>();
-				return utils::io::file_size(path);
-			});
-
-			gsc::function::add("createdirectory", [](const gsc::function_args& args)
-			{
-				const auto path = args[0].as<std::string>();
-				return utils::io::create_directory(path);
-			});
-
-			gsc::function::add("deletedirectory", [](const gsc::function_args& args)
-			{
-				const auto path = args[0].as<std::string>();
-				auto recursive = false;
-
-				if (args.size() == 2)
-				{
-					recursive = args[1].as<bool>();
-				}
-
-				return utils::io::remove_directory(path, recursive);
-			});
-
-			gsc::function::add("directoryexists", [](const gsc::function_args& args)
-			{
-				const auto path = args[0].as<std::string>();
-				return utils::io::directory_exists(path);
-			});
-
-			gsc::function::add("directoryisempty", [](const gsc::function_args& args)
-			{
-				const auto path = args[0].as<std::string>();
-				return utils::io::directory_is_empty(path);
-			});
-
-			gsc::function::add("listfiles", [](const gsc::function_args& args)
-			{
-				const auto path = args[0].as<std::string>();
-				const auto files = utils::io::list_files(path);
-
-				scripting::array array{};
-				for (const auto& file : files)
-				{
-					array.push(file);
-				}
-
-				return array;
-			});
-
-			gsc::function::add("copyfolder", [](const gsc::function_args& args)
-			{
-				const auto source = args[0].as<std::string>();
-				const auto target = args[1].as<std::string>();
-				utils::io::copy_folder(source, target);
-
-				return scripting::script_value{};
-			});
-
-			gsc::function::add("removefile", [](const gsc::function_args& args)
-			{
-				const auto path = args[0].as<std::string>();
-				return utils::io::remove_file(path);
-			});
-
-			gsc::function::add("hashstring", [](const gsc::function_args& args)
-			{
-				const auto* str = args[0].as<const char*>();
 				return game::BG_StringHashValue(str);
 			});
 
-			gsc::function::add("httpget", http_get);
-			gsc::function::add("curl", http_get);
-			gsc::function::add("httppost", http_post);
+			gsc::function::add_multiple([](const std::string& file, const std::string& data,
+				const scripting::variadic_args& va)
+			{
+				auto append = false;
+
+				if (va.size() > 0)
+				{
+					append = va[0];
+				}
+
+				return utils::io::write_file(file, data, append);
+			}, "writefile", "io::write_file");
+
+			gsc::function::add_multiple([](const std::string& file, const std::string& data)
+			{
+				return utils::io::write_file(file, data, true);
+			}, "appendfile", "io::append_file");
+
+			gsc::function::add_multiple(utils::io::file_exists, "fileexists", "io::file_exists");
+			gsc::function::add_multiple(utils::io::move_file, "movefile", "io::move_file");
+			gsc::function::add_multiple(utils::io::file_size, "filesize", "io::file_size");
+			gsc::function::add_multiple(utils::io::create_directory, "createdirectory", "io::create_directory");
+			gsc::function::add_multiple(utils::io::directory_exists, "directoryexists", "io::directory_exists");
+			gsc::function::add_multiple(utils::io::directory_is_empty, "directoryisempty", "io::directory_is_empty");
+			gsc::function::add_multiple(utils::io::list_files, "listfiles", "io::list_files");
+			gsc::function::add_multiple(utils::io::remove_file, "removefile", "io::remove_file");
+
+			gsc::function::add_multiple([](const std::string& directory, const scripting::variadic_args& va)
+			{
+				auto recursive = false;
+				if (va.size() > 0)
+				{
+					recursive = va[0];
+				}
+
+				utils::io::remove_directory(directory, recursive);
+			}, "removedirectory", "io::remove_directory");
+
+			gsc::function::add_multiple(utils::io::copy_folder, "copyfolder", "io::copy_folder");
+			gsc::function::add_multiple(utils::io::copy_folder, "copydirectory", "io::copy_directory");
+			gsc::function::add_multiple(static_cast<std::string(*)(const std::string&)>(utils::io::read_file), "readfile", "io::read_file");
 		}
 	};
 }

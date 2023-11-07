@@ -17,15 +17,20 @@
 
 namespace gsc
 {
+    std::unordered_map<std::string, function_t> functions;
+    std::unordered_map<std::string, function_t> methods;
+
+    std::unordered_map<std::string, void*> function_wraps;
+    std::unordered_map<std::string, void*> method_wraps;
+
     namespace
     {
-        std::unordered_map<unsigned int, std::pair<std::string, script_function>> functions;
-        std::unordered_map<unsigned int, std::pair<std::string, script_method>> methods;
-
         utils::hook::detour scr_get_common_function_hook;
         utils::hook::detour player_get_method_hook;
 
         auto field_offset_start = 0xA000;
+
+        std::string current_namespace;
 
         struct entity_field
         {
@@ -45,39 +50,47 @@ namespace gsc
 
         std::atomic_bool disable_longjmp_error = false;
 
-        unsigned int find_function(const std::string& name)
+        std::string get_full_name(const std::string& name)
         {
-            for (const auto& function : functions)
+            if (current_namespace.empty())
             {
-                if (function.second.first == name)
-                {
-                    return function.first;
-                }
+                return name;
             }
 
-            return 0;
+            return std::format("{}::{}", current_namespace, name);
         }
 
-        unsigned int find_method(const std::string& name)
+        void* find_function(const std::string& name)
         {
-            for (const auto& method : methods)
+            const auto full_name = get_full_name(name);
+            const auto iter = function_wraps.find(full_name);
+            if (iter == function_wraps.end())
             {
-                if (method.second.first == name)
-                {
-                    return method.first;
-                }
+                return nullptr;
             }
 
-            return 0;
+            return iter->second;
         }
 
-        builtin_function scr_get_common_function(const char** pName, int* type, int* min_args, int* max_args)
+        void* find_method(const std::string& name)
         {
-            const auto func = reinterpret_cast<builtin_function>(find_function(*pName));
+            const auto full_name = get_full_name(name);
+            const auto iter = method_wraps.find(full_name);
+            if (iter == method_wraps.end())
+            {
+                return nullptr;
+            }
+
+            return iter->second;
+        }
+
+        builtin_function scr_get_common_function(const char** name, int* type, int* min_args, int* max_args)
+        {
+            const auto func = reinterpret_cast<builtin_function>(find_function(*name));
 
             if (func == nullptr)
             {
-                return scr_get_common_function_hook.invoke<builtin_function>(pName, type, min_args, max_args);
+                return scr_get_common_function_hook.invoke<builtin_function>(name, type, min_args, max_args);
             }
 
             *type = 1;
@@ -87,13 +100,13 @@ namespace gsc
             return func;
         }
 
-        builtin_method player_get_method(const char** pName, int* min_args, int* max_args)
+        builtin_method player_get_method(const char** name, int* min_args, int* max_args)
         {
-            const auto method = reinterpret_cast<builtin_method>(find_method(*pName));
+            const auto method = reinterpret_cast<builtin_method>(find_method(*name));
 
             if (method == nullptr)
             {
-                return player_get_method_hook.invoke<builtin_method>(pName, min_args, max_args);
+                return player_get_method_hook.invoke<builtin_method>(name, min_args, max_args);
             }
 
             *min_args = 0;
@@ -110,7 +123,7 @@ namespace gsc
                 return scr_get_object_field_hook.invoke<void>(classnum, entnum, offset);
             }
 
-            const auto field = custom_fields[classnum][offset];
+            const auto& field = custom_fields[classnum][offset];
 
             try
             {
@@ -135,7 +148,7 @@ namespace gsc
             }
 
             const auto args = get_arguments();
-            const auto field = custom_fields[classnum][offset];
+            const auto& field = custom_fields[classnum][offset];
 
             try
             {
@@ -199,36 +212,126 @@ namespace gsc
             }
         }
 
-        bool execute_hook(void* ptr)
+        void gsc_obj_resolve_stub_1(game::GSC_OBJ* obj, game::GSC_IMPORT_ITEM* item)
         {
-            const auto iter = hooked_builtins.find(ptr);
-            if (iter == hooked_builtins.end())
+            const auto name = &obj->magic[item->name];
+            current_namespace = &obj->magic[item->name_space];
+
+            if (current_namespace[0] == 0)
             {
-                return false;
+                return;
             }
 
-            scripting::function function(iter->second);
-            function.call(*game::levelEntityId, get_arguments());
+            const auto is_function = find_function(name);
+            const auto is_method = !is_function && find_method(name);
 
-            return true;
+            if (is_function || is_method)
+            {
+                item->name_space += static_cast<unsigned short>(current_namespace.size());
+            }
+        }
+
+        __declspec(naked) void gsc_obj_resolve_stub_mp()
+        {
+            __asm
+            {
+                pushad
+                push edi
+                push esi
+                call gsc_obj_resolve_stub_1
+                pop esi
+                pop edi
+                popad
+
+                movzx eax, byte ptr[edi + 7]
+                and eax, 0xF
+                dec eax
+
+                push 0x6CD7F1
+                ret
+            }
+        }
+
+        __declspec(naked) void gsc_obj_resolve_stub_zm()
+        {
+            __asm
+            {
+                pushad
+                push edi
+                push esi
+                call gsc_obj_resolve_stub_1
+                pop esi
+                pop edi
+                popad
+
+                movzx eax, byte ptr[edi + 7]
+                and eax, 0xF
+                dec eax
+
+                push 0x4F0441
+                ret
+            }
         }
     }
 
-    namespace function
+    bool execute_hook(const void* ptr)
     {
-        void add(const std::string& name, const script_function& function)
+        const auto iter = hooked_builtins.find(reinterpret_cast<void*>(
+            reinterpret_cast<size_t>(ptr)));
+        if (iter == hooked_builtins.end())
         {
-            const auto id = functions.size() + 1;
-            functions[id] = std::make_pair(name, function);
+            return false;
+        }
+
+        scripting::function function(iter->second);
+        function.call(*game::levelEntityId, get_arguments());
+
+        return true;
+    }
+
+    void call_function(const function_t& function, const std::string& name)
+    {
+        const auto args = get_arguments();
+
+        try
+        {
+            const auto value = function(args);
+            return_value(value);
+        }
+        catch (const std::exception& e)
+        {
+            printf("******* script runtime error *******\n");
+            printf("in call to builtin function \"%s\": %s\n", name.data(), e.what());
+            printf(debug::get_call_stack().data());
+            printf("************************************\n");
         }
     }
 
-    namespace method
+    void call_method(const function_t& method, const std::string& name, const game::scr_entref_t entref)
     {
-        void add(const std::string& name, const script_method& function)
+        const auto args = get_arguments();
+
+        try
         {
-            const auto id = methods.size() + 1;
-            methods[id] = std::make_pair(name, function);
+            const scripting::entity entity = game::Scr_GetEntityId(
+                game::SCRIPTINSTANCE_SERVER, entref.entnum, entref.classnum, 0);
+
+            std::vector<scripting::script_value> args_{};
+            args_.push_back(entity);
+            for (const auto& arg : args)
+            {
+                args_.push_back(arg);
+            }
+
+            const auto value = method(args_);
+            return_value(value);
+        }
+        catch (const std::exception& e)
+        {
+            printf("******* script runtime error *******\n");
+            printf("in call to builtin method \"%s\": %s\n", name.data(), e.what());
+            printf(debug::get_call_stack().data());
+            printf("************************************\n");
         }
     }
 
@@ -271,31 +374,6 @@ namespace gsc
         return args;
     }
 
-    function_args::function_args(std::vector<scripting::script_value> values)
-        : values_(values)
-    {
-    }
-
-    unsigned int function_args::size() const
-    {
-        return this->values_.size();
-    }
-
-    std::vector<scripting::script_value> function_args::get_raw() const
-    {
-        return this->values_;
-    }
-
-    scripting::value_wrap function_args::get(const int index) const
-    {
-        if (static_cast<unsigned int>(index) >= this->values_.size())
-        {
-            throw std::runtime_error(utils::string::va("parameter %d does not exist", index));
-        }
-
-        return {this->values_[index], index};
-    }
-
     std::string find_builtin_name(void* function)
     {
         for (auto i = scripting::function_map.begin(); i != scripting::function_map.end(); ++i)
@@ -306,11 +384,11 @@ namespace gsc
             }
         }
 
-        for (auto i = functions.begin(); i != functions.end(); ++i)
+        for (auto i = function_wraps.begin(); i != function_wraps.end(); ++i)
         {
-            if (i->first == reinterpret_cast<unsigned int>(function))
+            if (i->second == function)
             {
-                return i->second.first;
+                return i->first;
             }
         }
 
@@ -327,77 +405,24 @@ namespace gsc
             }
         }
 
-        for (auto i = methods.begin(); i != methods.end(); ++i)
+        for (auto i = method_wraps.begin(); i != method_wraps.end(); ++i)
         {
-            if (i->first == reinterpret_cast<unsigned int>(function))
+            if (i->second == function)
             {
-                return i->second.first;
+                return i->first;
             }
         }
 
         return {};
     }
-
-    bool call_function(unsigned int ptr)
-    {
-        if (execute_hook(reinterpret_cast<void*>(ptr)))
-        {
-            return false;
-        }
-
-        const auto iter = functions.find(ptr);
-        if (iter == functions.end())
-        {
-            return false;
-        }
-
-        try
-        {
-            const auto result = iter->second.second(get_arguments());
-            return_value(result);
-        }
-        catch (const std::exception& e)
-        {
-            printf("******* script runtime error *******\n");
-            printf("in call to builtin function \"%s\": %s\n", iter->second.first.data(), e.what());
-            printf(debug::get_call_stack().data());
-            printf("************************************\n");
-        }
-
-        return true;
-    }
-
-    bool call_method(unsigned int ptr, game::scr_entref_t entref)
-    {
-        const auto iter = methods.find(ptr);
-        if (iter == methods.end())
-        {
-            return false;
-        }
-
-        try
-        {
-            const scripting::entity entity = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, entref.entnum, entref.classnum, 0);
-            const auto result = iter->second.second(entity, get_arguments());
-            return_value(result);
-
-        }
-        catch (const std::exception& e)
-        {
-            printf("******* script runtime error *******\n");
-            printf("in call to builtin method \"%s\": %s\n", iter->second.first.data(), e.what());
-            printf(debug::get_call_stack().data());
-            printf("************************************\n");
-        }
-
-        return true;
-    }
-
+    
     class component final : public component_interface
     {
     public:
         void post_unpack() override
         {
+            utils::hook::jump(SELECT(0x6CD7E9, 0x4F0439), SELECT(gsc_obj_resolve_stub_mp, gsc_obj_resolve_stub_zm));
+
             scr_get_common_function_hook.create(SELECT(0x4B57B0, 0x4AD040), scr_get_common_function);
             player_get_method_hook.create(SELECT(0x432480, 0x6F2DB0), player_get_method);
 
@@ -452,28 +477,32 @@ namespace gsc
                 }
             );
 
-            function::add("getfunction", [](const function_args& args) -> scripting::script_value
+            function::add("getfunction", [](const std::string& filename, const std::string& function)
+                -> scripting::script_value
             {
-                const auto filename = args[0].as<std::string>();
-                const auto function = args[1].as<std::string>();
-
-                if (scripting::script_function_table[filename].find(function) != scripting::script_function_table[filename].end())
+                const auto file_iter = scripting::script_function_table.find(filename);
+                if (file_iter == scripting::script_function_table.end())
                 {
-                    return scripting::function{scripting::script_function_table[filename][function]};
+                    throw std::runtime_error(std::format("script {} not found", filename));
                 }
 
-                return {};
+                const auto iter = file_iter->second.find(function);
+                if (iter == file_iter->second.end())
+                {
+                    throw std::runtime_error(std::format("function {} not found in script", function, filename));
+                }
+
+                return scripting::function{iter->second};
             });
 
-            function::add("getfunctionname", [](const function_args& args)
+            function::add("getfunctionname", [](const scripting::variadic_args& args)
             {
                 const auto function = args[0].as<scripting::function>();
                 return function.get_name();
             });
             
-            function::add("getfunctionargcount", [](const function_args& args)
+            function::add("getfunctionargcount", [](const scripting::function& function)
             {
-                const auto function = args[0].as<scripting::function>();
                 const auto pos = function.get_pos();
                 if (*pos != 0x17) // OP_SafeCreateLocalVariables
                 {
@@ -483,67 +512,49 @@ namespace gsc
                 return static_cast<int>(pos[1]);
             });
 
-            function::add("arrayremovekey", [](const function_args& args) -> scripting::script_value
+            function::add("arrayremovekey", [](const scripting::array& array, const std::string& key)
             {
-                const auto array = args[0].as<scripting::array>();
-                const auto key = args[1].as<std::string>();
                 array.erase(key);
-                return {};
             });
 
-            function::add("xor", [](const function_args& args)
+            function::add("xor", [](const int a, const int b)
             {
-                const auto a = args[0].as<int>();
-                const auto b = args[1].as<int>();
                 return a ^ b;
             });
 
-            function::add("not", [](const function_args& args)
+            function::add("not", [](const int a)
             {
-                const auto a = args[0].as<int>();
                 return ~a;
             });
 
-            function::add("and", [](const function_args& args)
+            function::add("and", [](const int a, const int b)
             {
-                const auto a = args[0].as<int>();
-                const auto b = args[1].as<int>();
                 return a & b;
             });
 
-            function::add("or", [](const function_args& args)
+            function::add("or", [](const int a, const int b)
             {
-                const auto a = args[0].as<int>();
-                const auto b = args[1].as<int>();
                 return a | b;
             });
 
-            function::add("structget", [](const function_args& args)
+            function::add("structget", [](const scripting::object& obj, const std::string& key)
             {
-                const auto obj = args[0].as<scripting::object>();
-                const auto key = args[1].as<std::string>();
                 return obj[key];
             });
 
-            function::add("structset", [](const function_args& args) -> scripting::script_value
+            function::add("structset", [](const scripting::object& obj, const std::string& key, 
+                const scripting::script_value& value)
             {
-                const auto obj = args[0].as<scripting::object>();
-                const auto key = args[1].as<std::string>();
-                obj[key] = args[2];
-                return {};
+                obj[key] = value;
             });
 
-            function::add("structremove", [](const function_args& args) -> scripting::script_value
+            function::add("structremove", [](const scripting::object& obj, const std::string& key)
             {
-                const auto obj = args[0].as<scripting::object>();
-                const auto key = args[1].as<std::string>();
                 obj.erase(key);
-                return {};
             });
 
-            function::add("getstructkeys", [](const function_args& args) -> scripting::script_value
+            function::add("getstructkeys", [](const scripting::object& obj)
             {
-                const auto obj = args[0].as<scripting::object>();
                 const auto keys = obj.get_keys();
                 scripting::array result;
 
@@ -555,94 +566,92 @@ namespace gsc
                 return result;
             });
 
-            function::add("isfunctionptr", [](const function_args& args) -> scripting::script_value
+            function::add("isfunctionptr", [](const scripting::script_value& value)
             {
-                return args[0].is<scripting::function>();
+                return value.is<scripting::function>();
             });
 
-            function::add("isentity", [](const function_args& args) -> scripting::script_value
+            function::add("isentity", [](const scripting::script_value& value)
             {
-                const auto value = args[0].get_raw();
-                const auto type = game::scr_VarGlob->objectVariableValue[value.u.uintValue].w.type & 0x7F;
-                return value.type == game::SCRIPT_OBJECT && type == game::SCRIPT_ENTITY;
+                const auto& raw = value.get_raw();
+                const auto type = game::scr_VarGlob->objectVariableValue[raw.u.uintValue].w.type & 0x7F;
+                return raw.type == game::SCRIPT_OBJECT && type == game::SCRIPT_ENTITY;
             });
 
-            function::add("isstruct", [](const function_args& args)
+            function::add("isstruct", [](const scripting::script_value& value)
             {
-                return args[0].is<scripting::object>();
+                return value.is<scripting::object>();
             });
 
-            function::add("typeof", [](const function_args& args)
+            function::add("typeof", [](const scripting::script_value& value)
             {
-                return args[0].type_name();
+                return value.type_name();
             });
 
-            method::add("get", [](const scripting::entity& entity, const function_args& args)
+            method::add("get", [](const scripting::entity& entity, const std::string& field)
             {
-                const auto field = args[0].as<std::string>();
                 return entity.get(field);
             });
 
-            method::add("set", [](const scripting::entity& entity, const function_args& args) -> scripting::script_value
+            method::add("set", [](const scripting::entity& entity, const std::string& field,
+                const scripting::script_value& value)
             {
-                const auto field = args[0].as<std::string>();
-                entity.set(field, args[1]);
-                return {};
+                entity.set(field, value);
             });
 
-            function::add("worldget", [](const function_args& args) -> scripting::script_value
+            function::add("worldget", [](const std::string& key)
             {
-                const auto key = args[0].as<std::string>();
                 return world[key];
             });
 
-            function::add("worldset", [](const function_args& args) -> scripting::script_value
+            function::add("worldset", [](const std::string& key, const scripting::script_value& value)
             {
-                const auto key = args[0].as<std::string>();
-                world[key] = args[1];
-                return {};
+                world[key] = value;
             });
 
-            function::add("invokefunc", [](const function_args& args) -> scripting::script_value
+            function::add("invokefunc", [](const std::string& name, const scripting::variadic_args& args)
             {
-                const auto name = utils::string::to_lower(args[0].as<std::string>());
-                auto arguments = args.get_raw();
-                arguments.erase(arguments.begin());
+                const auto lower = utils::string::to_lower(name);
+
+                std::vector<scripting::script_value> arguments;
+                for (auto i = args.begin() + 1, end = args.end(); i < end; ++i)
+                {
+                    arguments.emplace_back(i->get_raw());
+                }
+
                 disable_longjmp_error = true;
+
                 const auto _0 = gsl::finally([&]
                 {
                     *reinterpret_cast<const char**>(SELECT(0x2E27C70, 0x2DF7F70)) = nullptr;
                     disable_longjmp_error = false;
                 });
 
-                return scripting::call(name, arguments);
+                return scripting::call(lower, arguments);
             });
 
-            function::add("detourfunc", [](const function_args& args) -> scripting::script_value
+            function::add("detourfunc", [](const std::string& name, const scripting::function& stub)
             {
-                const auto name = utils::string::to_lower(args[0].as<std::string>());
-                const auto stub = args[1].as<scripting::function>();
-                if (scripting::function_map.find(name) == scripting::function_map.end())
+                const auto iter = scripting::function_map.find(name);
+                if (iter == scripting::function_map.end())
                 {
                     throw std::runtime_error("function not found");
                 }
 
-                const auto func = scripting::function_map[name].actionFunc;
+                const auto func = iter->second.actionFunc;
                 hooked_builtins[func] = stub.get_pos();
-                return {};
             });
 
-            function::add("disabledetour", [](const function_args& args) -> scripting::script_value
+            function::add("disabledetour", [](const std::string& name)
             {
-                const auto name = utils::string::to_lower(args[0].as<std::string>());
-                if (scripting::function_map.find(name) == scripting::function_map.end())
+                const auto iter = scripting::function_map.find(name);
+                if (iter == scripting::function_map.end())
                 {
                     throw std::runtime_error("function not found");
                 }
 
-                const auto func = scripting::function_map[name].actionFunc;
+                const auto func = iter->second.actionFunc;
                 hooked_builtins.erase(func);
-                return {};
             });
         }
     };

@@ -11,7 +11,7 @@ namespace script_extension
 	{
 		void add_gsc_funcs()
 		{
-			gsc::method::add("noclip", [](const scripting::entity& entity, [[maybe_unused]] const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("noclip", [](const scripting::entity& entity) 
 			{
 				const auto entref = entity.get_entity_reference();
 				const auto* ent = game::GetPlayerEntity(entref);
@@ -27,11 +27,9 @@ namespace script_extension
 
 				game::SV_GameSendServerCommand(entref.entnum, 0, utils::string::va("%c \"%s\"", 0x4F,
 					(ent->client->flags & game::gclientFlag::NOCLIP) ? "GAME_NOCLIPON" : "GAME_NOCLIPOFF"));
-
-				return {};
 			});
 
-			gsc::method::add("ufo", [](const scripting::entity& entity, [[maybe_unused]] const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("ufo", [](const scripting::entity& entity)
 			{
 				const auto entref = entity.get_entity_reference();
 				const auto* ent = game::GetPlayerEntity(entref);
@@ -47,11 +45,9 @@ namespace script_extension
 
 				game::SV_GameSendServerCommand(entref.entnum, 0, utils::string::va("%c \"%s\"", 0x4F,
 					(ent->client->flags & game::gclientFlag::UFO) ? "GAME_UFOON" : "GAME_UFOOFF"));
-
-				return {};
 			});
 
-			gsc::method::add("god", [](const scripting::entity& entity, [[maybe_unused]] const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("god", [](const scripting::entity& entity)
 			{
 				const auto entref = entity.get_entity_reference();
 				auto* ent = game::GetEntity(entref);
@@ -67,11 +63,9 @@ namespace script_extension
 
 				game::SV_GameSendServerCommand(entref.entnum, 0, utils::string::va("%c \"%s\"", 0x4F,
 					(ent->flags & game::entityFlag::FL_GODMODE) ? "GAME_GODMODE_ON" : "GAME_GODMODE_OFF"));
-
-				return {};
 			});
 
-			gsc::method::add("demigod", [](const scripting::entity& entity, [[maybe_unused]] const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("demigod", [](const scripting::entity& entity)
 			{
 				const auto entref = entity.get_entity_reference();
 				auto* ent = game::GetEntity(entref);
@@ -87,11 +81,9 @@ namespace script_extension
 
 				game::SV_GameSendServerCommand(entref.entnum, 0, utils::string::va("%c \"%s\"", 0x4F,
 					(ent->flags & game::entityFlag::FL_DEMI_GODMODE) ? "GAME_DEMI_GODMODE_ON" : "GAME_DEMI_GODMODE_OFF"));
-
-				return {};
 			});
 
-			gsc::method::add("notarget", [](const scripting::entity& entity, [[maybe_unused]] const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("notarget", [](const scripting::entity& entity)
 			{
 				const auto entref = entity.get_entity_reference();
 				auto* ent = game::GetEntity(entref);
@@ -107,8 +99,6 @@ namespace script_extension
 
 				game::SV_GameSendServerCommand(entref.entnum, 0, utils::string::va("%c \"%s\"", 0x4F,
 					(ent->flags & game::entityFlag::FL_NOTARGET) ? "GAME_NOTARGETON" : "GAME_NOTARGETOFF"));
-
-				return {};
 			});
 		}
 	}
