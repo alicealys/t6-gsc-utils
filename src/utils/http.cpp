@@ -1,6 +1,5 @@
 #include <stdinc.hpp>
 #include "http.hpp"
-#include <curl/curl.h>
 #include <gsl/gsl>
 
 #pragma comment(lib, "ws2_32.lib")
@@ -151,5 +150,63 @@ namespace utils::http
 		{
 			return post_data(url, data, headers);
 		});
+	}
+
+	std::optional<result> get_data_result(const std::string& url, const std::string& fields,
+		const headers& headers, const std::function<void(size_t)>& callback)
+	{
+		curl_slist* header_list = nullptr;
+		auto* curl = curl_easy_init();
+		if (!curl)
+		{
+			return {};
+		}
+
+		auto _ = gsl::finally([&]()
+		{
+			curl_slist_free_all(header_list);
+			curl_easy_cleanup(curl);
+		});
+
+		for (const auto& header : headers)
+		{
+			auto data = header.first + ": " + header.second;
+			header_list = curl_slist_append(header_list, data.data());
+		}
+
+		std::string buffer{};
+		progress_helper helper{};
+		helper.callback = &callback;
+
+		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, header_list);
+		curl_easy_setopt(curl, CURLOPT_URL, url.data());
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+		curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
+		curl_easy_setopt(curl, CURLOPT_XFERINFODATA, &helper);
+		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+
+		if (!fields.empty())
+		{
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, fields.data());
+		}
+
+		const auto code = curl_easy_perform(curl);
+
+		if (code == CURLE_OK)
+		{
+			result result;
+			result.code = code;
+			result.buffer = std::move(buffer);
+
+			return result;
+		}
+		else
+		{
+			result result;
+			result.code = code;
+
+			return result;
+		}
 	}
 }

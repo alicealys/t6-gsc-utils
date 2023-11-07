@@ -21,7 +21,6 @@ namespace scripting
 
 	std::unordered_map<std::string, std::unordered_map<std::string, const char*>> script_function_table;
 	std::unordered_map<std::string, std::vector<std::pair<std::string, const char*>>> script_function_table_sort;
-	std::unordered_map<const char*, std::pair<std::string, std::string>> script_function_table_rev;
 
 	namespace
 	{
@@ -150,7 +149,6 @@ namespace scripting
 
 				script_function_table[filename][function] = address;
 				script_function_table_sort[filename].push_back({function, address});
-				script_function_table_rev[address] = {filename, function};
 
 				if (i == count - 1)
 				{
@@ -165,7 +163,6 @@ namespace scripting
 		utils::hook::detour scr_post_load_scripts_hook;
 		unsigned int post_load_scripts_stub(unsigned int inst)
 		{
-			script_function_table_rev.clear();
 			script_function_table.clear();
 			script_function_table_sort.clear();
 

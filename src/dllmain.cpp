@@ -10,22 +10,27 @@ BOOL APIENTRY DllMain(HMODULE /*module_*/, DWORD ul_reason_for_call, LPVOID /*re
 {
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
 	{
-        if (!signatures::process())
-        {
-            MessageBoxA(NULL,
-                "This version of t6-gsc-utils is outdated.\n" \
-                "Download the latest dll from here: https://github.com/fedddddd/t6-gsc-utils/releases",
-                "ERROR", MB_ICONERROR);
+		if (!signatures::process())
+		{
+			MessageBoxA(NULL,
+				"This version of t6-gsc-utils is outdated.\n" \
+				"Download the latest dll from here: https://github.com/fedddddd/t6-gsc-utils/releases",
+				"ERROR", MB_ICONERROR);
 
-            return FALSE;
-        }
+			return FALSE;
+		}
 
-        if (game::plutonium::printf.get() != nullptr)
-        {
-            utils::hook::jump(reinterpret_cast<uintptr_t>(&printf), game::plutonium::printf);
-        }
+		if (game::plutonium::printf.get() != nullptr)
+		{
+			utils::hook::jump(reinterpret_cast<uintptr_t>(&printf), game::plutonium::printf);
+		}
 
 		component_loader::post_unpack();
+	}
+
+	if (ul_reason_for_call == DLL_PROCESS_DETACH)
+	{
+		component_loader::pre_destroy();
 	}
 
 	return TRUE;

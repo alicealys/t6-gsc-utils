@@ -75,6 +75,8 @@ namespace scripting
 			{
 				return {this->id_, this->get_value_id(key.as<S>())};
 			}
+
+			throw std::runtime_error("invalid key type");
 		}
 
 	private:

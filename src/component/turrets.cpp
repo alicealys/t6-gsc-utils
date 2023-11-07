@@ -30,12 +30,12 @@ namespace turret
 {
 	namespace
 	{
-		game::TurretInfo turret_info_store_relocated[256];
+		game::TurretInfo turret_info_store_relocated[NEW_MAX_TURRETS];
 
 		game::TurretInfo dummy_info{};
 
 		using getter_t = std::function<scripting::script_value(game::TurretInfo* info)>;
-		using setter_t = std::function<void(game::TurretInfo* info, const scripting::value_wrap& value)>;
+		using setter_t = std::function<void(game::TurretInfo* info, const scripting::function_argument& value)>;
 
 		struct turret_field
 		{
@@ -57,7 +57,7 @@ namespace turret
 		typename std::enable_if<std::is_same<T, float*>::value, setter_t>::type
 		get_default_setter([[maybe_unused]] T, const std::string& name, const size_t offset)
 		{
-			return [=](game::TurretInfo* info, const scripting::value_wrap& value)
+			return [=](game::TurretInfo* info, const scripting::function_argument& value)
 			{
 				if (!value.is<T>())
 				{
@@ -77,7 +77,7 @@ namespace turret
 		typename std::enable_if<!std::is_same<T, float*>::value, setter_t>::type
 		get_default_setter([[maybe_unused]] T, const std::string& name, const size_t offset)
 		{
-			return [=](game::TurretInfo* info, const scripting::value_wrap& value)
+			return [=](game::TurretInfo* info, const scripting::function_argument& value)
 			{
 				if (!value.is<T>())
 				{
@@ -94,7 +94,7 @@ namespace turret
 			return utils::hook::invoke<const char*>(0x4D7A30, info->eTeam);
 		}
 
-		void turret_set_team(game::TurretInfo* info, const scripting::value_wrap& value)
+		void turret_set_team(game::TurretInfo* info, const scripting::function_argument& value)
 		{
 			const auto str = value.as<std::string>();
 			const auto team_names = reinterpret_cast<const char**>(0xD39970);
@@ -196,29 +196,31 @@ namespace turret
 			{
 				turret_info_store_relocated[i].inuse = 0;
 			}
-			//level.turrets = turret_info_store_relocated;
+
+			// level.turrets = turret_info_store_relocated;
 			utils::hook::set<game::TurretInfo*>(0x233CAB8, turret_info_store_relocated);
 		}
 
-		int turret_index = 0;
-
-		int* turret_index_ptr = &turret_index;
+		auto turret_index = 0;
+		const auto turret_index_ptr = &turret_index;
 
 		game::TurretInfo* g_spawn_turret_relocate()
 		{
 			turret_index = 0;
-			game::TurretInfo* turretInfo = 0;
-			int i = 0;
-			for (; i < NEW_MAX_TURRETS; ++i)
+			game::TurretInfo* turret_info{};
+
+			for (auto i = 0; i < NEW_MAX_TURRETS; ++i)
 			{
-				turretInfo = &turret_info_store_relocated[i];
-				if (!turretInfo->inuse)
+				turret_info = &turret_info_store_relocated[i];
+				if (!turret_info->inuse)
 				{
 					break;
 				}
+
 				turret_index++;
 			}
-			return turretInfo;
+
+			return turret_info;
 		}
 
 		void __declspec(naked) g_spawn_turret_stub()
@@ -242,22 +244,22 @@ namespace turret
 			return utils::hook::invoke<game::gentity_s*>(0x54FCC0);
 		}
 
-		void relocate_turrets()
+		void reallocate_turrets()
 		{
-			//Modify G_InitTurrets to initialize more tuurets
+			// Modify G_InitTurrets to initialize more tuurets
 			utils::hook::jump(0x61E850, g_init_turrets_stub);
-			//Modify G_SpawnTurret to check for a larger amount of turretInfoStore
+			// Modify G_SpawnTurret to check for a larger amount of turretInfoStore
 			utils::hook::jump(0x60AE3B, g_spawn_turret_stub);
-			//Modify G_SpawnturetStaticEntity to call G_Spawn instead
+			// Modify G_SpawnturetStaticEntity to call G_Spawn instead
 			utils::hook::jump(0x6E1B00, g_spawn_turret_static_entity_stub);
-			//Patch G_SpawnTurret com_error to happen at a higher limit(255)
+			// Patch G_SpawnTurret com_error to happen at a higher limit (255)
 			utils::hook::set<std::uint8_t>(0x60AE92, NEW_MAX_TURRETS);
 
-			//Patch level.num_gentities to min of 78 to not preallocate turret slots
+			// Patch level.num_gentities to min of 78 to not preallocate turret slots
 			utils::hook::set<int>(0x67EEA2 + 6, 78);
-			//Patch SV_LocateGameData arg so sv.num_entities is the same as the above
+			// Patch SV_LocateGameData arg so sv.num_entities is the same as the above
 			utils::hook::set<std::uint8_t>(0x67EE9F + 1, 78);
-			//G_FreeEntity remove turrets from slot calculations
+			// G_FreeEntity remove turrets from slot calculations
 			utils::hook::set<std::uint8_t>(0x6658E7 + 2, 78);
 		}
 	}
@@ -272,8 +274,7 @@ namespace turret
 				return;
 			}
 
-			gsc::method::add("setturretfield", [](const scripting::entity& entity, const gsc::function_args& args)
-				-> scripting::script_value
+			gsc::method::add("setturretfield", [](const scripting::entity& entity, const std::string& field, const scripting::variadic_args& args)
 			{
 				const auto ent = entity.get_entity_reference();
 				if (ent.classnum != 0)
@@ -286,7 +287,7 @@ namespace turret
 				{
 					throw std::runtime_error("Not a valid turret entity");
 				}
-				const auto field_name = utils::string::to_lower(args[0].as<std::string>());
+				const auto field_name = utils::string::to_lower(field);
 				const auto itr = turret_fields.find(field_name);
 
 				if (itr == turret_fields.end())
@@ -294,11 +295,10 @@ namespace turret
 					throw std::runtime_error(utils::string::va("Invalid field %s", field_name.data()));
 				}
 
-				itr->second.setter(turret, scripting::value_wrap(args[1], 1));
-				return {};
+				itr->second.setter(turret, args[0]);
 			});
 
-			gsc::method::add("getturretfield", [](const scripting::entity& entity, const gsc::function_args& args)->scripting::script_value
+			gsc::method::add("getturretfield", [](const scripting::entity& entity, const std::string& field)
 			{
 				const auto ent = entity.get_entity_reference();
 				if (ent.classnum != 0)
@@ -312,7 +312,7 @@ namespace turret
 					throw std::runtime_error("Not a valid turret entity");
 				}
 
-				const auto field_name = utils::string::to_lower(args[0].as<std::string>());
+				const auto field_name = utils::string::to_lower(field);
 				const auto itr = turret_fields.find(field_name);
 
 				if (itr == turret_fields.end())
@@ -323,10 +323,9 @@ namespace turret
 				return itr->second.getter(turret);
 			});
 
-			gsc::function::add("dumpturret", [](const gsc::function_args& args) 
-				-> scripting::script_value
+			gsc::function::add("dumpturret", [](const scripting::entity& entity, const std::string& name)
 			{
-				const auto ent = args[0].as<scripting::entity>().get_entity_reference();
+				const auto ent = entity.get_entity_reference();
 				if (ent.classnum != 0)
 				{
 					throw std::runtime_error("Invalid entity");
@@ -399,7 +398,6 @@ namespace turret
 				TURRET_DUMP_FIELD(previousAngles);
 
 				const std::string buffer = data.dump(4);
-				const auto name = args[1].as<std::string>();
 				const std::string turret_entity_path = utils::string::va("entity_dumps/turrets/%s.json", name.data());
 
 				return utils::io::write_file(turret_entity_path, buffer, false);
@@ -411,8 +409,8 @@ namespace turret
 			// Don't use weapon def value for turrets turnspeed
 			bg_get_weapon_def_hook.create(0x5906B0, bg_get_weapon_def_stub);
 
-			//Relocate turrets to NEW_MAX_TURRETS
-			relocate_turrets();
+			// Reallocate turrets to NEW_MAX_TURRETS
+			reallocate_turrets();
 		}
 	};
 }

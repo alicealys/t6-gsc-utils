@@ -28,7 +28,10 @@ namespace signatures
 	{
 		const char* string_ptr = nullptr;
 		std::string mask(string.size(), 'x');
-		const auto base = reinterpret_cast<size_t>(GetModuleHandle("plutonium-bootstrapper-win32.exe"));
+
+		constexpr auto payload_size = 0x12000000;
+		const auto base = reinterpret_cast<size_t>(GetModuleHandle("plutonium-bootstrapper-win32.exe")) + payload_size;
+
 		utils::hook::signature signature(base, get_image_size() - base);
 
 		signature.add({
@@ -51,8 +54,7 @@ namespace signatures
 		memcpy(bytes, &string_ptr, sizeof(bytes));
 		return find_string_ptr({bytes, 4});
 	}
-
-
+	
 	bool process_printf()
 	{
 		const auto string_ref = find_string_ref("A critical exception occured!\n");
@@ -62,7 +64,6 @@ namespace signatures
 		}
 
 		const auto offset = *reinterpret_cast<size_t*>(string_ref + 5);
-		OutputDebugString(utils::string::va("%p\n", string_ref + 4 + 5 + offset));
 		game::plutonium::printf.set(string_ref + 4 + 5 + offset);
 		return true;
 	}

@@ -16,7 +16,7 @@ namespace bots
 	private:
 		static void add_gsc_functions()
 		{
-			gsc::function::add("dropallbots", [](const gsc::function_args&) -> scripting::script_value
+			gsc::function::add("dropallbots", []
 			{
 				const auto* dvar = game::Dvar_FindVar("com_maxclients");
 				const auto client_count = game::Dvar_GetInt(dvar);
@@ -28,8 +28,6 @@ namespace bots
 						game::SV_GameDropClient(i, "GAME_DROPPEDFORINACTIVITY");
 					}
 				}
-
-				return {};
 			});
 		}
 	};

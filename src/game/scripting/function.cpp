@@ -26,13 +26,7 @@ namespace scripting
 
 	std::string function::get_name() const
 	{
-		if (scripting::script_function_table_rev.find(this->pos_) != scripting::script_function_table_rev.end())
-		{
-			const auto func = scripting::script_function_table_rev[this->pos_];
-			return utils::string::va("%s::%s", func.first.data(), func.second.data());
-		}
-
-		return "unknown function";
+		return scripting::find_function(this->pos_);
 	}
 
 	script_value function::call(const entity& self, std::vector<script_value> arguments) const

@@ -280,18 +280,13 @@ namespace command
 				game::Scr_NotifyNum(client, 0, name, argc - 3);
 			});
 
-			gsc::function::add("executecommand", [](const gsc::function_args&) -> scripting::script_value
+			gsc::function::add_multiple([](const std::string& cmd)
 			{
-				const auto cmd = game::get<std::string>(0);
 				execute(cmd);
-				return {};
-			});
+			}, "executecommand", "command::execute");
 
-			gsc::function::add("addcommand", [](const gsc::function_args& args) -> scripting::script_value
+			gsc::function::add_multiple([](const std::string& name, const scripting::function& function)
 			{
-				const auto name = args[0].as<std::string>();
-				const auto function = args[1].as<scripting::function>();
-
 				add_script_command(name, [function](const params& params)
 				{
 					scripting::array array;
@@ -303,15 +298,10 @@ namespace command
 
 					function({array.get_raw()});
 				});
+			}, "addcommand", "command::add");
 
-				return {};
-			});
-
-			gsc::function::add("addclientcommand", [](const gsc::function_args& args) -> scripting::script_value
+			gsc::function::add_multiple([](const std::string& name, const scripting::function& function)
 			{
-				const auto name = args[0].as<std::string>();
-				const auto function = args[1].as<scripting::function>();
-
 				add_script_sv_command(name, [function](const int client_num, const params_sv& params)
 				{
 					const auto params_ = params.get_all();
@@ -329,9 +319,7 @@ namespace command
 						function(player, {array});
 					}, scheduler::pipeline::server);
 				});
-
-				return {};
-			});
+			}, "addclientcommand", "command::add_sv");
 
 		}
 	};

@@ -207,7 +207,7 @@ namespace json
 	public:
 		void post_unpack() override
 		{
-			gsc::function::add("createmap", [](const gsc::function_args& args)
+			gsc::function::add_multiple([](const scripting::variadic_args& args)
 			{
 				scripting::array array;
 
@@ -223,74 +223,71 @@ namespace json
 				}
 
 				return array;
-			});
+			}, "createmap", "json::create_map");
 
-			gsc::function::add("jsonparse", [](const gsc::function_args& args)
+			gsc::function::add_multiple([](const std::string& json)
 			{
-				const auto json = args[0].as<std::string>();
 				const auto obj = nlohmann::json::parse(json);
 				return json_to_gsc(obj);
-			});
+			}, "jsonparse", "json::parse");
 
-			gsc::function::add("jsonserialize", [](const gsc::function_args& args)
+			gsc::function::add_multiple([](const scripting::script_value& value, const scripting::variadic_args& args)
 			{
-				const auto value = args[0];
 				auto indent = -1;
 				auto print_id = false;
 
-				if (args.size() > 1)
+				if (args.size() > 0)
 				{
-					indent = args[1].as<int>();
+					indent = args[0].as<int>();
 				}
 
-				if (args.size() > 2)
+				if (args.size() > 1)
 				{
-					print_id = args[2].as<bool>();
+					print_id = args[1].as<bool>();
 				}
 
 				dumped_objects = {};
 				return gsc_to_json(value, print_id).dump(indent).substr(0, 0x5000);
-			});
+			}, "jsonserialize", "json::serialize");
 
-			gsc::function::add("jsondump", [](const gsc::function_args& args)
+			gsc::function::add_multiple([](const std::string& file, const scripting::script_value& value, const scripting::variadic_args& va)
 			{
-				auto file = args[0].as<std::string>();
-				const auto value = args[1];
+				std::string file_name = file;
+
 				auto indent = -1;
 				auto print_id = false;
 
-				if (!file.ends_with(".json"))
+				if (!file_name.ends_with(".json"))
 				{
-					file.append(".json");
+					file_name.append(".json");
 				}
 
-				if (args.size() > 2)
+				if (va.size() > 0)
 				{
-					indent = args[2].as<int>();
+					indent = va[0].as<int>();
 				}
 
-				if (args.size() > 3)
+				if (va.size() > 1)
 				{
-					print_id = args[3].as<bool>();
+					print_id = va[1].as<bool>();
 				}
 
 				dumped_objects = {};
-				return utils::io::write_file(file, gsc_to_json(value, print_id).dump(indent));
-			});
+				return utils::io::write_file(file_name, gsc_to_json(value, print_id).dump(indent));
+			}, "jsondump", "json::dump");
 
-			gsc::function::add("jsonprint", [](const gsc::function_args& args) -> scripting::script_value
+			gsc::function::add_multiple([](const scripting::variadic_args& args)
 			{
 				std::string buffer;
 
-				for (const auto& arg : args.get_raw())
+				for (const auto& arg : args)
 				{
 					buffer.append(gsc_to_string(arg));
 					buffer.append("\t");
 				}
 
 				printf("%s\n", buffer.data());
-				return {};
-			});
+			}, "jsonprint", "json::print");
 		}
 	};
 }

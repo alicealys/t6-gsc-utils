@@ -392,7 +392,7 @@ namespace debug
 
             if (function.has_value())
             {
-                const auto value = function.value();
+                const auto& value = function.value();
                 line(utils::string::va("\tat function \"%s\" in file \"%s.gsc\"", value.second.data(), value.first.data()));
             }
             else
@@ -483,18 +483,17 @@ namespace debug
 
             scr_terminal_error_hook.create(SELECT(0x698C50, 0x410440), scr_terminal_error_stub);
 
-            gsc::function::add("crash", [](const gsc::function_args&) -> scripting::script_value
+            gsc::function::add("crash", []
             {
                 if (!developer_script->current.enabled)
                 {
-                    return {};
+                    return;
                 }
 
                 *reinterpret_cast<int*>(0) = 1;
-                return {};
             });
 
-            gsc::function::add("breakpoint", [](const gsc::function_args& args) -> scripting::script_value
+            gsc::function::add("breakpoint", [](const scripting::variadic_args& args) -> scripting::script_value
             {
                 if (!developer_script->current.enabled)
                 {
@@ -509,60 +508,50 @@ namespace debug
 
                 const auto text = utils::string::va("%s\n %s", msg.data(), get_call_stack().data());
                 MessageBoxA(nullptr, text, "GSC Breakpoint", MB_ICONERROR);
-                return {};
             });
 
-            gsc::function::add("assert", [](const gsc::function_args& args) -> scripting::script_value
+            gsc::function::add("assert", [](const bool assertion)
             {
                 if (!developer_script->current.enabled)
                 {
-                    return {};
+                    return;
                 }
-
-                const auto assertion = args[0].as<bool>();
+                
                 if (!assertion)
                 {
                     throw std::runtime_error("assertion failed");
                 }
-
-                return {};
             });
 
-            gsc::function::add("assertmsg", [](const gsc::function_args& args) -> scripting::script_value
+            gsc::function::add("assertmsg", [](const std::string& msg)
             {
                 if (!developer_script->current.enabled)
                 {
-                    return {};
+                    return;
                 }
-
-                const auto msg = args[0].as<std::string>();
+                
                 throw std::runtime_error(msg);
             });
 
-            gsc::function::add("throw", [](const gsc::function_args& args) -> scripting::script_value
+            gsc::function::add("throw", [](const std::string& msg)
             {
                 if (!developer_script->current.enabled)
                 {
-                    return {};
+                    return;
                 }
-
-                const auto msg = args[0].as<std::string>();
+                
                 print_error("exception thrown: %s", msg.data());
-
                 kill_current_thread();
-
-                return {};
             });
 
-            gsc::function::add("killthread", [](const gsc::function_args& args) -> scripting::script_value
+            gsc::function::add("killthread", [](const scripting::function& function, const scripting::variadic_args& args)
             {
-                const auto function = args[0].as<scripting::function>();
                 const auto threads = get_all_threads();
 
                 auto entity_id = 0u;
-                if (args.size() >= 2)
+                if (args.size() >= 1)
                 {
-                    entity_id = args[1].as<scripting::entity>().get_entity_id();
+                    entity_id = args[0].as<scripting::entity>().get_entity_id();
                 }
 
                 for (const auto& thread : threads)
@@ -577,15 +566,14 @@ namespace debug
                 return 0;
             });
 
-            gsc::function::add("killallthreads", [](const gsc::function_args& args) -> scripting::script_value
+            gsc::function::add("killallthreads", [](const scripting::function& function, const scripting::variadic_args& args)
             {
-                const auto function = args[0].as<scripting::function>();
                 const auto threads = get_all_threads();
 
                 auto entity_id = 0u;
-                if (args.size() >= 2)
+                if (args.size() >= 1)
                 {
-                    entity_id = args[1].as<scripting::entity>().get_entity_id();
+                    entity_id = args[0].as<scripting::entity>().get_entity_id();
                 }
 
                 auto count = 0;
@@ -601,17 +589,17 @@ namespace debug
                 return count;
             });
 
-            gsc::function::add("getvarusage", [](const gsc::function_args&) -> scripting::script_value
+            gsc::function::add("getvarusage", []
             {
                 return get_var_count();
             });
 
-            gsc::function::add("getchildvarusage", [](const gsc::function_args&) -> scripting::script_value
+            gsc::function::add("getchildvarusage", []
             {
                 return get_child_var_count();
             });
 
-            gsc::function::add("getusagestats", [](const gsc::function_args&) -> scripting::script_value
+            gsc::function::add("getusagestats", []
             {
                 scripting::object stats{};
 
@@ -623,10 +611,8 @@ namespace debug
                 return stats;
             });
 
-            gsc::function::add("removeconfigstring", [](const gsc::function_args& args)
+            gsc::function::add("removeconfigstring", [](const std::string& target)
             {
-                const auto target = args[0].as<std::string>();
-
                 for (auto i = 0; i < 2806; i++)
                 {
                     const auto string_value = game::sv_configstrings[i];
@@ -642,11 +628,8 @@ namespace debug
                 return false;
             });
 
-            gsc::function::add("replaceconfigstring", [](const gsc::function_args& args)
+            gsc::function::add("replaceconfigstring", [](const std::string& target, const std::string& new_string)
             {
-                const auto target = args[0].as<std::string>();
-                const auto new_string = args[1].as<std::string>();
-
                 for (auto i = 0; i < 2806; i++)
                 {
                     const auto string_value = game::sv_configstrings[i];
@@ -680,18 +663,17 @@ namespace debug
                 });
             }
 
-            gsc::function::add("printcallstack", [](const gsc::function_args&) -> scripting::script_value
+            gsc::function::add("printcallstack", []
             {
                 if (!developer_script->current.enabled)
                 {
-                    return {};
+                    return;
                 }
 
                 printf(debug::get_call_stack().data());
-                return {};
             });
 
-            gsc::function::add("getcallstack", [](const gsc::function_args&) -> scripting::script_value
+            gsc::function::add("getcallstack", []
             {
                 return debug::get_call_stack();
             });

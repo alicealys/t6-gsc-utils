@@ -103,6 +103,7 @@ namespace chat
 			g_say_hook.create(SELECT(0x6A7A40, 0x493DF0), g_say_stub);
 			sv_get_user_info_hook.create(SELECT(0x68BB90, 0x4C10F0), sv_get_user_info_stub);
 			client_connect_hook.create(SELECT(0x5EF5A0, 0x41BE10), client_connect_stub);
+
 			utils::hook::call(SELECT(0x4ED764, 0x427E84), client_clean_name_stub);
 			utils::hook::call(SELECT(0x4ED79F, 0x427EBF), client_clean_name_stub);
 
@@ -112,10 +113,9 @@ namespace chat
 				say_callbacks.clear();
 			});
 
-			gsc::method::add("rename", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("rename", [](const scripting::entity& entity, const std::string& name)
 			{
 				const auto ent = entity.get_entity_reference();
-				const auto name = args[0].as<std::string>();
 
 				if (ent.classnum != 0)
 				{
@@ -129,14 +129,11 @@ namespace chat
 
 				userinfo_overrides[ent.entnum]["name"] = name;
 				game::ClientUserInfoChanged(ent.entnum);
-
-				return {};
 			});
 
-			gsc::method::add("setname", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("setname", [](const scripting::entity& entity, const std::string& name)
 			{
 				const auto ent = entity.get_entity_reference();
-				const auto name = args[0].as<std::string>();
 
 				if (ent.classnum != 0)
 				{
@@ -150,11 +147,9 @@ namespace chat
 
 				userinfo_overrides[ent.entnum]["name"] = name;
 				game::ClientUserInfoChanged(ent.entnum);
-
-				return {};
 			});
 
-			gsc::method::add("resetname", [](const scripting::entity& entity, const gsc::function_args&) -> scripting::script_value
+			gsc::method::add("resetname", [](const scripting::entity& entity)
 			{
 				const auto ent = entity.get_entity_reference();
 				if (ent.classnum != 0)
@@ -169,11 +164,9 @@ namespace chat
 
 				userinfo_overrides[ent.entnum].erase("name");
 				game::ClientUserInfoChanged(ent.entnum);
-
-				return {};
 			});
 
-			gsc::method::add("resetclantag", [](const scripting::entity& entity, const gsc::function_args&) -> scripting::script_value
+			gsc::method::add("resetclantag", [](const scripting::entity& entity)
 			{
 				const auto ent = entity.get_entity_reference();
 
@@ -191,14 +184,11 @@ namespace chat
 				userinfo_overrides[ent.entnum].erase("clanAbbrev");
 				userinfo_overrides[ent.entnum].erase("clanAbbrevEV");
 				game::ClientUserInfoChanged(ent.entnum);
-
-				return {};
 			});
 
-			gsc::method::add("setclantag", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("setclantag", [](const scripting::entity& entity, const std::string& name)
 			{
 				const auto ent = entity.get_entity_reference();
-				const auto name = args[0].as<std::string>();
 
 				if (ent.classnum != 0)
 				{
@@ -214,11 +204,9 @@ namespace chat
 				userinfo_overrides[ent.entnum]["clanAbbrev"] = name;
 				userinfo_overrides[ent.entnum]["clanAbbrevEV"] = "1";
 				game::ClientUserInfoChanged(ent.entnum);
-
-				return {};
 			});
 
-			gsc::method::add("tell", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("tell", [](const scripting::entity& entity, const std::string& msg)
 			{
 				const auto ent = entity.get_entity_reference();
 
@@ -233,40 +221,28 @@ namespace chat
 				}
 
 				const auto client = ent.entnum;
-				const auto msg = args[0].as<std::string>();
 				game::SV_GameSendServerCommand(client, 0, utils::string::va("j \"%s\"", msg.data()));
-
-				return {};
 			});
 
-			gsc::function::add("say", [](const gsc::function_args& args) -> scripting::script_value
+			gsc::function::add("say", [](const std::string& msg)
 			{
-				const auto msg = args[0].as<std::string>();
 				game::SV_GameSendServerCommand(-1, 0, utils::string::va("j \"%s\"", msg.data()));
-				return {};
 			});
 
-			gsc::function::add("sendservercommand", [](const gsc::function_args& args) -> scripting::script_value
+			gsc::function::add("sendservercommand", [](const int client, const std::string& cmd)
 			{
-				const auto client = args[0].as<int>();
-				const auto cmd = args[1].as<std::string>();
 				game::SV_GameSendServerCommand(client, 0, cmd.data());
-				return {};
 			});
 
-			gsc::method::add("sendservercommand", [](const scripting::entity& entity, const gsc::function_args& args) -> scripting::script_value
+			gsc::method::add("sendservercommand", [](const scripting::entity& entity, const std::string& cmd)
 			{
 				const auto client = entity.get_entity_reference().entnum;
-				const auto cmd = args[0].as<std::string>();
 				game::SV_GameSendServerCommand(client, 0, cmd.data());
-				return {};
 			});
 
-			gsc::function::add("onplayersay", [](const gsc::function_args& args) -> scripting::script_value
+			gsc::function::add("onplayersay", [](const scripting::function& function)
 			{
-				const auto function = args[0].as<scripting::function>();
 				say_callbacks.push_back(function);
-				return {};
 			});
 		}
 	};

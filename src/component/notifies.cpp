@@ -146,7 +146,7 @@ namespace notifies
                 notify_groups_queue.clear();
             });
 
-            gsc::function::add("createnotifygroup", [](const gsc::function_args& args) 
+            gsc::function::add("createnotifygroup", [](const scripting::variadic_args& args) 
                 -> scripting::script_value
             {
                 std::unordered_set<unsigned int> notifies;
