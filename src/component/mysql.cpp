@@ -17,7 +17,7 @@ namespace mysql
 			std::thread thread;
 			bool done;
 			bool canceled;
-			unsigned int handle_id;
+			std::unique_ptr<scripting::object> handle;
 			MYSQL_RES* result;
 		};
 
@@ -85,6 +85,7 @@ namespace mysql
 
 			task->done = false;
 			task->canceled = false;
+			task->handle = std::make_unique<scripting::object>();
 
 			task->thread = std::thread([=]()
 			{
@@ -103,16 +104,7 @@ namespace mysql
 				}
 			});
 
-			scripting::object handle;
-			const auto handle_id = handle.get_entity_id();
-			task->handle_id = handle_id;
-
-			game::VariableValue value{};
-			value.type = game::SCRIPT_OBJECT;
-			value.u.uintValue = handle_id;
-			game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
-
-			return handle;
+			return *task->handle.get();
 		}
 	}
 
@@ -176,10 +168,7 @@ namespace mysql
 				for (auto i = tasks.begin(); i != tasks.end(); ++i)
 				{
 					i->second.canceled = true;
-					if (i->second.thread.joinable())
-					{
-						i->second.thread.join();
-					}
+					i->second.handle.reset();
 				}
 			});
 
@@ -206,10 +195,7 @@ namespace mysql
 					if (!i->second.canceled)
 					{
 						const auto result = generate_result(i->second.result);
-						scripting::notify(i->second.handle_id, "done", {result});
-
-						game::RemoveRefToObject(game::SCRIPTINSTANCE_SERVER, i->second.handle_id);
-
+						scripting::notify(i->second.handle->get_entity_id(), "done", {result});
 						mysql_free_result(i->second.result);
 						i->second.result = nullptr;
 					}
