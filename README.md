@@ -605,6 +605,61 @@ This also patches the behaviour of the .name getter function for players for GSC
 
 * `sv_display_clan_tag`: This dvar toggles the patch
 
+# MySQL
+
+You can access a mysql database using the following functions:
+
+* `mysql::set_config(config)`: Must be called before calling other mysql functions, config should be a struct of this kind:
+  
+  ```gsc
+  init()
+  {
+      config = spawnstruct();
+      config.host = "localhost";
+      config.user = "root";
+      config.password = "password";
+      config.port = 3306;
+      config.database = "database_name";
+      mysql::set_config(config);
+  }
+  ```
+* `mysql::query(query)`: Executes an sql statement, returns a query object:
+
+  ```gsc
+  init()
+  {
+      // call mysql::set_config
+
+      query = mysql::execute("select * from `players` where guid=1");
+      query waittill("done", result);
+      if (result.size > 0)
+      {
+          print("player name " + result[0]["name"]);
+      }
+  }
+  ```
+* `mysql::prepared_statement(query: string, params...)`: Executes a prepared statement, params can be a list of arguments or an array:
+  
+  ```gsc
+  init()
+  {
+      // call mysql::set_config
+
+      // use variadic args for the parameters
+      {
+          query = mysql::prepared_statement("insert into `players` (`guid`, `name`) values (?, ?)", "foo", 123);
+          query waittill("done", result);
+      }
+
+      // use an array for the parameters
+      {
+          params = array("foo", 123);
+          query = mysql::prepared_statement("insert into `players` (`guid`, `name`) values (?, ?)", params);
+          query waittill("done", result);
+      }
+  }
+  ```
+
 ## Function list
 * dropallbots
 * say
