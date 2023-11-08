@@ -208,6 +208,17 @@ public: \
 			return get<T>();
 		}
 
+		template <typename T>
+		T as_or(const T& default_value) const
+		{
+			if (!this->is<T>())
+			{
+				return default_value;
+			}
+
+			return get<T>();
+		}
+
 		std::string type_name() const
 		{
 			return get_typename(this->get_raw());
@@ -313,7 +324,7 @@ public: \
 		operator C<T, std::allocator<T>>() const
 		{
 			const auto container_type = get_c_typename<C<T, std::allocator<T>>>();
-			if (!script_value::as<ArrayType>())
+			if (!script_value::is<ArrayType>())
 			{
 				const auto type = get_typename(this->get_raw());
 
@@ -325,7 +336,7 @@ public: \
 
 			C<T, std::allocator<T>> container{};
 			const auto array = script_value::as<ArrayType>();
-			for (auto i = 0; i < array.size(); i++)
+			for (auto i = 0u; i < array.size(); i++)
 			{
 				try
 				{
