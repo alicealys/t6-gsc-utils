@@ -228,7 +228,7 @@ namespace mysql
 				});
 			});
 
-			gsc::function::add("mysql::statement", [](const std::string& query, const scripting::variadic_args& values)
+			gsc::function::add("mysql::prepared_statement", [](const std::string& query, const scripting::variadic_args& values)
 			{
 				MYSQL_BIND* binds = nullptr;
 				size_t bind_count = 0;
