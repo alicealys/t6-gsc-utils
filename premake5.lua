@@ -67,33 +67,38 @@ workspace "t6-gsc-utils"
 	filter {}
 
 	startproject "t6-gsc-utils"
+		project "t6-gsc-utils"
+			kind "SharedLib"
+			language "C++"
 
-	project "t6-gsc-utils"
-		kind "SharedLib"
-		language "C++"
+			files 
+			{
+				"./src/**.h",
+				"./src/**.hpp",
+				"./src/**.cpp",
+				"./src/**.rc",
+			}
 
-		files 
-		{
-			"./src/**.h",
-			"./src/**.hpp",
-			"./src/**.cpp",
-		}
+			includedirs 
+			{
+				"%{prj.location}/src",
+				"./src",
+				"./deps/mysql/include"
+			}
 
-		includedirs 
-		{
-			"%{prj.location}/src",
-			"./src",
-		}
+			libdirs {"./deps/mysql/lib"}
 
-		resincludedirs 
-		{
-			"$(ProjectDir)src"
-		}
-	
-		pchheader "stdinc.hpp"
-		pchsource "src/stdinc.cpp"
+			resincludedirs 
+			{
+				"$(ProjectDir)src"
+			}
 
-		dependencies.imports()
+			linkoptions {"/DELAYLOAD:libmysql.dll"}
+		
+			pchheader "stdinc.hpp"
+			pchsource "src/stdinc.cpp"
 
-	group "Dependencies"
-	dependencies.projects()
+			dependencies.imports()
+
+		group "Dependencies"
+			dependencies.projects()

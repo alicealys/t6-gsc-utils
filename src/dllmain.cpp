@@ -4,12 +4,35 @@
 #include "game/game.hpp"
 
 #include "component/signatures.hpp"
-#include <utils/hook.hpp>
 
-BOOL APIENTRY DllMain(HMODULE /*module_*/, DWORD ul_reason_for_call, LPVOID /*reserved_*/)
+#include <utils/hook.hpp>
+#include <utils/binary_resource.hpp>
+#include <utils/nt.hpp>
+
+namespace
+{
+	utils::hook::detour load_library_hook;
+	HMODULE __stdcall load_library_stub(LPCSTR lib_name, HANDLE file, DWORD flags)
+	{
+		if (lib_name == "libmysql.dll"s)
+		{
+			static auto dll = utils::binary_resource{LIBMYSQL_DLL, lib_name};
+			const auto path = dll.get_extracted_file();
+			return load_library_hook.invoke<HMODULE>(path.data(), file, flags);
+		}
+
+		return load_library_hook.invoke<HMODULE>(lib_name, file, flags);
+	}
+}
+
+BOOL APIENTRY DllMain(HMODULE module, DWORD ul_reason_for_call, LPVOID /*reserved*/)
 {
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
 	{
+		utils::nt::library::set_current_handle(module);
+
+		load_library_hook.create(LoadLibraryExA, load_library_stub);
+
 		if (!signatures::process())
 		{
 			MessageBoxA(NULL,

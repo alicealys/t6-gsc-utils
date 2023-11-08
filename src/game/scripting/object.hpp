@@ -6,11 +6,27 @@ namespace scripting
 	class object_value : public script_value
 	{
 	public:
-		object_value(unsigned int, unsigned int);
+		object_value(const std::string& key, unsigned int, unsigned int);
 		void operator=(const script_value&);
+
+		template <typename T>
+		T as() const
+		{
+			try
+			{
+				return script_value::as<T>();
+			}
+			catch (const std::exception& e)
+			{
+				throw std::runtime_error(std::format("object field '{}' {}", this->key_, e.what()));
+			}
+		}
+
 	private:
+		std::string key_;
 		unsigned int id_;
 		unsigned int parent_id_;
+
 	};
 
 	class object final
@@ -43,7 +59,7 @@ namespace scripting
 
 		object_value operator[](const std::string& key) const
 		{
-			return {this->id_, this->get_value_id(key)};
+			return {key, this->id_, this->get_value_id(key)};
 		}
 
 	private:

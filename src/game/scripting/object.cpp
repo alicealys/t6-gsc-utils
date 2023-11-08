@@ -4,9 +4,10 @@
 
 namespace scripting
 {
-	object_value::object_value(unsigned int parent_id, unsigned int id)
-		: id_(id)
-		, parent_id_(parent_id)
+	object_value::object_value(const std::string& key, unsigned int parent_id, unsigned int id)
+		: key_(key)
+		  , id_(id)
+		  , parent_id_(parent_id)
 	{
 		if (!this->id_)
 		{
@@ -14,34 +15,34 @@ namespace scripting
 		}
 
 		const auto value = game::scr_VarGlob->childVariableValue[this->id_];
-		game::VariableValue variable;
+		game::VariableValue variable{};
 		variable.u = value.u.u;
-		variable.type = (game::scriptType_e)value.type;
+		variable.type = static_cast<game::scriptType_e>(value.type);
 
 		this->value_ = variable;
 	}
 
-	void object_value::operator=(const script_value& _value)
+	void object_value::operator=(const script_value& value)
 	{
 		if (!this->id_)
 		{
 			return;
 		}
 
-		const auto value = _value.get_raw();
+		const auto& value_raw = value.get_raw();
 
 		const auto variable = &game::scr_VarGlob->childVariableValue[this->id_];
 		game::VariableValue variable_{};
 		variable_.type = variable->type;
 		variable_.u = variable->u.u;
 
-		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
+		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value_raw);
 		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable->type, variable->u.u);
 
-		variable->type = gsl::narrow_cast<char>(value.type);
-		variable->u.u = value.u;
+		variable->type = gsl::narrow_cast<char>(value_raw.type);
+		variable->u.u = value_raw.u;
 
-		this->value_ = value;
+		this->value_ = value_raw;
 	}
 
 	object::object(const unsigned int id)
@@ -185,9 +186,9 @@ namespace scripting
 		return variable;
 	}
 
-	void object::set(const std::string& key, const script_value& value_) const
+	void object::set(const std::string& key, const script_value& value) const
 	{
-		const auto value = value_.get_raw();
+		const auto& value_raw = value.get_raw();
 		const auto variable_id = this->get_value_id(key);
 
 		if (!variable_id)
@@ -200,11 +201,11 @@ namespace scripting
 		variable_.type = variable->type;
 		variable_.u = variable->u.u;
 
-		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
+		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value_raw);
 		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_.type, variable_.u);
 
-		variable->type = gsl::narrow_cast<char>(value.type);
-		variable->u.u = value.u;
+		variable->type = gsl::narrow_cast<char>(value_raw.type);
+		variable->u.u = value_raw.u;
 	}
 
 	unsigned int object::get_entity_id() const

@@ -20,3 +20,9 @@
 [submodule "deps/curl"]
 	path = deps/curl
 	url = https://github.com/curl/curl.git
+[submodule "deps/date"]
+	path = deps/date
+	url = https://github.com/HowardHinnant/date
+[submodule "deps/sqlpp11"]
+	path = deps/sqlpp11
+	url = https://github.com/fedddddd/sqlpp11.git
