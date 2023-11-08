@@ -161,6 +161,14 @@ namespace mysql
 	class component final : public component_interface
 	{
 	public:
+		void pre_destroy() override
+		{
+			for (auto i = tasks.begin(); i != tasks.end(); ++i)
+			{
+				i->second.canceled = true;
+			}
+		}
+
 		void post_unpack() override
 		{
 			scripting::on_shutdown([]()
@@ -168,6 +176,10 @@ namespace mysql
 				for (auto i = tasks.begin(); i != tasks.end(); ++i)
 				{
 					i->second.canceled = true;
+					if (i->second.thread.joinable())
+					{
+						i->second.thread.join();
+					}
 				}
 			});
 

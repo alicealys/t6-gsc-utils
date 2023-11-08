@@ -15,7 +15,7 @@ namespace sql = sqlpp::mysql;
 
 namespace mysql
 {
-	constexpr auto max_connections = 100;
+	constexpr auto max_connections = 256;
 	constexpr auto connection_timeout = 200s;
 
 	using database_mutex_t = std::recursive_mutex;
