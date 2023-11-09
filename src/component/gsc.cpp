@@ -596,15 +596,7 @@ namespace gsc
 
             function::add("getstructkeys", [](const scripting::object& obj)
             {
-                const auto keys = obj.get_keys();
-                scripting::array result;
-
-                for (const auto& key : keys)
-                {
-                    result.push(key);
-                }
-
-                return result;
+                return obj.get_keys();
             });
 
             function::add("isfunctionptr", [](const scripting::script_value& value)
@@ -693,6 +685,66 @@ namespace gsc
 
                 const auto func = iter->second.actionFunc;
                 hooked_builtins.erase(func);
+            });
+
+            function::add("scripting::test", [](const scripting::object& object)
+            {
+                std::unordered_map<std::string, std::string> map;
+
+                for (auto i = map.begin(); i != map.end(); i++)
+                {
+                    const auto b = *i;
+                }
+
+                auto iter = object.find("value");
+                if (iter != object.end())
+                {
+                    iter->second = "balls";
+                    auto t = iter->second.type_name();
+                    printf("aaaaa %s\n", t.data());
+                }
+
+                auto begin = object.begin();
+                auto end = object.end();
+                printf("begin == end %i\n", begin == end);
+
+                for (auto i = object.begin(); i != object.end(); ++i)
+                {
+                    printf("key: %s\n", i->first.data());
+                }
+
+                for (const auto& [key, value] : object)
+                {
+                    auto str = value.to_string();
+                    printf("%s = %s\n", key.data(), str.data());
+                }
+            });
+
+            function::add("scripting::test2", [](const scripting::array& object)
+            {
+                auto iter = object.find("value");
+                if (iter != object.end())
+                {
+                    iter->second = "balls";
+                    auto t = iter->second.type_name();
+                    printf("aaaaa %s\n", t.data());
+                }
+
+                auto begin = object.begin();
+                auto end = object.end();
+                printf("begin == end %i\n", begin == end);
+
+                for (auto i = object.begin(); i != object.end(); ++i)
+                {
+                    printf("key: %s\n", i->first.to_string().data());
+                }
+
+                for (const auto& [key, value] : object)
+                {
+                    auto str = value.to_string();
+                    auto key_str = key.to_string();
+                    printf("%s = %s\n", key_str.data(), str.data());
+                }
             });
         }
     };

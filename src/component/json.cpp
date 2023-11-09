@@ -181,7 +181,7 @@ namespace json
 
 				for (const auto& [key, value] : obj.items())
 				{
-					array.push(json_to_gsc(value));
+					array.emplace_back(json_to_gsc(value));
 				}
 
 				return array.get_raw();

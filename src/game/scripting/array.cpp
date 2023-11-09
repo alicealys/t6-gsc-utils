@@ -1,12 +1,13 @@
 #include <stdinc.hpp>
+
 #include "array.hpp"
 #include "execution.hpp"
 
 namespace scripting
 {
-	array_value::array_value(unsigned int parent_id, unsigned int id)
-		: id_(id)
-		, parent_id_(parent_id)
+	array_value::array_value(const array* array, const std::uint32_t id)
+		: array_(array)
+		  , id_(id)
 	{
 		if (!this->id_)
 		{
@@ -14,37 +15,37 @@ namespace scripting
 		}
 
 		const auto value = game::scr_VarGlob->childVariableValue[this->id_];
-		game::VariableValue variable;
+		game::VariableValue variable{};
 		variable.u = value.u.u;
-		variable.type = (game::scriptType_e)value.type;
+		variable.type = static_cast<game::scriptType_e>(value.type);
 
 		this->value_ = variable;
 	}
 
-	void array_value::operator=(const script_value& _value)
+	void array_value::operator=(const script_value& value)
 	{
 		if (!this->id_)
 		{
 			return;
 		}
 
-		const auto value = _value.get_raw();
+		const auto& value_raw = value.get_raw();
 
 		const auto variable = &game::scr_VarGlob->childVariableValue[this->id_];
-		game::VariableValue variable_{};
-		variable_.type = variable->type;
-		variable_.u = variable->u.u;
+		game::VariableValue variable_value{};
+		variable_value.type = variable->type;
+		variable_value.u = variable->u.u;
 
-		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
-		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_.type, variable_.u);
+		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value_raw);
+		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_value.type, variable_value.u);
 
-		variable->type = gsl::narrow_cast<char>(value.type);
-		variable->u.u = value.u;
+		variable->type = gsl::narrow_cast<char>(value_raw.type);
+		variable->u.u = value_raw.u;
 
-		this->value_ = value;
+		this->value_ = value_raw;
 	}
 
-	array::array(const unsigned int id)
+	array::array(const std::uint32_t id)
 		: id_(id)
 	{
 		this->add();
@@ -64,26 +65,6 @@ namespace scripting
 	array::array()
 	{
 		this->id_ = make_array();
-	}
-	
-	array::array(std::vector<script_value> values)
-	{
-		this->id_ = make_array();
-
-		for (const auto& value : values)
-		{
-			this->push(value);
-		}
-	}
-
-	array::array(std::unordered_map<std::string, script_value> values)
-	{
-		this->id_ = make_array();
-
-		for (const auto& value : values)
-		{
-			this->set(value.first, value.second);
-		}
 	}
 
 	array::~array()
@@ -155,7 +136,7 @@ namespace scripting
 				continue;
 			}
 
-			const auto string_value = (unsigned __int8)var.name_lo + (var.k.keys.name_hi << 8);
+			const auto string_value = static_cast<std::uint8_t>(var.name_lo) + (var.k.keys.name_hi << 8);
 			const auto* str = game::SL_ConvertToString(string_value);
 
 			script_value key;
@@ -176,18 +157,18 @@ namespace scripting
 		return result;
 	}
 
-	unsigned int array::size() const
+	std::uint32_t array::size() const
 	{
 		return game::Scr_GetSelf(game::SCRIPTINSTANCE_SERVER, this->id_);
 	}
 
-	unsigned int array::push(script_value value) const
+	std::uint32_t array::push_back(const script_value& value) const
 	{
 		this->set(this->size(), value);
 		return this->size();
 	}
 
-	void array::erase(const unsigned int index) const
+	void array::erase(const std::uint32_t index) const
 	{
 		const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, this->id_, (index - 0x800000) & 0xFFFFFF);
 		if (variable_id)
@@ -206,11 +187,22 @@ namespace scripting
 		}
 	}
 
-	script_value array::pop() const
+	void array::erase(const script_value& key) const
 	{
-		const auto value = this->get(this->size() - 1);
-		this->erase(this->size() - 1);
-		return value;
+		if (key.is<int>())
+		{
+			return this->erase(key.as<int>());
+		}
+
+		if (key.is<std::string>())
+		{
+			return this->erase(key.as<std::string>());
+		}
+	}
+
+	void array::erase(const array_iterator& iter) const
+	{
+		this->erase(iter->first);
 	}
 
 	script_value array::get(const std::string& key) const
@@ -224,14 +216,14 @@ namespace scripting
 		}
 
 		const auto value = game::scr_VarGlob->childVariableValue[variable_id];
-		game::VariableValue variable;
+		game::VariableValue variable{};
 		variable.u = value.u.u;
-		variable.type = (game::scriptType_e)value.type;
+		variable.type = static_cast<game::scriptType_e>(value.type);
 
 		return variable;
 	}
 
-	script_value array::get(const unsigned int index) const
+	script_value array::get(const std::uint32_t index) const
 	{
 		const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, this->id_, (index - 0x800000) & 0xFFFFFF);
 
@@ -241,9 +233,9 @@ namespace scripting
 		}
 
 		const auto value = game::scr_VarGlob->childVariableValue[variable_id];
-		game::VariableValue variable;
+		game::VariableValue variable{};
 		variable.u = value.u.u;
-		variable.type = (game::scriptType_e)value.type;
+		variable.type = static_cast<game::scriptType_e>(value.type);
 
 		return variable;
 	}
@@ -252,20 +244,19 @@ namespace scripting
 	{
 		if (key.is<int>())
 		{
-			this->get(key.as<int>());
+			return this->get(key.as<int>());
 		}
 
 		if (key.is<std::string>())
 		{
-			this->get(key.as<std::string>());
+			return this->get(key.as<std::string>());
 		}
 
-		return {};
+		throw std::runtime_error("invalid key type");
 	}
 
-	void array::set(const std::string& key, const script_value& value_) const
+	void array::set(const std::string& key, const script_value& value) const
 	{
-		const auto value = value_.get_raw();
 		const auto variable_id = this->get_value_id(key);
 
 		if (!variable_id)
@@ -273,21 +264,21 @@ namespace scripting
 			return;
 		}
 
+		const auto& value_raw = value.get_raw();
 		const auto variable = &game::scr_VarGlob->childVariableValue[variable_id];
-		game::VariableValue variable_{};
-		variable_.type = variable->type;
-		variable_.u = variable->u.u;
+		game::VariableValue variable_value{};
+		variable_value.type = variable->type;
+		variable_value.u = variable->u.u;
 
-		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
-		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_.type, variable_.u);
+		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value_raw);
+		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_value.type, variable_value.u);
 
-		variable->type = gsl::narrow_cast<char>(value.type);
-		variable->u.u = value.u;
+		variable->type = gsl::narrow_cast<char>(value_raw.type);
+		variable->u.u = value_raw.u;
 	}
 
-	void array::set(const unsigned int index, const script_value& _value) const
+	void array::set(const std::uint32_t index, const script_value& value) const
 	{
-		const auto value = _value.get_raw();
 		const auto variable_id = this->get_value_id(index);
 
 		if (!variable_id)
@@ -295,37 +286,40 @@ namespace scripting
 			return;
 		}
 
+		const auto& value_raw = value.get_raw();
 		const auto variable = &game::scr_VarGlob->childVariableValue[variable_id];
-		game::VariableValue variable_{};
-		variable_.type = variable->type;
-		variable_.u = variable->u.u;
+		game::VariableValue variable_value{};
+		variable_value.type = variable->type;
+		variable_value.u = variable->u.u;
 
-		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value);
-		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_.type, variable_.u);
+		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value_raw);
+		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_value.type, variable_value.u);
 
-		variable->type = gsl::narrow_cast<char>(value.type);
-		variable->u.u = value.u;
+		variable->type = gsl::narrow_cast<char>(value_raw.type);
+		variable->u.u = value_raw.u;
 	}
 
 	void array::set(const script_value& key, const script_value& _value) const
 	{
 		if (key.is<int>())
 		{
-			this->set(key.as<int>(), _value);
+			return this->set(key.as<int>(), _value);
 		}
 
 		if (key.is<std::string>())
 		{
-			this->set(key.as<std::string>(), _value);
+			return this->set(key.as<std::string>(), _value);
 		}
+
+		throw std::runtime_error("invalid key type");
 	}
 
-	unsigned int array::get_entity_id() const
+	std::uint32_t array::get_entity_id() const
 	{
 		return this->id_;
 	}
 
-	unsigned int array::get_value_id(const std::string& key) const
+	std::uint32_t array::get_value_id(const std::string& key) const
 	{
 		const auto string_value = game::SL_GetString(key.data(), 0);
 		const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, this->id_, string_value);
@@ -338,7 +332,7 @@ namespace scripting
 		return variable_id;
 	}
 
-	unsigned int array::get_value_id(const unsigned int index) const
+	std::uint32_t array::get_value_id(const std::uint32_t index) const
 	{
 		const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, this->id_, (index - 0x800000) & 0xFFFFFF);
 		if (!variable_id)
@@ -352,5 +346,45 @@ namespace scripting
 	entity array::get_raw() const
 	{
 		return entity(this->id_);
+	}
+
+	array_value array::operator[](const script_value& key) const
+	{
+		if (key.is<int>())
+		{
+			return array_value(this, this->get_value_id(key.as<int>()));
+		}
+
+		if (key.is<std::string>())
+		{
+			return array_value(this, this->get_value_id(key.as<std::string>()));
+		}
+
+		throw std::runtime_error("invalid key type");
+	}
+
+	array_iterator array::begin() const
+	{
+		const auto keys = this->get_keys();
+		return array_iterator(this, keys, 0);
+	}
+
+	array_iterator array::end() const
+	{
+		return array_iterator(this);
+	}
+
+	array_iterator array::find(const script_value& key) const
+	{
+		const auto keys = this->get_keys();
+		for (auto i = 0u; i < keys.size(); i++)
+		{
+			if (keys[i] == key)
+			{
+				return array_iterator(this, keys, i);
+			}
+		}
+
+		return array_iterator(this);
 	}
 }

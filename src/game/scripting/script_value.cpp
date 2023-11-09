@@ -428,9 +428,9 @@ namespace scripting
 
 	function_argument::function_argument(const arguments& args, const script_value& value, const size_t index, const bool exists)
 		: script_value(value)
-		, values_(args)
-		, index_(index)
-		, exists_(exists)
+		  , values_(args)
+		  , index_(index)
+		  , exists_(exists)
 	{
 
 	}
@@ -442,7 +442,7 @@ namespace scripting
 
 	variadic_args::variadic_args(const size_t begin)
 		: std::vector<function_argument>({})
-		, begin_(begin)
+		  , begin_(begin)
 	{
 	}
 

@@ -200,7 +200,7 @@ namespace string
 				{
 					for (const auto& s : match)
 					{
-						array_match.push((s.str()));
+						array_match.emplace_back((s.str()));
 					}
 				}
 

@@ -21,15 +21,15 @@ namespace http
 		scripting::script_value http_post(const std::string& url, const std::string& data, const scripting::array& headers_array)
 		{
 			utils::http::headers headers;
-			for (const auto& key : headers_array.get_keys())
+			for (const auto& [key, value] : headers_array)
 			{
-				const auto value = headers_array[key];
 				if (!key.is<std::string>() || !value.is<std::string>())
 				{
 					continue;
 				}
 
-				headers[key.as<std::string>()] = value.as<std::string>();
+				const auto key_str = key.as<std::string>();
+				headers[key_str] = value.as<std::string>();
 			}
 
 			const scripting::object object{};
@@ -125,19 +125,18 @@ namespace http
 
 					if (fields.is<scripting::array>())
 					{
-						const auto fields_ = fields.as<scripting::array>();
-						const auto keys = fields_.get_keys();
+						const auto fields_arr = fields.as<scripting::array>();
 
-						for (const auto& key : keys)
+						for (const auto& [key, value] : fields_arr)
 						{
 							if (!key.is<std::string>())
 							{
 								continue;
 							}
 
-							const auto key_ = key.as<std::string>();
-							const auto value = fields_[key].to_string();
-							fields_string += key_ + "=" + value + "&";
+							const auto key_str = key.as<std::string>();
+							const auto value_str = value.to_string();
+							fields_string += std::format("{}={}", key_str, value_str);
 						}
 
 					}
@@ -149,20 +148,19 @@ namespace http
 
 					if (headers.is<scripting::array>())
 					{
-						const auto headers_ = headers.as<scripting::array>();
-						const auto keys = headers_.get_keys();
+						const auto headers_arr = headers.as<scripting::array>();
 
-						for (const auto& key : keys)
+						for (const auto& [key, value] : headers_arr)
 						{
 							if (!key.is<std::string>())
 							{
 								continue;
 							}
 
-							const auto key_ = key.as<std::string>();
-							const auto value = headers_[key].to_string();
+							const auto key_str = key.as<std::string>();
+							const auto value_str = value.to_string();
 
-							headers_map[key_] = value;
+							headers_map[key_str] = value_str;
 						}
 					}
 				}

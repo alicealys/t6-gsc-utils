@@ -113,7 +113,7 @@ namespace mysql
 					row_arr[field_name] = field_to_value(field, row);
 				}
 
-				result_arr.push(row_arr);
+				result_arr.emplace_back(row_arr);
 			}
 
 			mysql_free_result(meta);
@@ -152,7 +152,7 @@ namespace mysql
 					row_arr[field_str] = value;
 				}
 
-				result_arr.push(row_arr);
+				result_arr.emplace_back(row_arr);
 			}
 
 			return result_arr;
