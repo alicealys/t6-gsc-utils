@@ -369,26 +369,22 @@ init()
       }
   }
   ```
-* `onPlayerSay`: Adds a player say callback.
+* `chat::register_command(name, hide_message, callback)`: Regisers a chat command, the callback takes an array of arguments:
 
   ```c
   init()
   {
-      onPlayerSay(::callbackPlayerSay);
+      chat::register_command("!hello", true, ::cmd_hello);
   }
   
-  callbackPlayerSay(text, mode)
+  cmd_hello(args)
   {
-      // mode == 0 -> all
-      // mode == 1 -> team
-      // self -> player that sent the message
-      
-      self tell("You said " + text);
-      
-      // returning `false` will hide the message, anything else will not
-      return false;
+      assert(string::to_lower(args[0]) == "!hello");
+      self tell("world");
   }
   ```
+* `chat::disable_command(name)`: Disables a chat command.
+* `chat::enable_command(name)`: Enables a chat command.
   
 # IO
 The basepath for all IO functions is `Plutonium/storage/t6`
