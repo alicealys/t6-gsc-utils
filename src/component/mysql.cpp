@@ -116,6 +116,8 @@ namespace mysql
 				result_arr.push(row_arr);
 			}
 
+			mysql_free_result(meta);
+
 			return result_arr;
 		}
 
