@@ -158,7 +158,7 @@ namespace mysql
 			return result_arr;
 		}
 
-		template <typename F, typename ...Args>
+		template <typename F>
 		scripting::object create_mysql_query(F&& cb)
 		{
 			auto task = &tasks[task_index++];
@@ -302,7 +302,7 @@ namespace mysql
 
 					i = tasks.erase(i);
 				}
-			}, scheduler::server);
+			}, scheduler::server_packet_loop);
 
 			gsc::function::add("mysql::set_config", [](const scripting::object& config)
 			{

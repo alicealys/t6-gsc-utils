@@ -14,6 +14,7 @@ function mysql.install()
 		return
 	end
 
+	os.execute(string.format("powershell -command \"rm -recurse mysql\""))
     os.execute(string.format("mkdir \"%s\" 2> nul", mysql.source))
 
 	local folder = path.join(mysql.source, "mysql-5.7.43-win32")

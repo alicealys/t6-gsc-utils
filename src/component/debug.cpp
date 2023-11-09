@@ -645,6 +645,12 @@ namespace debug
                 return false;
             });
 
+            gsc::function::add("getcurrentthread", []()
+            {
+                const scripting::object thread = game::scr_VmPub->function_frame->fs.localId;
+                return thread;
+            });
+
             if (game::environment::t6zm())
             {
                 alloc_child_variable_hook.create(0x8F19A0, alloc_child_variable_stub);
