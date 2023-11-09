@@ -5,6 +5,7 @@ namespace scheduler
 	enum pipeline
 	{
 		server,
+		server_packet_loop,
 		async,
 		count,
 	};

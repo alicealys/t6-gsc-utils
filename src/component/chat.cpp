@@ -27,6 +27,7 @@ namespace chat
 		{
 			scripting::function callback;
 			bool hide_message;
+			bool enabled;
 		};
 
 		std::unordered_map<std::string, chat_command_t> chat_commands;
@@ -71,6 +72,11 @@ namespace chat
 			const auto name = utils::string::to_lower(args[0]);
 			const auto iter = chat_commands.find(name);
 			if (iter == chat_commands.end())
+			{
+				return false;
+			}
+
+			if (!iter->second.enabled)
 			{
 				return false;
 			}
@@ -287,6 +293,7 @@ namespace chat
 				chat_command_t command{};
 				command.hide_message = hide_message;
 				command.callback = callback;
+				command.enabled = true;
 
 				if (names_or_name.is<scripting::array>())
 				{
@@ -302,6 +309,30 @@ namespace chat
 					const auto lower = utils::string::to_lower(names_or_name.as<std::string>());
 					chat_commands.insert(std::make_pair(lower, command));
 				}
+			});
+			
+			gsc::function::add("chat::disable_command", [](const std::string& name)
+			{
+				const auto lower = utils::string::to_lower(name);
+				const auto iter = chat_commands.find(lower);
+				if (iter == chat_commands.end())
+				{
+					return;
+				}
+
+				iter->second.enabled = false;
+			});
+
+			gsc::function::add("chat::enable_command", [](const std::string& name)
+			{
+				const auto lower = utils::string::to_lower(name);
+				const auto iter = chat_commands.find(lower);
+				if (iter == chat_commands.end())
+				{
+					return;
+				}
+
+				iter->second.enabled = true;
 			});
 		}
 	};

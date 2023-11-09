@@ -20,6 +20,8 @@ namespace scheduler
 
 		using task_list = std::vector<task>;
 
+		utils::hook::detour com_server_packet_event_hook;
+
 		class task_pipeline
 		{
 		public:
@@ -103,6 +105,12 @@ namespace scheduler
 
 			a.jmp(SELECT(0x49E910, 0x5001A0));
 		}
+
+		void com_server_packet_event_stub()
+		{
+			execute(pipeline::server_packet_loop);
+			com_server_packet_event_hook.invoke<void>();
+		}
 	}
 
 	void schedule(const std::function<bool()>& callback, const pipeline type,
@@ -153,6 +161,7 @@ namespace scheduler
 			});
 
 			utils::hook::jump(SELECT(0x4A59F7, 0x6AA2F7), utils::hook::assemble(server_frame_stub));
+			com_server_packet_event_hook.create(SELECT(0x42F850, 0x549300), com_server_packet_event_stub);
 		}
 
 		void pre_destroy() override
