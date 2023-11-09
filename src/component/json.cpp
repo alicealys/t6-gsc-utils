@@ -21,14 +21,20 @@ namespace json
 
 		nlohmann::json array_to_json(const scripting::array& array, bool print_id)
 		{
+			if (array.size() == 0)
+			{
+				return nlohmann::json::array();
+			}
+
 			nlohmann::json obj;
 
 			auto string_indexed = -1;
 			const auto keys = array.get_keys();
-			for (auto i = 0u; i < keys.size(); i++)
+
+			for (const auto& key : keys)
 			{
-				const auto is_int = keys[i].is<int>();
-				const auto is_string = keys[i].is<std::string>();
+				const auto is_int = key.is<int>();
+				const auto is_string = key.is<std::string>();
 
 				if (string_indexed == -1)
 				{
@@ -37,13 +43,13 @@ namespace json
 
 				if (!string_indexed && is_int)
 				{
-					const auto index = keys[i].as<int>();
+					const auto index = key.as<int>();
 					obj[index] = gsc_to_json(array[index], print_id);
 				}
 				else if (string_indexed && is_string)
 				{
-					const auto key = keys[i].as<std::string>();
-					obj.emplace(key, gsc_to_json(array[key], print_id));
+					const auto key_str = key.as<std::string>();
+					obj.emplace(key_str, gsc_to_json(array[key_str], print_id));
 				}
 			}
 
@@ -59,7 +65,7 @@ namespace json
 			}
 
 			dumped_objects.insert(id);
-			nlohmann::json obj;
+			auto obj = nlohmann::json::object();
 
 			if (print_id)
 			{
@@ -86,7 +92,6 @@ namespace json
 			obj.push_back(value[0]);
 			obj.push_back(value[1]);
 			obj.push_back(value[2]);
-
 			return obj;
 		}
 

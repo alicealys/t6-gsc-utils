@@ -31,6 +31,11 @@ namespace scripting
 
 	script_value function::call(const entity& self, std::vector<script_value> arguments) const
 	{
+		if (this->pos_ == 0)
+		{
+			throw std::runtime_error("function pos not set");
+		}
+
 		return exec_ent_thread(self, this->pos_, arguments);
 	}
 }

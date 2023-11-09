@@ -12,13 +12,21 @@ namespace mysql
 {
 	namespace
 	{
+		struct mysql_result_t
+		{
+			MYSQL_RES* result;
+			MYSQL_STMT* stmt;
+			uint64_t affected_rows;
+			std::string error;
+		};
+
 		struct task_t
 		{
 			std::thread thread;
 			bool done;
 			bool canceled;
 			std::unique_ptr<scripting::object> handle;
-			MYSQL_RES* result;
+			mysql_result_t result;
 		};
 
 		uint64_t task_index{};
@@ -41,14 +49,84 @@ namespace mysql
 			return row;
 		}
 
-		scripting::array generate_result(MYSQL_RES* result)
+		scripting::array generate_result(MYSQL_STMT* stmt)
 		{
+			if (stmt == nullptr)
+			{
+				return {};
+			}
+
 			scripting::array result_arr;
 
+			const auto meta = mysql_stmt_result_metadata(stmt);
+			if (meta == nullptr)
+			{
+				return {};
+			}
+
+			const auto column_count = mysql_num_fields(meta);
+			const auto fields = mysql_fetch_fields(meta);
+
+			const auto is_null = utils::memory::allocate_array<my_bool>(column_count);
+			const auto errors = utils::memory::allocate_array<my_bool>(column_count);
+			const auto real_lengths = utils::memory::allocate_array<unsigned long>(column_count);
+			const auto binds = utils::memory::allocate_array<MYSQL_BIND>(column_count);
+
+			const auto _0 = gsl::finally([&]
+			{
+				utils::memory::free(is_null);
+				utils::memory::free(errors);
+				utils::memory::free(real_lengths);
+				utils::memory::free(binds);
+			});
+
+			for (auto i = 0u; i < column_count; i++)
+			{
+				binds[i].length = &real_lengths[i];
+				binds[i].is_null = &is_null[i];
+				binds[i].error = &errors[i];
+			}
+
+			if (mysql_stmt_bind_result(stmt, binds) != 0 ||
+				mysql_stmt_store_result(stmt) != 0)
+			{
+				return {};
+			}
+
+			while (mysql_stmt_fetch(stmt) != MYSQL_NO_DATA)
+			{
+				for (auto i = 0u; i < column_count; i++)
+				{
+					binds[i].buffer_type = MYSQL_TYPE_STRING;
+					binds[i].buffer = utils::memory::allocate_array<char>(real_lengths[i]);
+					binds[i].buffer_length = real_lengths[i];
+					mysql_stmt_fetch_column(stmt, &binds[i], i, 0);
+				}
+
+				scripting::array row_arr;
+
+				for (auto i = 0u; i < column_count; i++)
+				{
+					const auto field = &fields[i];
+					const std::string field_name = {field->name, field->name_length};
+					const std::string row = {reinterpret_cast<char*>(binds[i].buffer), binds[i].buffer_length};
+					row_arr[field_name] = row;
+				}
+
+				result_arr.push(row_arr);
+			}
+
+			return result_arr;
+		}
+
+		scripting::array generate_result(MYSQL_RES* result)
+		{
 			if (result == nullptr)
 			{
 				return {};
 			}
+
+			scripting::array result_arr;
 
 			const auto num_rows = mysql_num_rows(result);
 			const auto num_fields = mysql_num_fields(result);
@@ -194,10 +272,25 @@ namespace mysql
 
 					if (!i->second.canceled)
 					{
-						const auto result = generate_result(i->second.result);
-						scripting::notify(i->second.handle->get_entity_id(), "done", {result});
-						mysql_free_result(i->second.result);
-						i->second.result = nullptr;
+						const auto result = i->second.result.result
+							? generate_result(i->second.result.result)
+							: generate_result(i->second.result.stmt);
+
+						const auto rows = static_cast<size_t>(i->second.result.affected_rows);
+
+						scripting::notify(i->second.handle->get_entity_id(), "done", {result, rows, i->second.result.error});
+
+						if (i->second.result.result)
+						{
+							mysql_free_result(i->second.result.result);
+							i->second.result.result = nullptr;
+						}
+
+						if (i->second.result.stmt)
+						{
+							mysql_stmt_close(i->second.result.stmt);
+							i->second.result.stmt = nullptr;
+						}
 					}
 
 					i = tasks.erase(i);
@@ -221,8 +314,18 @@ namespace mysql
 				return create_mysql_query([=](database_t& db)
 				{
 					const auto handle = db->get_handle();
-					mysql_query(handle, query.data());
-					return mysql_store_result(handle);
+
+					mysql_result_t result{};
+					if (mysql_query(handle, query.data()) != 0)
+					{
+						result.error = mysql_error(handle);
+						return result;
+					}
+
+					result.result = mysql_store_result(handle);
+					result.affected_rows = mysql_affected_rows(handle);
+
+					return result;
 				});
 			});
 
@@ -308,19 +411,29 @@ namespace mysql
 				}
 
 				return create_mysql_query([=](database_t& db)
-					-> MYSQL_RES*
 				{
 					const auto _0 = gsl::finally([&]
 					{
 						free_binds();
 					});
 
+					mysql_result_t result{};
+
 					const auto handle = db->get_handle();
 					const auto stmt = mysql_stmt_init(handle);
-					mysql_stmt_prepare(stmt, query.data(), query.size());
-					mysql_stmt_bind_param(stmt, binds);
-					mysql_stmt_execute(stmt);
-					return mysql_store_result(handle);
+
+					if (mysql_stmt_prepare(stmt, query.data(), query.size()) != 0 || 
+						mysql_stmt_bind_param(stmt, binds) != 0 ||
+						mysql_stmt_execute(stmt) != 0)
+					{
+						result.error = mysql_stmt_error(stmt);
+						return result;
+					}
+
+					result.stmt = stmt;
+					result.affected_rows = mysql_stmt_affected_rows(stmt);
+
+					return result;
 				});
 			});
 		}

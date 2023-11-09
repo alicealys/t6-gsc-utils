@@ -515,6 +515,9 @@ namespace game
 		unsigned char __pad1[0xDEF0];
 	};
 
+	static_assert(offsetof(client_s, header.netchan) == 24);
+	static_assert(offsetof(netchan_t, remoteAddress) == 16);
+
 	static_assert(sizeof(client_s) == 0x4E180);
 
 	struct cmd_function_t

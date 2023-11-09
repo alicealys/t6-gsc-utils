@@ -118,12 +118,19 @@ namespace gsc
         utils::hook::detour scr_get_object_field_hook;
         void scr_get_object_field_stub(unsigned int classnum, int entnum, unsigned int offset)
         {
-            if (custom_fields[classnum].find(offset) == custom_fields[classnum].end())
+            const auto class_iter = custom_fields.find(classnum);
+            if (class_iter == custom_fields.end())
             {
                 return scr_get_object_field_hook.invoke<void>(classnum, entnum, offset);
             }
 
-            const auto& field = custom_fields[classnum][offset];
+            const auto iter = class_iter->second.find(offset);
+            if (iter == class_iter->second.end())
+            {
+                return scr_get_object_field_hook.invoke<void>(classnum, entnum, offset);
+            }
+
+            const auto& field = iter->second;
 
             try
             {
@@ -142,13 +149,20 @@ namespace gsc
         utils::hook::detour scr_set_object_field_hook;
         void scr_set_object_field_stub(unsigned int classnum, int entnum, unsigned int offset)
         {
-            if (custom_fields[classnum].find(offset) == custom_fields[classnum].end())
+            const auto class_iter = custom_fields.find(classnum);
+            if (class_iter == custom_fields.end())
+            {
+                return scr_set_object_field_hook.invoke<void>(classnum, entnum, offset);
+            }
+
+            const auto iter = class_iter->second.find(offset);
+            if (iter == class_iter->second.end())
             {
                 return scr_set_object_field_hook.invoke<void>(classnum, entnum, offset);
             }
 
             const auto args = get_arguments();
-            const auto& field = custom_fields[classnum][offset];
+            const auto& field = iter->second;
 
             try
             {
@@ -474,6 +488,33 @@ namespace gsc
                 {
                     const auto entity = &game::g_entities[entnum];
                     entity->client->flags = value.as<int>();
+                }
+            );
+
+            field::add(classid::entity, "address",
+                [](unsigned int entnum) -> scripting::script_value
+                {
+                    if (entnum >= 18)
+                    {
+                        throw std::runtime_error("Not a player entity");
+                    }
+
+                    const auto clients = *game::svs_clients;
+                    const auto client = &clients[entnum];
+                    const auto address = client->header.netchan.remoteAddress.ip;
+
+                    const std::string address_str = utils::string::va("%i.%i.%i.%i",
+                        address[0],
+                        address[1],
+                        address[2],
+                        address[3]
+                    );
+
+                    return address_str;
+                },
+                [](unsigned int, const scripting::script_value&)
+                {
+                    throw std::runtime_error("cannot set address");
                 }
             );
 
