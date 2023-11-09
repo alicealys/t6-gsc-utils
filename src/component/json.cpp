@@ -97,7 +97,7 @@ namespace json
 
 		nlohmann::json gsc_to_json(const scripting::script_value& value, bool print_id)
 		{
-			const auto variable = value.get_raw();
+			const auto& variable = value.get_raw();
 
 			if (value.is<int>())
 			{
@@ -166,6 +166,8 @@ namespace json
 
 			switch (type)
 			{
+			case (nlohmann::detail::value_t::boolean):
+				return obj.get<bool>();
 			case (nlohmann::detail::value_t::number_integer):
 			case (nlohmann::detail::value_t::number_unsigned):
 				return obj.get<int>();
