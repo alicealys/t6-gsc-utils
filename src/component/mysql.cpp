@@ -110,7 +110,7 @@ namespace mysql
 					const auto field = &fields[i];
 					const std::string field_name = {field->name, field->name_length};
 					const std::string row = {reinterpret_cast<char*>(binds[i].buffer), binds[i].buffer_length};
-					row_arr[field_name] = row;
+					row_arr[field_name] = field_to_value(field, row);
 				}
 
 				result_arr.push(row_arr);
@@ -238,6 +238,11 @@ namespace mysql
 			for (auto i = tasks.begin(); i != tasks.end(); ++i)
 			{
 				i->second.canceled = true;
+
+				if (i->second.thread.joinable())
+				{
+					i->second.thread.join();
+				}
 			}
 		}
 
