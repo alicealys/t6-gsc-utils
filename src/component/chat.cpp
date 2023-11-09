@@ -15,14 +15,6 @@ namespace chat
 {
 	namespace
 	{
-		using userinfo_map = std::unordered_map<std::string, std::string>;
-		std::unordered_map<int, userinfo_map> userinfo_overrides;
-		utils::hook::detour sv_get_user_info_hook;
-		utils::hook::detour client_connect_hook;
-
-		std::vector<scripting::function> say_callbacks;
-		utils::hook::detour g_say_hook;
-
 		struct chat_command_t
 		{
 			scripting::function callback;
@@ -30,6 +22,14 @@ namespace chat
 			bool enabled;
 		};
 
+		using userinfo_map = std::unordered_map<std::string, std::string>;
+
+		utils::hook::detour sv_get_user_info_hook;
+		utils::hook::detour client_connect_hook;
+		utils::hook::detour g_say_hook;
+
+		std::vector<scripting::function> say_callbacks;
+		std::unordered_map<int, userinfo_map> userinfo_overrides;
 		std::unordered_map<std::string, chat_command_t> chat_commands;
 
 		void sv_get_user_info_stub(int index, char* buffer, int buffer_size)
@@ -133,6 +133,34 @@ namespace chat
 			}
 		}
 
+		game::scr_entref_t check_entity(const scripting::entity& entity)
+		{
+			const auto ent = entity.get_entity_reference();
+			if (ent.classnum != 0)
+			{
+				throw std::runtime_error("invalid entity");
+			}
+
+			if (game::g_entities[ent.entnum].client == nullptr)
+			{
+				throw std::runtime_error("not a player entity");
+			}
+
+			return ent;
+		}
+
+		template <bool value>
+		void enable_chat_command(const std::string& name)
+		{
+			const auto lower = utils::string::to_lower(name);
+			const auto iter = chat_commands.find(lower);
+			if (iter == chat_commands.end())
+			{
+				return;
+			}
+
+			iter->second.enabled = value;
+		}
 	}
 
 	class component final : public component_interface
@@ -156,71 +184,28 @@ namespace chat
 
 			gsc::method::add("rename", [](const scripting::entity& entity, const std::string& name)
 			{
-				const auto ent = entity.get_entity_reference();
-
-				if (ent.classnum != 0)
-				{
-					throw std::runtime_error("Invalid entity");
-				}
-
-				if (game::g_entities[ent.entnum].client == nullptr)
-				{
-					throw std::runtime_error("Not a player entity");
-				}
-
+				const auto ent = check_entity(entity);
 				userinfo_overrides[ent.entnum]["name"] = name;
 				game::ClientUserInfoChanged(ent.entnum);
 			});
 
 			gsc::method::add("setname", [](const scripting::entity& entity, const std::string& name)
 			{
-				const auto ent = entity.get_entity_reference();
-
-				if (ent.classnum != 0)
-				{
-					throw std::runtime_error("Invalid entity");
-				}
-
-				if (game::g_entities[ent.entnum].client == nullptr)
-				{
-					throw std::runtime_error("Not a player entity");
-				}
-
+				const auto ent = check_entity(entity);
 				userinfo_overrides[ent.entnum]["name"] = name;
 				game::ClientUserInfoChanged(ent.entnum);
 			});
 
 			gsc::method::add("resetname", [](const scripting::entity& entity)
 			{
-				const auto ent = entity.get_entity_reference();
-				if (ent.classnum != 0)
-				{
-					throw std::runtime_error("Invalid entity");
-				}
-
-				if (game::g_entities[ent.entnum].client == nullptr)
-				{
-					throw std::runtime_error("Not a player entity");
-				}
-
+				const auto ent = check_entity(entity);
 				userinfo_overrides[ent.entnum].erase("name");
 				game::ClientUserInfoChanged(ent.entnum);
 			});
 
 			gsc::method::add("resetclantag", [](const scripting::entity& entity)
 			{
-				const auto ent = entity.get_entity_reference();
-
-				if (ent.classnum != 0)
-				{
-					throw std::runtime_error("Invalid entity");
-				}
-
-				if (game::g_entities[ent.entnum].client == nullptr)
-				{
-					throw std::runtime_error("Not a player entity");
-				}
-
+				const auto ent = check_entity(entity);
 				userinfo_overrides[ent.entnum].erase("clantag");
 				userinfo_overrides[ent.entnum].erase("clanAbbrev");
 				userinfo_overrides[ent.entnum].erase("clanAbbrevEV");
@@ -229,18 +214,7 @@ namespace chat
 
 			gsc::method::add("setclantag", [](const scripting::entity& entity, const std::string& name)
 			{
-				const auto ent = entity.get_entity_reference();
-
-				if (ent.classnum != 0)
-				{
-					throw std::runtime_error("Invalid entity");
-				}
-
-				if (game::g_entities[ent.entnum].client == nullptr)
-				{
-					throw std::runtime_error("Not a player entity");
-				}
-
+				const auto ent = check_entity(entity);
 				userinfo_overrides[ent.entnum]["clantag"] = name;
 				userinfo_overrides[ent.entnum]["clanAbbrev"] = name;
 				userinfo_overrides[ent.entnum]["clanAbbrevEV"] = "1";
@@ -249,20 +223,8 @@ namespace chat
 
 			gsc::method::add("tell", [](const scripting::entity& entity, const std::string& msg)
 			{
-				const auto ent = entity.get_entity_reference();
-
-				if (ent.classnum != 0)
-				{
-					throw std::runtime_error("Invalid entity");
-				}
-
-				if (game::g_entities[ent.entnum].client == nullptr)
-				{
-					throw std::runtime_error("Not a player entity");
-				}
-
-				const auto client = ent.entnum;
-				game::SV_GameSendServerCommand(client, 0, utils::string::va("j \"%s\"", msg.data()));
+				const auto ent = check_entity(entity);
+				game::SV_GameSendServerCommand(ent.entnum, 0, utils::string::va("j \"%s\"", msg.data()));
 			});
 
 			gsc::function::add("say", [](const std::string& msg)
@@ -277,8 +239,8 @@ namespace chat
 
 			gsc::method::add("sendservercommand", [](const scripting::entity& entity, const std::string& cmd)
 			{
-				const auto client = entity.get_entity_reference().entnum;
-				game::SV_GameSendServerCommand(client, 0, cmd.data());
+				const auto ent = check_entity(entity);
+				game::SV_GameSendServerCommand(ent.entnum, 0, cmd.data());
 			});
 
 			gsc::function::add("onplayersay", [](const scripting::function& function)
@@ -306,34 +268,14 @@ namespace chat
 				}
 				else
 				{
-					const auto lower = utils::string::to_lower(names_or_name.as<std::string>());
+					const auto name = names_or_name.as<std::string>();
+					const auto lower = utils::string::to_lower(name);
 					chat_commands.insert(std::make_pair(lower, command));
 				}
 			});
 			
-			gsc::function::add("chat::disable_command", [](const std::string& name)
-			{
-				const auto lower = utils::string::to_lower(name);
-				const auto iter = chat_commands.find(lower);
-				if (iter == chat_commands.end())
-				{
-					return;
-				}
-
-				iter->second.enabled = false;
-			});
-
-			gsc::function::add("chat::enable_command", [](const std::string& name)
-			{
-				const auto lower = utils::string::to_lower(name);
-				const auto iter = chat_commands.find(lower);
-				if (iter == chat_commands.end())
-				{
-					return;
-				}
-
-				iter->second.enabled = true;
-			});
+			gsc::function::add("chat::disable_command", enable_chat_command<false>);
+			gsc::function::add("chat::enable_command", enable_chat_command<true>);
 		}
 	};
 }

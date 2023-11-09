@@ -6,13 +6,17 @@
 #include <utils/io.hpp>
 #include <utils/hook.hpp>
 
-#define INT64_OPERATION(expr) [](const int64_t a, [[maybe_unused]] const int64_t b) { return expr; }
+#define INT64_OPERATION(expr) \
+	[](const std::int64_t a, [[maybe_unused]] const std::int64_t b)  \
+	{ \
+		return expr; \
+	} \
 
 namespace int64
 {
 	namespace
 	{
-		int64_t get_int64_arg(const scripting::variadic_args& args, int index, bool optional)
+		std::int64_t get_int64_arg(const scripting::variadic_args& args, const size_t index, bool optional)
 		{
 			if (optional && index >= static_cast<int>(args.size()))
 			{
@@ -29,10 +33,10 @@ namespace int64
 				return std::strtoll(args[index].as<const char*>(), nullptr, 0);
 			}
 
-			throw std::runtime_error(utils::string::va("parameter %d does not have type 'string' or 'int'", index));
+			throw std::runtime_error(std::format("parameter {} does not have type 'string' or 'int'", index));
 		}
 
-		std::unordered_map<std::string, std::function<int64_t(int64_t, int64_t)>> operations =
+		std::unordered_map<std::string, std::function<std::int64_t(std::int64_t, std::int64_t)>> operations =
 		{
 			{"+",  INT64_OPERATION(a + b)},
 			{"-",  INT64_OPERATION(a - b)},
@@ -49,7 +53,7 @@ namespace int64
 			{"--", INT64_OPERATION(a - 1)},
 		};
 
-		std::unordered_map<std::string, std::function<bool(int64_t, int64_t)>> comparisons =
+		std::unordered_map<std::string, std::function<bool(std::int64_t, std::int64_t)>> comparisons =
 		{
 			{">",  INT64_OPERATION(a > b)},
 			{">=", INT64_OPERATION(a >= b)},
@@ -64,35 +68,35 @@ namespace int64
 	public:
 		void post_unpack() override
 		{
-			gsc::function::add("int64_is_int", [](const scripting::variadic_args& args)
+			gsc::function::add_multiple([](const scripting::variadic_args& args)
 			{
 				auto value = get_int64_arg(args, 0, false);
-				return value <= std::numeric_limits<int32_t>::max() && value >= std::numeric_limits<int32_t>::min();
-			});
+				return value <= std::numeric_limits<std::int32_t>::max() && value >= std::numeric_limits<std::int32_t>::min();
+			}, "int64_is_int", "int64::is_int");
 
-			gsc::function::add("int64_to_int", [](const scripting::variadic_args& args)
+			gsc::function::add_multiple([](const scripting::variadic_args& args)
 			{
-				return static_cast<int32_t>(get_int64_arg(args, 0, false));
-			});
+				return static_cast<std::int32_t>(get_int64_arg(args, 0, false));
+			}, "int64_to_int", "int64::to_int");
 
-			gsc::function::add("int64_op", [](const scripting::variadic_args& args) -> scripting::script_value
+			gsc::function::add_multiple([](const scripting::variadic_args& args) -> scripting::script_value
 			{
 				auto a = get_int64_arg(args, 0, false);
 				const auto op = args[1].as<std::string>();
 				auto b = get_int64_arg(args, 2, true);
 
-				if (operations.find(op) != operations.end())
+				if (const auto iter = operations.find(op); iter != operations.end())
 				{
-					return utils::string::va("%lld", operations[op](a, b));
+					return std::to_string(iter->second(a, b));
 				}
 
-				if (comparisons.find(op) != comparisons.end())
+				if (const auto iter = comparisons.find(op); iter != comparisons.end())
 				{
-					return comparisons[op](a, b);
+					return iter->second(a, b);
 				}
 
-				throw std::runtime_error("Invalid int64 operation");
-			});
+				throw std::runtime_error("invalid int64 operation");
+			}, "int64_op", "int64::op");
 		}
 	};
 }
