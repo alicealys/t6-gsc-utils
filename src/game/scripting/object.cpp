@@ -1,13 +1,14 @@
 #include <stdinc.hpp>
+
 #include "object.hpp"
 #include "execution.hpp"
 
 namespace scripting
 {
-	object_value::object_value(const std::string& key, unsigned int parent_id, unsigned int id)
-		: key_(key)
+	object_value::object_value(const object* object, const std::string& key, const std::uint32_t id)
+		: object_(object)
+		  , key_(key)
 		  , id_(id)
-		  , parent_id_(parent_id)
 	{
 		if (!this->id_)
 		{
@@ -45,7 +46,7 @@ namespace scripting
 		this->value_ = value_raw;
 	}
 
-	object::object(const unsigned int id)
+	object::object(const std::uint32_t id)
 		: id_(id)
 	{
 		this->add();
@@ -65,16 +66,6 @@ namespace scripting
 	object::object()
 	{
 		this->id_ = make_object();
-	}
-
-	object::object(std::unordered_map<std::string, script_value> values)
-	{
-		this->id_ = make_object();
-
-		for (const auto& value : values)
-		{
-			this->set(value.first, value.second);
-		}
 	}
 
 	object::~object()
@@ -130,30 +121,66 @@ namespace scripting
 		}
 	}
 
-	std::vector<std::string> object::get_keys() const
+	void object::iterate_keys(const std::function<bool(const std::string& key)>& callback) const
 	{
-		std::vector<std::string> result;
-
 		auto current = game::scr_VarGlob->objectVariableChildren[this->id_].firstChild;
 
 		while (current)
 		{
 			const auto var = game::scr_VarGlob->childVariableValue[current];
-			const auto string_id = (unsigned __int8)var.name_lo + (var.k.keys.name_hi << 8);
+			const auto string_id = static_cast<std::uint8_t>(var.name_lo) + (var.k.keys.name_hi << 8);
 
 			if (string_id < 0x34BC)
 			{
-				const auto string = reinterpret_cast<const char**>(SELECT(0x2DACC28, 0x2D7CF28))[string_id];
-				result.push_back(string);
+				static const auto address = SELECT(0x2DACC28, 0x2D7CF28);
+				const auto string = reinterpret_cast<const char**>(address)[string_id];
+				if (callback(string))
+				{
+					return;
+				}
 			}
 
 			current = var.nextSibling;
 		}
+	}
+
+	std::vector<std::string> object::get_keys() const
+	{
+		std::vector<std::string> result;
+		iterate_keys([&](const std::string& key)
+		{
+			result.emplace_back(key);
+			return false;
+		});
 
 		return result;
 	}
 
-	unsigned int object::size() const
+	std::optional<std::string> object::get_next_key(const std::string& current) const
+	{
+		auto is_next = false;
+		std::optional<std::string> next;
+
+		iterate_keys([&](const std::string& key)
+		{
+			if (is_next)
+			{
+				next.emplace(key);
+				return true;
+			}
+
+			if (key == current)
+			{
+				is_next = true;
+			}
+
+			return false;
+		});
+
+		return next;
+	}
+
+	std::uint32_t object::size() const
 	{
 		return game::Scr_GetSelf(game::SCRIPTINSTANCE_SERVER, this->id_);
 	}
@@ -168,6 +195,11 @@ namespace scripting
 		}
 	}
 
+	void object::erase(const object_iterator& iter) const
+	{
+		this->erase(iter->first);
+	}
+
 	script_value object::get(const std::string& key) const
 	{
 		const auto string_value = game::SL_GetCanonicalString(key.data(), 0);
@@ -179,9 +211,9 @@ namespace scripting
 		}
 
 		const auto value = game::scr_VarGlob->childVariableValue[variable_id];
-		game::VariableValue variable;
+		game::VariableValue variable{};
 		variable.u = value.u.u;
-		variable.type = (game::scriptType_e)value.type;
+		variable.type = static_cast<game::scriptType_e>(value.type);
 
 		return variable;
 	}
@@ -208,12 +240,12 @@ namespace scripting
 		variable->u.u = value_raw.u;
 	}
 
-	unsigned int object::get_entity_id() const
+	std::uint32_t object::get_entity_id() const
 	{
 		return this->id_;
 	}
 
-	unsigned int object::get_value_id(const std::string& key) const
+	std::uint32_t object::get_value_id(const std::string& key) const
 	{
 		const auto string_value = game::SL_GetCanonicalString(key.data(), 0);
 		const auto variable_id = game::FindVariable(game::SCRIPTINSTANCE_SERVER, this->id_, string_value);
@@ -229,5 +261,35 @@ namespace scripting
 	entity object::get_raw() const
 	{
 		return entity(this->id_);
+	}
+
+	object_value object::operator[](const std::string& key) const
+	{
+		return object_value(this, key, this->get_value_id(key));
+	}
+
+	object_iterator object::begin() const
+	{
+		const auto keys = this->get_keys();
+		return object_iterator(this, keys, 0);
+	}
+
+	object_iterator object::end() const
+	{
+		return object_iterator(this);
+	}
+
+	object_iterator object::find(const std::string& key) const
+	{
+		const auto keys = this->get_keys();
+		for (auto i = 0u; i < keys.size(); i++)
+		{
+			if (keys[i] == key)
+			{
+				return object_iterator(this, keys, i);
+			}
+		}
+
+		return object_iterator(this);
 	}
 }

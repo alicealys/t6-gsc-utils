@@ -172,14 +172,9 @@ namespace notifies
                     if (arg.is<scripting::array>())
                     {
                         const auto arr = arg.as<scripting::array>();
-                        for (auto o = 0u; o < arr.size(); o++)
+                        for (const auto& [key, value] : arr)
                         {
-                            if (!arr[o].is<std::string>())
-                            {
-                                continue;
-                            }
-
-                            const auto str = arr[o].as<std::string>();
+                            const auto str = value.as<std::string>();
                             notifies.insert(game::SL_GetString(str.data(), 0));
                         }
                     }

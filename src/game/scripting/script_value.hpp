@@ -231,7 +231,7 @@ public: \
 
 			for (const auto& value : container)
 			{
-				array_.push(value);
+				array_.emplace_back(value);
 			}
 
 			game::VariableValue value{};
@@ -248,6 +248,14 @@ public: \
 		}
 
 		std::string to_string() const;
+
+		friend bool operator==(const script_value& a, const script_value& b)
+		{
+			const auto& value_raw_a = a.get_raw();
+			const auto& value_raw_b = b.get_raw();
+
+			return value_raw_a.type != value_raw_b.type && value_raw_a.u.uintValue == value_raw_b.u.uintValue;
+		}
 
 		const game::VariableValue& get_raw() const;
 
@@ -296,7 +304,7 @@ public: \
 		{
 			const auto value = script_value::as<I>();
 
-			if (!value)
+			if (value == nullptr)
 			{
 				throw std::runtime_error("is null");
 			}
@@ -308,10 +316,12 @@ public: \
 		variadic_args as() const
 		{
 			variadic_args args{this->index_};
+
 			for (auto i = this->index_; i < this->values_.size(); i++)
 			{
-				args.push_back({this->values_, this->values_[i], i, true});
+				args.emplace_back(this->values_, this->values_[i], i, true);
 			}
+
 			return args;
 		}
 
@@ -340,7 +350,7 @@ public: \
 			{
 				try
 				{
-					container.push_back(array.get(i).as<T>());
+					container.emplace_back(array.get(i).as<T>());
 				}
 				catch (const std::exception& e)
 				{
@@ -362,6 +372,7 @@ public: \
 		arguments values_{};
 		size_t index_{};
 		bool exists_{};
+
 	};
 
 	class function_arguments
@@ -377,5 +388,6 @@ public: \
 
 	private:
 		arguments values_{};
+
 	};
 }
