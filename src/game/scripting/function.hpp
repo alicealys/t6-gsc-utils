@@ -7,6 +7,7 @@ namespace scripting
 	class function
 	{
 	public:
+		function() = default;
 		function(const char*);
 
 		script_value get_raw() const;

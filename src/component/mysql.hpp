@@ -51,7 +51,6 @@ namespace mysql
 			{
 				get_config().access([&](sql::connection_config& cfg)
 				{
-					printf("create connection\n");
 					connection.db = std::make_unique<sql::connection>(cfg);
 					connection.start = now;
 				});

@@ -129,7 +129,7 @@ namespace game
 	WEAK symbol<gentity_s> g_entities{0x21EF7C0, 0x21C13C0};
 	WEAK symbol<unsigned int> levelEntityId{0x2E1A51C, 0x2DEA81C};
 
-	WEAK symbol<client_s> svs_clients{0x291C0C0, 0x28EC9C0};
+	WEAK symbol<client_s*> svs_clients{0x291C0C0, 0x28EC9C0};
 
 	namespace plutonium
 	{
