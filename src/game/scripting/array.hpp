@@ -10,11 +10,24 @@ namespace scripting
 	class array_value : public script_value
 	{
 	public:
-		array_value(const array* array, const std::uint32_t id);
+		array_value(const array* array, const script_value& key);
 		void operator=(const script_value& value);
 
+		template <typename T>
+		T as() const
+		{
+			try
+			{
+				return script_value::as<T>();
+			}
+			catch (const std::exception& e)
+			{
+				throw std::runtime_error(std::format("array value '{}' {}", this->key_.to_string(), e.what()));
+			}
+		}
+
 	private:
-		std::uint32_t id_;
+		script_value key_;
 		const array* array_;
 
 	};

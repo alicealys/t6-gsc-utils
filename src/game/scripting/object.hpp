@@ -10,7 +10,7 @@ namespace scripting
 	class object_value : public script_value
 	{
 	public:
-		object_value(const object* object, const std::string& key, const std::uint32_t id);
+		object_value(const object* object, const std::string& key);
 		void operator=(const script_value& value);
 
 		template <typename T>
@@ -29,7 +29,6 @@ namespace scripting
 	private:
 		const object* object_;
 		std::string key_;
-		std::uint32_t id_;
 
 	};
 

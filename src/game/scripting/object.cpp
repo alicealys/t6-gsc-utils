@@ -5,45 +5,18 @@
 
 namespace scripting
 {
-	object_value::object_value(const object* object, const std::string& key, const std::uint32_t id)
+	object_value::object_value(const object* object, const std::string& key)
 		: object_(object)
 		  , key_(key)
-		  , id_(id)
 	{
-		if (!this->id_)
-		{
-			return;
-		}
-
-		const auto value = game::scr_VarGlob->childVariableValue[this->id_];
-		game::VariableValue variable{};
-		variable.u = value.u.u;
-		variable.type = static_cast<game::scriptType_e>(value.type);
-
-		this->value_ = variable;
+		const auto value = this->object_->get(key);
+		this->script_value::operator=(value);
 	}
 
 	void object_value::operator=(const script_value& value)
 	{
-		if (!this->id_)
-		{
-			return;
-		}
-
-		const auto& value_raw = value.get_raw();
-
-		const auto variable = &game::scr_VarGlob->childVariableValue[this->id_];
-		game::VariableValue variable_{};
-		variable_.type = variable->type;
-		variable_.u = variable->u.u;
-
-		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value_raw);
-		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable->type, variable->u.u);
-
-		variable->type = gsl::narrow_cast<char>(value_raw.type);
-		variable->u.u = value_raw.u;
-
-		this->value_ = value_raw;
+		this->object_->set(this->key_, value);
+		this->script_value::operator=(value);
 	}
 
 	object::object(const std::uint32_t id)
@@ -265,7 +238,7 @@ namespace scripting
 
 	object_value object::operator[](const std::string& key) const
 	{
-		return object_value(this, key, this->get_value_id(key));
+		return object_value(this, key);
 	}
 
 	object_iterator object::begin() const

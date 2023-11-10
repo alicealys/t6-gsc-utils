@@ -5,44 +5,18 @@
 
 namespace scripting
 {
-	array_value::array_value(const array* array, const std::uint32_t id)
+	array_value::array_value(const array* array, const script_value& key)
 		: array_(array)
-		  , id_(id)
+		  , key_(key)
 	{
-		if (!this->id_)
-		{
-			return;
-		}
-
-		const auto value = game::scr_VarGlob->childVariableValue[this->id_];
-		game::VariableValue variable{};
-		variable.u = value.u.u;
-		variable.type = static_cast<game::scriptType_e>(value.type);
-
-		this->value_ = variable;
+		const auto value = this->array_->get(key);
+		this->script_value::operator=(value);
 	}
 
 	void array_value::operator=(const script_value& value)
 	{
-		if (!this->id_)
-		{
-			return;
-		}
-
-		const auto& value_raw = value.get_raw();
-
-		const auto variable = &game::scr_VarGlob->childVariableValue[this->id_];
-		game::VariableValue variable_value{};
-		variable_value.type = variable->type;
-		variable_value.u = variable->u.u;
-
-		game::AddRefToValue(game::SCRIPTINSTANCE_SERVER, &value_raw);
-		game::RemoveRefToValue(game::SCRIPTINSTANCE_SERVER, variable_value.type, variable_value.u);
-
-		variable->type = gsl::narrow_cast<char>(value_raw.type);
-		variable->u.u = value_raw.u;
-
-		this->value_ = value_raw;
+		this->array_->set(this->key_, value);
+		this->script_value::operator=(value);
 	}
 
 	array::array(const std::uint32_t id)
@@ -252,7 +226,7 @@ namespace scripting
 			return this->get(key.as<std::string>());
 		}
 
-		throw std::runtime_error("invalid key type");
+		throw std::runtime_error(std::format("invalid key type '{}'", key.type_name()));
 	}
 
 	void array::set(const std::string& key, const script_value& value) const
@@ -299,19 +273,19 @@ namespace scripting
 		variable->u.u = value_raw.u;
 	}
 
-	void array::set(const script_value& key, const script_value& _value) const
+	void array::set(const script_value& key, const script_value& value) const
 	{
 		if (key.is<int>())
 		{
-			return this->set(key.as<int>(), _value);
+			return this->set(key.as<int>(), value);
 		}
 
 		if (key.is<std::string>())
 		{
-			return this->set(key.as<std::string>(), _value);
+			return this->set(key.as<std::string>(), value);
 		}
 
-		throw std::runtime_error("invalid key type");
+		throw std::runtime_error(std::format("invalid key type '{}'", key.type_name()));
 	}
 
 	std::uint32_t array::get_entity_id() const
@@ -350,17 +324,7 @@ namespace scripting
 
 	array_value array::operator[](const script_value& key) const
 	{
-		if (key.is<int>())
-		{
-			return array_value(this, this->get_value_id(key.as<int>()));
-		}
-
-		if (key.is<std::string>())
-		{
-			return array_value(this, this->get_value_id(key.as<std::string>()));
-		}
-
-		throw std::runtime_error("invalid key type");
+		return array_value(this, key);
 	}
 
 	array_iterator array::begin() const
