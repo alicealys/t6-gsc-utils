@@ -20,6 +20,13 @@ namespace chat
 			scripting::function callback;
 			bool hide_message;
 			bool enabled;
+			bool sync;
+		};
+
+		struct chat_callback_t
+		{
+			scripting::function callback;
+			bool sync;
 		};
 
 		using userinfo_map = std::unordered_map<std::string, std::string>;
@@ -28,9 +35,9 @@ namespace chat
 		utils::hook::detour client_connect_hook;
 		utils::hook::detour g_say_hook;
 
-		std::vector<scripting::function> say_callbacks;
 		std::unordered_map<int, userinfo_map> userinfo_overrides;
 		std::unordered_map<std::string, chat_command_t> chat_commands;
+		std::vector<chat_callback_t> chat_callbacks;
 
 		void sv_get_user_info_stub(int index, char* buffer, int buffer_size)
 		{
@@ -62,8 +69,7 @@ namespace chat
 
 		bool handle_chat_command(game::gentity_s* ent, const std::string& text)
 		{
-			const std::string text_str = text;
-			const auto args = utils::string::split(text_str, ' ');
+			const auto args = utils::string::split(text, ' ');
 			if (args.size() <= 0)
 			{
 				return false;
@@ -81,33 +87,66 @@ namespace chat
 				return false;
 			}
 
-			scheduler::once([=]
+			if (iter->second.sync)
 			{
 				const auto entity_id = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, ent->number, 0, 0);
-				iter->second.callback(entity_id, {args});
-			}, scheduler::server);
+				const auto result = iter->second.callback(entity_id, {args});
+
+				if (result.is<bool>())
+				{
+					return result.as<bool>();
+				}
+			}
+			else
+			{
+				scheduler::once([=]
+				{
+					const auto entity_id = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, ent->number, 0, 0);
+					iter->second.callback(entity_id, {args});
+				}, scheduler::server);
+			}
 
 			return iter->second.hide_message;
 		}
 
-		void g_say_stub(game::gentity_s* ent, game::gentity_s* target, int mode, const char* text)
+		bool handle_chat_callback(game::gentity_s* ent, const std::string& text, const int mode)
 		{
-			auto hidden = handle_chat_command(ent, text);
+			auto hidden = false;
 
-			for (const auto& callback : say_callbacks)
+			for (const auto& chat_callback : chat_callbacks)
 			{
-				const auto entity_id = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, ent->number, 0, 0);
-				const auto result = callback(entity_id, {text, mode});
-
-				if (result.is<int>() && !hidden)
+				if (chat_callback.sync)
 				{
-					hidden = result.as<int>() == 0;
+					const auto entity_id = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, ent->number, 0, 0);
+					const auto result = chat_callback.callback(entity_id, {text, mode});
+
+					if (result.is<bool>())
+					{
+						hidden = hidden || result.as<bool>();
+					}
+				}
+				else
+				{
+					scheduler::once([=]
+					{
+						const auto entity_id = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, ent->number, 0, 0);
+						chat_callback.callback(entity_id, {text, mode});
+					}, scheduler::server);
 				}
 			}
 
+			return hidden;
+		}
+
+		void g_say_stub(game::gentity_s* ent, game::gentity_s* target, int mode, const char* text)
+		{
+			auto hidden = false;
+			hidden = hidden || handle_chat_command(ent, text);
+			hidden = hidden || handle_chat_callback(ent, text, mode);
+
 			if (!hidden)
 			{
-				g_say_hook.invoke<void>(ent, target, mode, text);
+				g_say_hook.invoke<void>(ent, target, mode, text);	
 			}
 		}
 
@@ -178,7 +217,7 @@ namespace chat
 			scripting::on_shutdown([]()
 			{
 				userinfo_overrides.clear();
-				say_callbacks.clear();
+				chat_callbacks.clear();
 				chat_commands.clear();
 			});
 
@@ -243,19 +282,38 @@ namespace chat
 				game::SV_GameSendServerCommand(ent.entnum, 0, cmd.data());
 			});
 
-			gsc::function::add("onplayersay", [](const scripting::function& function)
+			gsc::function::add_multiple([](const scripting::function& callback, const scripting::variadic_args& va)
 			{
-				printf("[WARNING] onPlayerSay is deprectated and is not safe to use in certain contexts, use chat::register_command(name, hide_message, callback)");
-				say_callbacks.push_back(function);
-			});
+				chat_callback_t chat_callback{};
+				chat_callback.sync = false;
+				chat_callback.callback = callback;
+
+				if (va.size() >= 1)
+				{
+					chat_callback.sync = va[0].as<bool>();
+				}
+
+				chat_callbacks.emplace_back(chat_callback);
+			}, "onplayersay", "chat::register_callback");
 
 			gsc::function::add("chat::register_command", [](const scripting::function_argument& names_or_name, 
-				const bool hide_message, const scripting::function& callback)
+				const scripting::function& callback, const scripting::variadic_args& va)
 			{
 				chat_command_t command{};
-				command.hide_message = hide_message;
+				command.hide_message = true;
+				command.sync = false;
 				command.callback = callback;
 				command.enabled = true;
+
+				if (va.size() >= 1)
+				{
+					command.hide_message = va[0].as<bool>();
+				}
+
+				if (va.size() >= 2)
+				{
+					command.sync = va[1].as<bool>();
+				}
 
 				if (names_or_name.is<scripting::array>())
 				{
