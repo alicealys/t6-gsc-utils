@@ -369,12 +369,32 @@ init()
       }
   }
   ```
-* `chat::register_command(name, hide_message, callback)`: Regisers a chat command, the callback takes an array of arguments:
-
-  ```c
+* `chat::register_callback(callback[, sync])`: Registers a chat callback.
+  * `callback: function(text: string, mode: int)`: the GSC function that will be executed, `self` is the player that sent the message.
+  * `sync: bool (default: false)`: whether the callback should be executed immediately or in the next frame, setting it to true allows you to hide the message by making the callback return true.  
+  **WARNING**: Using certain GSC function in the callback when `sync` is true can cause crashes (example: any function that causes damage), so only set it to true when you really need it.  
+  ```gsc
   init()
   {
-      chat::register_command("!hello", true, ::cmd_hello);
+      chat::register_callback(::chat_callback);
+  }
+
+  chat_callback(text, mode)
+  {
+      self tell(string::format("You said %s", text));
+  }
+  ```
+  
+* `chat::register_command(name, callback[, hide_message[, sync])`: Regisers a chat command.
+  * `name`: can be either a string or an array of strings.
+  * `callback: function(args: array)`: the GSC function that will be executed, `self` is the player that sent the message.
+  * `hide_message: bool (default: false)`: specifies whether the message sent by the player should be hidden from the chat.
+  * `sync: bool (default: false)`: as described in `chat::register_callback`
+
+  ```gsc
+  init()
+  {
+      chat::register_command("!hello", ::cmd_hello, true);
   }
   
   cmd_hello(args)
