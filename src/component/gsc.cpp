@@ -147,18 +147,18 @@ namespace gsc
         }
 
         utils::hook::detour scr_set_object_field_hook;
-        void scr_set_object_field_stub(unsigned int classnum, int entnum, unsigned int offset)
+        int scr_set_object_field_stub(unsigned int classnum, int entnum, unsigned int offset)
         {
             const auto class_iter = custom_fields.find(classnum);
             if (class_iter == custom_fields.end())
             {
-                return scr_set_object_field_hook.invoke<void>(classnum, entnum, offset);
+                return scr_set_object_field_hook.invoke<int>(classnum, entnum, offset);
             }
 
             const auto iter = class_iter->second.find(offset);
             if (iter == class_iter->second.end())
             {
-                return scr_set_object_field_hook.invoke<void>(classnum, entnum, offset);
+                return scr_set_object_field_hook.invoke<int>(classnum, entnum, offset);
             }
 
             const auto args = get_arguments();
@@ -175,6 +175,8 @@ namespace gsc
                 printf(debug::get_call_stack().data());
                 printf("************************************\n");
             }
+
+            return 1;
         }
 
         utils::hook::detour scr_post_load_scripts_hook;
@@ -471,7 +473,7 @@ namespace gsc
                     const auto entity = &game::g_entities[entnum];
                     return entity->eFlags2;
                 },
-                    [](unsigned int entnum, const scripting::script_value& value)
+                [](unsigned int entnum, const scripting::script_value& value)
                 {
                     const auto entity = &game::g_entities[entnum];
                     entity->eFlags2 = value.as<int>();
@@ -496,7 +498,7 @@ namespace gsc
                 {
                     if (entnum >= 18)
                     {
-                        throw std::runtime_error("Not a player entity");
+                        throw std::runtime_error("not a player entity");
                     }
 
                     const auto clients = *game::svs_clients;
@@ -647,9 +649,9 @@ namespace gsc
                 const auto lower = utils::string::to_lower(name);
 
                 std::vector<scripting::script_value> arguments;
-                for (auto i = args.begin() + 1, end = args.end(); i < end; ++i)
+                for (const auto& arg : args)
                 {
-                    arguments.emplace_back(i->get_raw());
+                    arguments.emplace_back(arg);
                 }
 
                 disable_longjmp_error = true;
