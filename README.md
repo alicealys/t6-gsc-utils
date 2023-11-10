@@ -664,14 +664,14 @@ You can access a mysql database using the following functions:
       // use variadic args for the parameters
       {
           query = mysql::prepared_statement("insert into `players` (`guid`, `name`) values (?, ?)", 123, "foo");
-          query waittill("done", result);
+          query waittill("done", result, affected_rows, error);
       }
 
       // use an array for the parameters
       {
           params = array(123, "foo");
           query = mysql::prepared_statement("insert into `players` (`guid`, `name`) values (?, ?)", params);
-          query waittill("done", result);
+          query waittill("done", result, affected_rows, error);
       }
   }
   ```
