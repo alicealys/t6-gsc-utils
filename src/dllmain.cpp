@@ -18,10 +18,10 @@ namespace
 		{
 			static auto dll = utils::binary_resource{LIBMYSQL_DLL, lib_name};
 			const auto path = dll.get_extracted_file();
-			return load_library_hook.invoke<HMODULE>(path.data(), file, flags);
+			return load_library_hook.invoke_pascal<HMODULE>(path.data(), file, flags);
 		}
 
-		return load_library_hook.invoke<HMODULE>(lib_name, file, flags);
+		return load_library_hook.invoke_pascal<HMODULE>(lib_name, file, flags);
 	}
 }
 
