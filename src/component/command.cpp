@@ -234,7 +234,7 @@ namespace command
 				for (auto i = argc - 1; i > 1; i--)
 				{
 					const auto arg = params[i];
-					game::add(arg);
+					scripting::push_value(arg);
 				}
 
 				const auto name = game::SL_GetString(params[1], 0);
@@ -273,7 +273,7 @@ namespace command
 				for (auto i = argc - 1; i > 2; i--)
 				{
 					const auto arg = params[i];
-					game::add(arg);
+					scripting::push_value(arg);
 				}
 
 				const auto name = game::SL_GetString(params[2], 0);
