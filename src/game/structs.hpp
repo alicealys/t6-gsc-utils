@@ -399,6 +399,80 @@ namespace game
 
 	static_assert(sizeof(gentity_s) == 0x31C);
 
+	enum entity_class
+	{
+		CLASS_NUM_ENTITY = 0x0,
+		CLASS_NUM_HUDELEM = 0x1,
+		CLASS_NUM_PATHNODE = 0x2,
+		CLASS_NUM_VEHICLENODE = 0x3,
+		CLASS_NUM_DYNENTITY = 0x4,
+		CLASS_NUM_MENUELEM = 0x5,
+		CLASS_NUM_COUNT = 0x6,
+	};
+
+	union hudelem_color_t
+	{
+		int rgba;
+	};
+
+	struct hudelem_s
+	{
+		float x;
+		float y;
+		float z;
+		float fontScale;
+		float fromFontScale;
+		int fontScaleStartTime;
+		hudelem_color_t color;
+		hudelem_color_t fromColor;
+		int fadeStartTime;
+		int scaleStartTime;
+		float fromX;
+		float fromY;
+		int moveStartTime;
+		int time;
+		int duration;
+		float value;
+		float sort;
+		hudelem_color_t glowColor;
+		int fxBirthTime;
+		unsigned int flags;
+		__int16 targetEntNum;
+		__int16 fontScaleTime;
+		__int16 fadeTime;
+		__int16 label;
+		__int16 width;
+		__int16 height;
+		__int16 fromWidth;
+		__int16 fromHeight;
+		__int16 scaleTime;
+		__int16 moveTime;
+		__int16 text;
+		unsigned __int16 fxLetterTime;
+		unsigned __int16 fxDecayStartTime;
+		unsigned __int16 fxDecayDuration;
+		unsigned __int16 fxRedactDecayStartTime;
+		unsigned __int16 fxRedactDecayDuration;
+		char type;
+		char font;
+		char alignOrg;
+		char alignScreen;
+		char materialIndex;
+		char offscreenMaterialIdx;
+		char fromAlignOrg;
+		char fromAlignScreen;
+		char soundID;
+		char ui3dWindow;
+	};
+
+	struct game_hudelem_s
+	{
+		hudelem_s elem;
+		int clientNum;
+		int team;
+		int archived;
+	};
+
 	enum clientState_t
 	{
 		CS_FREE,

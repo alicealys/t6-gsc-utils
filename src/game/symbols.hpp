@@ -90,6 +90,7 @@ namespace game
 	WEAK symbol<void(int clientNum, const char* reason)> SV_GameDropClient{0x6D2980, 0x677690};
 	WEAK symbol<bool(int clientNum)> SV_IsTestClient{0x4E64B0, 0x42C300};
 	WEAK symbol<void(int clientNum, int type, const char* command)> SV_GameSendServerCommand{0x45D7D0, 0x40D450};
+	WEAK symbol<void(int index, const char* val)> SV_SetConfigString{0x6EAA00, 0x673E40};
 
 	WEAK symbol<void*(int valueIndex)> Sys_GetValue{0x5EFBA0, 0x59A740};
 	WEAK symbol<int()> Sys_Milliseconds{0x57EC40, 0x6F4C00};
@@ -130,6 +131,8 @@ namespace game
 	WEAK symbol<unsigned int> levelEntityId{0x2E1A51C, 0x2DEA81C};
 
 	WEAK symbol<client_s*> svs_clients{0x291C0C0, 0x28EC9C0};
+
+	WEAK symbol<game_hudelem_s> g_hudelems{0x21C5140, 0x2196D40};
 
 	namespace plutonium
 	{
