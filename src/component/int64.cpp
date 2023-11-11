@@ -25,7 +25,7 @@ namespace int64
 
 			if (args[index].is<int>())
 			{
-				return args[index].as<int>();
+				return static_cast<std::int64_t>(args[index].as<int>());
 			}
 
 			if (args[index].is<const char*>())
@@ -97,6 +97,20 @@ namespace int64
 
 				throw std::runtime_error("invalid int64 operation");
 			}, "int64_op", "int64::op");
+
+			gsc::function::add_multiple([](const scripting::variadic_args& args)
+			{
+				const auto a = get_int64_arg(args, 0, false);
+				const auto b = get_int64_arg(args, 1, false);
+				return std::to_string(std::min(a, b));
+			}, "int64_min", "int64::min");
+
+			gsc::function::add_multiple([](const scripting::variadic_args& args)
+			{
+				const auto a = get_int64_arg(args, 0, false);
+				const auto b = get_int64_arg(args, 1, false);
+				return std::to_string(std::max(a, b));
+			}, "int64_max", "int64::max");
 		}
 	};
 }

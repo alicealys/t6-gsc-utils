@@ -38,15 +38,37 @@ namespace mysql
 			{
 			case enum_field_types::MYSQL_TYPE_INT24:
 			case enum_field_types::MYSQL_TYPE_LONG:
-			case enum_field_types::MYSQL_TYPE_LONGLONG:
 			case enum_field_types::MYSQL_TYPE_SHORT:
 				return std::atoi(row.data());
+			case enum_field_types::MYSQL_TYPE_LONGLONG:
+				return row;
 			case enum_field_types::MYSQL_TYPE_FLOAT:
 			case enum_field_types::MYSQL_TYPE_DOUBLE:
-				return std::atof(row.data());
+				return static_cast<float>(std::atof(row.data()));
 			}
 
 			return row;
+		}
+
+		scripting::script_value bind_to_value(const MYSQL_BIND* bind)
+		{
+			switch (bind->buffer_type)
+			{
+			case enum_field_types::MYSQL_TYPE_INT24:
+			case enum_field_types::MYSQL_TYPE_LONG:
+			case enum_field_types::MYSQL_TYPE_SHORT:
+				return *reinterpret_cast<int*>(bind->buffer);
+			case enum_field_types::MYSQL_TYPE_LONGLONG:
+				return std::to_string(*reinterpret_cast<std::int64_t*>(bind->buffer));
+			case enum_field_types::MYSQL_TYPE_FLOAT:
+				return *reinterpret_cast<float*>(bind->buffer);
+			case enum_field_types::MYSQL_TYPE_DOUBLE:
+				return static_cast<float>(*reinterpret_cast<double*>(bind->buffer));
+			case enum_field_types::MYSQL_TYPE_STRING:
+				return std::string{reinterpret_cast<char*>(bind->buffer), bind->buffer_length};
+			}
+
+			return {};
 		}
 
 		scripting::array generate_result(MYSQL_STMT* stmt)
@@ -55,6 +77,8 @@ namespace mysql
 			{
 				return {};
 			}
+
+			utils::memory::allocator allocator;
 
 			scripting::array result_arr;
 
@@ -67,18 +91,10 @@ namespace mysql
 			const auto column_count = mysql_num_fields(meta);
 			const auto fields = mysql_fetch_fields(meta);
 
-			const auto is_null = utils::memory::allocate_array<my_bool>(column_count);
-			const auto errors = utils::memory::allocate_array<my_bool>(column_count);
-			const auto real_lengths = utils::memory::allocate_array<unsigned long>(column_count);
-			const auto binds = utils::memory::allocate_array<MYSQL_BIND>(column_count);
-
-			const auto _0 = gsl::finally([&]
-			{
-				utils::memory::free(is_null);
-				utils::memory::free(errors);
-				utils::memory::free(real_lengths);
-				utils::memory::free(binds);
-			});
+			const auto is_null = allocator.allocate_array<my_bool>(column_count);
+			const auto errors = allocator.allocate_array<my_bool>(column_count);
+			const auto real_lengths = allocator.allocate_array<unsigned long>(column_count);
+			const auto binds = allocator.allocate_array<MYSQL_BIND>(column_count);
 
 			for (auto i = 0u; i < column_count; i++)
 			{
@@ -97,9 +113,43 @@ namespace mysql
 			{
 				for (auto i = 0u; i < column_count; i++)
 				{
-					binds[i].buffer_type = MYSQL_TYPE_STRING;
-					binds[i].buffer = utils::memory::allocate_array<char>(real_lengths[i]);
-					binds[i].buffer_length = real_lengths[i];
+					switch (fields[i].type)
+					{
+					case enum_field_types::MYSQL_TYPE_INT24:
+					case enum_field_types::MYSQL_TYPE_LONG:
+					case enum_field_types::MYSQL_TYPE_SHORT:
+					{
+						binds[i].buffer_type = MYSQL_TYPE_LONG;
+						binds[i].buffer = allocator.allocate<int>();
+						binds[i].buffer_length = sizeof(int);
+						break;
+					};
+					case enum_field_types::MYSQL_TYPE_LONGLONG:
+					{
+						binds[i].buffer_type = MYSQL_TYPE_LONGLONG;
+						binds[i].buffer = allocator.allocate<std::int64_t>();
+						binds[i].buffer_length = sizeof(std::int64_t);
+						break;
+					};
+					case enum_field_types::MYSQL_TYPE_FLOAT:
+						binds[i].buffer_type = MYSQL_TYPE_FLOAT;
+						binds[i].buffer = allocator.allocate<float>();
+						binds[i].buffer_length = sizeof(float);
+						break;
+					case enum_field_types::MYSQL_TYPE_DOUBLE:
+					{
+						binds[i].buffer_type = MYSQL_TYPE_DOUBLE;
+						binds[i].buffer = allocator.allocate<double>();
+						binds[i].buffer_length = sizeof(double);
+						break;
+					}
+					default:
+						binds[i].buffer_type = MYSQL_TYPE_STRING;
+						binds[i].buffer = allocator.allocate_array<char>(real_lengths[i]);
+						binds[i].buffer_length = real_lengths[i];
+						break;
+					}
+
 					mysql_stmt_fetch_column(stmt, &binds[i], i, 0);
 				}
 
@@ -109,8 +159,7 @@ namespace mysql
 				{
 					const auto field = &fields[i];
 					const std::string field_name = {field->name, field->name_length};
-					const std::string row = {reinterpret_cast<char*>(binds[i].buffer), binds[i].buffer_length};
-					row_arr[field_name] = field_to_value(field, row);
+					row_arr[field_name] = bind_to_value(&binds[i]);
 				}
 
 				result_arr.emplace_back(row_arr);
