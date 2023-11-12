@@ -676,138 +676,208 @@ You can access a mysql database using the following functions:
   }
   ```
 
+# Hud Elements
+* `hudelem::set_text(text: string)`: Sets the text of a hud element by reserving a config string and modifying its value.  
+  This function can be used to prevent the "G_FindConfigstringIndex: overflow (%d): " error.
+  ```gsc
+  {
+      // ...
+      elem = newhudelement();
+      elem.x = 100;
+      elem.y = 100;
+      elem.font = "objective";
+      elem.fontscale = 1;
+      i = 0;
+      while (true)
+      {
+          elem hudelem::set_text(string::format("frame %i", i++));
+          wait 0.05;
+      }
+  }
+  ```
+
+## Int64
+These int64 functions allow you to use int64 values within GSC, which normally only supports 32 bit integers.  
+This is useful if you store int64 values in a file or a database and need to access them from GSC.  
+The values are stored as strings but all the functions below can take either a string or int for an int64 argument.  
+`int64` represents a value that is either a `string` or an `int`.  
+* `int64::op(a: int64, op: string, b: int64): int64|bool`: Performs an operation between 2 int64 values (stored as strings)
+  ```gsc
+  {
+      result = int64::op("2583528945238953952", "+", "12039152933205235");
+      assert(result == "2595568098172159187");
+
+      result = int64::op("5834258295282538925", ">", 1);
+      assert(result == true);
+  }
+  ```
+  List of supported operators:
+    * `+`
+    * `-`
+    * `*`
+    * `/`
+    * `&`
+    * `^`
+    * `|`
+    * `~`
+    * `%`
+    * `>>`
+    * `<<`
+    * `++`
+    * `--`
+* `int64::is_int(value: int64): bool`: Returns true if an int64 value fits within an int32 value.
+* `int64::to_int(value: int64): int`: Converts an int64 value to an int32 value.
+* `int64::min(a: int64, b: int64): int64`: Returns the minimum between 2 int64 values.
+* `int64::max(a: int64, b: int64): int64`: Returns the maximum between 2 int64 values.
+
 ## Function list
-* dropallbots
-* say
-* sendservercommand
-* onplayersay
-* executecommand
-* command::execute
-* addcommand
-* command::add
-* addclientcommand
-* command::add_sv
-* crash
-* breakpoint
-* assert
-* assertmsg
-* throw
-* killthread
-* killallthreads
-* getvarusage
-* getchildvarusage
-* getusagestats
-* removeconfigstring
-* replaceconfigstring
-* printcallstack
-* getcallstack
-* getfunction
-* getfunctionname
-* getfunctionargcount
-* arrayremovekey
-* xor
-* not
-* and
-* or
-* structget
-* structset
-* structremove
-* getstructkeys
-* isfunctionptr
-* isentity
-* isstruct
-* typeof
-* worldget
-* worldset
-* invokefunc
-* detourfunc
-* disabledetour
-* http::get
-* httpget
-* curl
-* http::request
-* httppost
-* int64_is_int
-* int64_to_int
-* int64_op
-* fremove
-* fopen
-* fclose
-* fwrite
-* fread
-* hashstring
-* writefile
-* io::write_file
-* appendfile
-* io::append_file
-* fileexists
-* io::file_exists
-* movefile
-* io::move_file
-* filesize
-* io::file_size
-* createdirectory
-* io::create_directory
-* directoryexists
-* io::directory_exists
-* directoryisempty
-* io::directory_is_empty
-* listfiles
-* io::list_files
-* removefile
-* io::remove_file
-* removedirectory
-* io::remove_directory
-* copyfolder
-* io::copy_folder
-* copydirectory
-* io::copy_directory
-* readfile
-* io::read_file
-* createmap
-* json::create_map
-* jsonparse
-* json::parse
-* jsonserialize
-* json::serialize
-* jsondump
-* json::dump
-* jsonprint
-* json::print
-* createnotifygroup
-* va
-* string::va
-* formatstring
-* string::format
-* sprintf
-* printf
-* print
-* toupper
-* string::to_upper
-* tolower
-* string::to_lower
-* string::is_numeric
-* string::starts_with
-* string::ends_with
-* string::replace
-* string::regex_replace
-* string::regex_match
-* string::regex_search
-* dumpturret
+* `dropallbots`
+* `say`
+* `sendservercommand`
+* `onplayersay`
+* `chat::register_callback`
+* `chat::register_command`
+* `chat::disable_command`
+* `chat::enable_command`
+* `executecommand`
+* `command::execute`
+* `addcommand`
+* `command::add`
+* `addclientcommand`
+* `command::add_sv`
+* `crash`
+* `breakpoint`
+* `assert`
+* `assertmsg`
+* `throw`
+* `killthread`
+* `killallthreads`
+* `getvarusage`
+* `getchildvarusage`
+* `getusagestats`
+* `removeconfigstring`
+* `replaceconfigstring`
+* `getcurrentthread`
+* `printcallstack`
+* `getcallstack`
+* `getfunction`
+* `getfunctionname`
+* `getfunctionargcount`
+* `arrayremovekey`
+* `xor`
+* `not`
+* `and`
+* `or`
+* `structget`
+* `structset`
+* `structremove`
+* `getstructkeys`
+* `isfunctionptr`
+* `isentity`
+* `isstruct`
+* `typeof`
+* `worldget`
+* `worldset`
+* `invokefunc`
+* `detourfunc`
+* `disabledetour`
+* `http::get`
+* `httpget`
+* `curl`
+* `http::request`
+* `httppost`
+* `int64_is_int`
+* `int64::is_int`
+* `int64_to_int`
+* `int64::to_int`
+* `int64_op`
+* `int64::op`
+* `int64_min`
+* `int64::min`
+* `int64_max`
+* `int64::max`
+* `fremove`
+* `fopen`
+* `fclose`
+* `fwrite`
+* `fread`
+* `hashstring`
+* `writefile`
+* `io::write_file`
+* `appendfile`
+* `io::append_file`
+* `fileexists`
+* `io::file_exists`
+* `movefile`
+* `io::move_file`
+* `filesize`
+* `io::file_size`
+* `createdirectory`
+* `io::create_directory`
+* `directoryexists`
+* `io::directory_exists`
+* `directoryisempty`
+* `io::directory_is_empty`
+* `listfiles`
+* `io::list_files`
+* `removefile`
+* `io::remove_file`
+* `removedirectory`
+* `io::remove_directory`
+* `copyfolder`
+* `io::copy_folder`
+* `copydirectory`
+* `io::copy_directory`
+* `readfile`
+* `io::read_file`
+* `createmap`
+* `json::create_map`
+* `jsonparse`
+* `json::parse`
+* `jsonserialize`
+* `json::serialize`
+* `jsondump`
+* `json::dump`
+* `jsonprint`
+* `json::print`
+* `mysql::set_config`
+* `mysql::query`
+* `mysql::prepared_statement`
+* `createnotifygroup`
+* `va`
+* `string::va`
+* `formatstring`
+* `string::format`
+* `sprintf`
+* `printf`
+* `print`
+* `toupper`
+* `string::to_upper`
+* `tolower`
+* `string::to_lower`
+* `string::is_numeric`
+* `string::starts_with`
+* `string::ends_with`
+* `string::replace`
+* `string::regex_replace`
+* `string::regex_match`
+* `string::regex_search`
+* `dumpturret`
 ## Method list
-* rename
-* setname
-* resetname
-* resetclantag
-* setclantag
-* tell
-* sendservercommand
-* get
-* set
-* noclip
-* ufo
-* god
-* demigod
-* notarget
-* setturretfield
-* getturretfield
+* `rename`
+* `setname`
+* `resetname`
+* `resetclantag`
+* `setclantag`
+* `tell`
+* `sendservercommand`
+* `hudelem::set_text`
+* `get`
+* `set`
+* `noclip`
+* `ufo`
+* `god`
+* `demigod`
+* `notarget`
+* `setturretfield`
+* `getturretfield`
