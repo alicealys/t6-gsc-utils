@@ -134,7 +134,6 @@ namespace config_strings
 				if (iter == hudelem_config_strings.end())
 				{
 					const auto index = get_config_string();
-					printf("reserve string %i\n", index);
 					hudelem->elem.text = static_cast<short>(index);
 					hudelem_config_strings.insert(std::make_pair(hudelem, index));
 				}
