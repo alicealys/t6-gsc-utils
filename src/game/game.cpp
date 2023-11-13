@@ -22,60 +22,6 @@ namespace game
 		}
 	}
 
-	void add(int value)
-	{
-		game::Scr_AddInt(SCRIPTINSTANCE_SERVER, value);
-	}
-
-	void add(float value)
-	{
-		game::Scr_AddFloat(SCRIPTINSTANCE_SERVER, value);
-	}
-
-	void add(float* value)
-	{
-		game::Scr_AddVector(SCRIPTINSTANCE_SERVER, value);
-	}
-
-	void add(const char* value)
-	{
-		game::Scr_AddString(SCRIPTINSTANCE_SERVER, value);
-	}
-
-	void add(gentity_s* value)
-	{
-		game::Scr_AddEntity(SCRIPTINSTANCE_SERVER, value);
-	}
-
-	void add(void* value)
-	{
-		game::Scr_AddInt(SCRIPTINSTANCE_SERVER, reinterpret_cast<uintptr_t>(value));
-	}
-
-	template <>
-	int get(int index)
-	{
-		return game::Scr_GetInt(SCRIPTINSTANCE_SERVER, index);
-	}
-
-	template <>
-	float get(int index)
-	{
-		return game::Scr_GetFloat(SCRIPTINSTANCE_SERVER, index);
-	}
-
-	template <>
-	const char* get(int index)
-	{
-		return game::Scr_GetString(SCRIPTINSTANCE_SERVER, index);
-	}
-
-	template <>
-	std::string get(int index)
-	{
-		return game::Scr_GetString(SCRIPTINSTANCE_SERVER, index);
-	}
-
 	gentity_s* GetEntity(scr_entref_t entref)
 	{
 		if (entref.classnum != 0)
@@ -89,11 +35,11 @@ namespace game
 		return &game::g_entities[entref.entnum];
 	}
 
-	scr_entref_t Scr_GetEntityIdRef(unsigned int entId)
+	scr_entref_t Scr_GetEntityIdRef(unsigned int ent_id)
 	{
 		scr_entref_t entref{};
 
-		const auto v2 = &game::scr_VarGlob->objectVariableValue[entId];
+		const auto v2 = &game::scr_VarGlob->objectVariableValue[ent_id];
 
 		entref.entnum = v2->u.f.next;
 		entref.classnum = gsl::narrow_cast<unsigned short>(v2->w.classnum >> 8);
@@ -101,7 +47,7 @@ namespace game
 		return entref;
 	}
 
-	void Scr_TerminateWaitThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId)
+	void Scr_TerminateWaitThread(scriptInstance_t inst, unsigned int local_id, unsigned int start_local_id)
 	{
 		static const auto func = utils::hook::assemble([](utils::hook::assembler& a)
 		{
@@ -116,10 +62,10 @@ namespace game
 			a.ret();
 		});
 
-		utils::hook::invoke<void>(func, inst, localId, startLocalId);
+		utils::hook::invoke<void>(func, inst, local_id, start_local_id);
 	}
 
-	void Scr_TerminateWaittillThread(scriptInstance_t inst, unsigned int localId, unsigned int startLocalId)
+	void Scr_TerminateWaittillThread(scriptInstance_t inst, unsigned int local_id, unsigned int start_local_id)
 	{
 		static const auto func = utils::hook::assemble([](utils::hook::assembler& a)
 		{
@@ -134,15 +80,6 @@ namespace game
 			a.ret();
 		});
 
-		utils::hook::invoke<void>(func, inst, localId, startLocalId);
-	}
-
-	namespace plutonium
-	{
-		bool is_up_to_date()
-		{
-			const auto value = *reinterpret_cast<DWORD*>(0x21B00000);
-			return value == 0x64AA1902;
-		}
+		utils::hook::invoke<void>(func, inst, local_id, start_local_id);
 	}
 }
