@@ -25,4 +25,4 @@
 	url = https://github.com/HowardHinnant/date
 [submodule "deps/sqlpp11"]
 	path = deps/sqlpp11
-	url = https://github.com/fedddddd/sqlpp11.git
+	url = https://github.com/rbock/sqlpp11.git
