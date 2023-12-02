@@ -520,30 +520,6 @@ namespace gsc
 				}
 			);
 
-			function::add("getfunction", [](const std::string& filename, const std::string& function)
-				-> scripting::script_value
-			{
-				const auto file_iter = scripting::script_function_table.find(filename);
-				if (file_iter == scripting::script_function_table.end())
-				{
-					throw std::runtime_error(std::format("script {} not found", filename));
-				}
-
-				const auto iter = file_iter->second.find(function);
-				if (iter == file_iter->second.end())
-				{
-					throw std::runtime_error(std::format("function {} not found in script", function, filename));
-				}
-
-				return scripting::function{iter->second};
-			});
-
-			function::add("getfunctionname", [](const scripting::variadic_args& args)
-			{
-				const auto function = args[0].as<scripting::function>();
-				return function.get_name();
-			});
-			
 			function::add("getfunctionargcount", [](const scripting::function& function)
 			{
 				const auto pos = function.get_pos();
