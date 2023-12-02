@@ -29,7 +29,7 @@ namespace patches
 			const auto result = utils::hook::invoke<void*>(0x5B4220, a1, a2);
 			if (!result)
 			{
-				const auto err = utils::string::va("No client field named %s found", a2);
+				const auto err = utils::string::va("no client field named %s found", a2);
 				game::Scr_Error(game::SCRIPTINSTANCE_SERVER, err, false);
 			}
 
