@@ -58,6 +58,7 @@ namespace int64
 			{">",  INT64_OPERATION(a > b)},
 			{">=", INT64_OPERATION(a >= b)},
 			{"==", INT64_OPERATION(a == b)},
+			{"!=", INT64_OPERATION(a != b)},
 			{"<=", INT64_OPERATION(a <= b)},
 			{"<",  INT64_OPERATION(a < b)},
 		};
