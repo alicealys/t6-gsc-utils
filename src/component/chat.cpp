@@ -69,7 +69,8 @@ namespace chat
 
 		bool handle_chat_command(game::gentity_s* ent, const std::string& text)
 		{
-			const auto args = utils::string::split(text, ' ');
+			const auto trimmed = utils::string::trim(text);
+			const auto args = utils::string::split(trimmed, ' ');
 			if (args.size() <= 0)
 			{
 				return false;

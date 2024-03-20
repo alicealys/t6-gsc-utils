@@ -98,4 +98,6 @@ namespace utils::string
 	std::string replace(std::string str, const std::string& from, const std::string& to);
 
 	std::string get_timestamp();
+
+	std::string trim(const std::string& str, const std::string& whitespace = " \t\n\r\f\v");
 }

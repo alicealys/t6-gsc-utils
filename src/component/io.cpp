@@ -6,14 +6,39 @@
 #include "gsc.hpp"
 #include "io.hpp"
 #include "scheduler.hpp"
+#include "scripting.hpp"
 
 #include <utils/hook.hpp>
 #include <utils/http.hpp>
 #include <utils/io.hpp>
+#include <utils/file_watcher.hpp>
 #include <curl/curl.h>
 
 namespace io
 {
+	namespace
+	{
+		struct watched_file
+		{
+			std::unique_ptr<utils::io::file_watcher> watcher;
+			scripting::object handle;
+		};
+
+		std::vector<watched_file> watched_files;
+
+		void poll_files()
+		{
+			for (auto& file : watched_files)
+			{
+				std::string data;
+				if (file.watcher->run(1ms, &data, true))
+				{
+					scripting::notify(file.handle.get_entity_id(), "data", {data});
+				}
+			}
+		}
+	}
+
 	class component final : public component_interface
 	{
 	public:
@@ -21,6 +46,13 @@ namespace io
 		{
 			const auto path = game::Dvar_FindVar("fs_homepath")->current.string;
 			std::filesystem::current_path(path);
+
+			scheduler::loop(poll_files, scheduler::server_packet_loop);
+
+			scripting::on_shutdown([]()
+			{
+				watched_files.clear();
+			});
 
 			gsc::function::add("fremove", [](const char* path)
 			{
@@ -116,6 +148,20 @@ namespace io
 			gsc::function::add_multiple(utils::io::copy_folder, "copyfolder", "io::copy_folder");
 			gsc::function::add_multiple(utils::io::copy_folder, "copydirectory", "io::copy_directory");
 			gsc::function::add_multiple(static_cast<std::string(*)(const std::string&)>(utils::io::read_file), "readfile", "io::read_file");
+
+			gsc::function::add("io::watch_file", [](const std::string& file)
+			{
+				scripting::object handle;
+
+				auto watcher = std::make_unique<utils::io::file_watcher>(file);
+				watcher->init();
+				watched_file watched_file{};
+				watched_file.watcher = std::move(watcher);
+				watched_file.handle = handle;
+				watched_files.emplace_back(std::move(watched_file));
+
+				return handle;
+			});
 		}
 	};
 }

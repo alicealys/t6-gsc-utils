@@ -145,4 +145,18 @@ namespace utils::string
 
 		return timestamp;
 	}
+
+	std::string trim(const std::string& str, const std::string& whitespace)
+	{
+		const auto first = str.find_first_not_of(whitespace);
+		if (first == std::string::npos)
+		{
+			return {};
+		}
+
+		const auto last = str.find_last_not_of(whitespace);
+		const auto range = last - first + 1;
+
+		return str.substr(first, range);
+	}
 }
