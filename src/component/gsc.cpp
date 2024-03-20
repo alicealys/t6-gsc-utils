@@ -567,6 +567,17 @@ namespace gsc
 				obj[key] = value;
 			});
 
+			function::add("struct::get", [](const scripting::object& obj, const std::string& key)
+			{
+				return obj[key];
+			});
+
+			function::add("struct::set", [](const scripting::object& obj, const std::string& key,
+				const scripting::script_value& value)
+			{
+				obj[key] = value;
+			});
+
 			function::add("structremove", [](const scripting::object& obj, const std::string& key)
 			{
 				obj.erase(key);

@@ -124,6 +124,13 @@ namespace notifies
 			a.pop(edi);
 			a.jmp(0x415EA2);
 		}
+
+		void* client_connect_stub(int client_num, int script_pers_id)
+		{
+			const scripting::entity player = game::Scr_GetEntityId(game::SCRIPTINSTANCE_SERVER, client_num, 0, 0);
+			scripting::notify(*game::levelEntityId, "direct_connect", {player});
+			return utils::hook::invoke<void*>(0x41BE10, client_num, script_pers_id);
+		}
 	}
 
 	class component final : public component_interface
@@ -140,6 +147,8 @@ namespace notifies
 
 			utils::hook::jump(0x550E9F, utils::hook::assemble(free_variable_stub_1));
 			utils::hook::jump(0x415E9D, utils::hook::assemble(free_variable_stub_2));
+
+			utils::hook::call(0x501F0F, client_connect_stub);
 
 			scripting::on_shutdown([]
 			{
