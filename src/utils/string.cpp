@@ -91,6 +91,25 @@ namespace utils::string
 		return result;
 	}
 
+	std::string bin_to_hex(const std::string& data)
+	{
+		return dump_hex(data, "");
+	}
+
+	std::string hex_to_bin(const std::string& data)
+	{
+		std::string result;
+
+		for (auto i = 0u; i < data.size(); i += 2)
+		{
+			const auto byte = data.substr(i, 2);
+			const auto value = static_cast<char>(std::strtol(byte.data(), nullptr, 0x10));
+			result += value;
+		}
+
+		return result;
+	}
+
 	std::string convert(const std::wstring& wstr)
 	{
 		std::string result;
