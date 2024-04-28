@@ -2,6 +2,7 @@
 
 #include "game/scripting/array.hpp"
 #include "game/scripting/execution.hpp"
+#include "../plugin.hpp"
 
 #if _HAS_CXX20
 namespace gsc

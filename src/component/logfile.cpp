@@ -29,30 +29,14 @@ namespace logfile
 			return flag.value();
 		}
 
-		int printf_stub(const char* fmt, ...)
-		{
-			std::lock_guard _(mutex);
-
-			static thread_local utils::string::va_provider<8, 256> provider;
-
-			va_list ap;
-			va_start(ap, fmt);
-
-			const auto result = provider.get(fmt, ap);
-
-			va_end(ap);
-
-			if (is_logging_enabled())
-			{
-				utils::io::write_file(filename, result, true);
-			}
-
-			return printf_hook.invoke<int>(result);
-		}
-
 		std::string load_path()
 		{
 			const auto fs_basegame = game::Dvar_FindVar("fs_homepath");
+			if (fs_basegame == nullptr)
+			{
+				return "";
+			}
+
 			return fs_basegame->current.string;
 		}
 
@@ -63,10 +47,20 @@ namespace logfile
 		}
 	}
 
+	void log_hook(const std::string& buffer)
+	{
+		std::lock_guard _(mutex);
+
+		if (is_logging_enabled())
+		{
+			utils::io::write_file(filename, buffer, true);
+		}
+	}
+
 	class component final : public component_interface
 	{
 	public:
-		void post_unpack() override
+		void on_after_dvar_init([[maybe_unused]] plugin::plugin* plugin) override
 		{
 			const auto path = get_path();
 			std::filesystem::current_path(path);
@@ -74,8 +68,6 @@ namespace logfile
 			utils::io::create_directory("logs");
 			filename = utils::string::va("logs/console-%s.log",
 				utils::string::get_timestamp().data());
-
-			printf_hook.create(printf, printf_stub);
 		}
 	};
 }

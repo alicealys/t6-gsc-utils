@@ -282,7 +282,7 @@ namespace mysql
 	class component final : public component_interface
 	{
 	public:
-		void pre_destroy() override
+		void on_shutdown([[maybe_unused]] plugin::plugin* plugin) override
 		{
 			for (auto i = tasks.begin(); i != tasks.end(); ++i)
 			{
@@ -295,7 +295,7 @@ namespace mysql
 			}
 		}
 
-		void post_unpack() override
+		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
 			scripting::on_shutdown([]()
 			{

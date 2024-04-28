@@ -5,6 +5,8 @@
 
 #include "component/signatures.hpp"
 
+#include "plugin.hpp"
+
 #include <utils/hook.hpp>
 #include <utils/binary_resource.hpp>
 #include <utils/nt.hpp>
@@ -30,35 +32,22 @@ namespace
 	}
 }
 
+PLUTONIUM_API plutonium::sdk::plugin* PLUTONIUM_CALLBACK on_initialize()
+{
+	return plugin::get();
+}
+
 BOOL APIENTRY DllMain(HMODULE module, DWORD ul_reason_for_call, LPVOID /*reserved*/)
 {
 	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
 	{
 		utils::nt::library::set_current_handle(module);
-
 		load_library_hook.create(LoadLibraryExA, load_library_stub);
-
-		if (!signatures::process())
-		{
-			MessageBoxA(NULL,
-				"This version of t6-gsc-utils is outdated.\n" \
-				"Download the latest dll from here: https://github.com/fedddddd/t6-gsc-utils/releases",
-				"ERROR", MB_ICONERROR);
-
-			return FALSE;
-		}
-
-		if (game::plutonium::printf.get() != nullptr)
-		{
-			utils::hook::jump(reinterpret_cast<uintptr_t>(&printf), game::plutonium::printf);
-		}
-
-		component_loader::post_unpack();
 	}
 
 	if (ul_reason_for_call == DLL_PROCESS_DETACH)
 	{
-		component_loader::pre_destroy();
+		component_loader::on_shutdown();
 	}
 
 	return TRUE;
