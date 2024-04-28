@@ -42,11 +42,14 @@ namespace io
 	class component final : public component_interface
 	{
 	public:
-		void post_unpack() override
+		void on_after_dvar_init([[maybe_unused]] plugin::plugin* plugin) override
 		{
 			const auto path = game::Dvar_FindVar("fs_homepath")->current.string;
 			std::filesystem::current_path(path);
+		}
 
+		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
+		{
 			gsc::function::add("fremove", [](const char* path)
 			{
 				return std::remove(path);

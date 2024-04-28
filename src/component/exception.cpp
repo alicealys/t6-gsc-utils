@@ -152,7 +152,7 @@ namespace exception
     class component final : public component_interface
     {
     public:
-        void post_unpack() override
+        void on_startup([[maybe_unused]] plugin::plugin* plugin) override
         {
             SetUnhandledExceptionFilter(exception_filter);
             utils::hook::jump(reinterpret_cast<uintptr_t>(&SetUnhandledExceptionFilter), set_unhandled_exception_filter_stub);

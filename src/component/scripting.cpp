@@ -268,7 +268,7 @@ namespace scripting
 	class component final : public component_interface
 	{
 	public:
-		void post_unpack() override
+		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
 			g_shutdown_game_hook.create(SELECT(0x60DCF0, 0x688A40), g_shutdown_game_stub);
 

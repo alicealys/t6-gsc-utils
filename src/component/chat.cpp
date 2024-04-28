@@ -206,7 +206,7 @@ namespace chat
 	class component final : public component_interface
 	{
 	public:
-		void post_unpack() override
+		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
 			g_say_hook.create(SELECT(0x6A7A40, 0x493DF0), g_say_stub);
 			sv_get_user_info_hook.create(SELECT(0x68BB90, 0x4C10F0), sv_get_user_info_stub);

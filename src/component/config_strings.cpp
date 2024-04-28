@@ -113,7 +113,7 @@ namespace config_strings
 	class component final : public component_interface
 	{
 	public:
-		void post_unpack() override
+		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
 			utils::hook::jump(SELECT(0x6D6573, 0x467D63), utils::hook::assemble(g_localized_string_index_stub_1));
 			utils::hook::jump(SELECT(0x6D6633, 0x467E23), utils::hook::assemble(g_localized_string_index_stub_2));

@@ -1,4 +1,5 @@
 #pragma once
+#include "../plugin.hpp"
 
 class component_interface
 {
@@ -7,25 +8,24 @@ public:
 	{
 	}
 
-	virtual void post_start()
+	virtual void on_startup([[maybe_unused]] plugin::plugin* plugin)
 	{
 	}
 
-	virtual void post_load()
+	virtual void on_dvar_init([[maybe_unused]] plugin::plugin* plugin)
 	{
 	}
 
-	virtual void pre_destroy()
+	virtual void on_after_dvar_init([[maybe_unused]] plugin::plugin* plugin)
 	{
 	}
 
-	virtual void post_unpack()
+	virtual void on_game_init([[maybe_unused]] plugin::plugin* plugin)
 	{
 	}
 
-	virtual void* load_import([[maybe_unused]] const std::string& library, [[maybe_unused]] const std::string& function)
+	virtual void on_shutdown([[maybe_unused]] plugin::plugin* plugin)
 	{
-		return nullptr;
 	}
 
 	virtual bool is_supported()

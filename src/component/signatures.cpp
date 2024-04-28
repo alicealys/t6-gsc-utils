@@ -54,22 +54,9 @@ namespace signatures
 		memcpy(bytes, &string_ptr, sizeof(bytes));
 		return find_string_ptr({bytes, 4});
 	}
-	
-	bool process_printf()
-	{
-		const auto string_ref = find_string_ref("A critical exception occured!\n");
-		if (!string_ref)
-		{
-			return false;
-		}
-
-		const auto offset = *reinterpret_cast<size_t*>(string_ref + 5);
-		game::plutonium::printf.set(string_ref + 4 + 5 + offset);
-		return true;
-	}
 
 	bool process()
 	{
-		return process_printf();
+		return true;
 	}
 }

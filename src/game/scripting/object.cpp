@@ -107,7 +107,7 @@ namespace scripting
 			{
 				static const auto address = SELECT(0x2DACC28, 0x2D7CF28);
 				const auto string = reinterpret_cast<const char**>(address)[string_id];
-				if (callback(string))
+				if (string != nullptr && callback(string))
 				{
 					return;
 				}

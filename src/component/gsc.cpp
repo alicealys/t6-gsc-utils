@@ -435,7 +435,7 @@ namespace gsc
 	class component final : public component_interface
 	{
 	public:
-		void post_unpack() override
+		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
 			utils::hook::jump(SELECT(0x6CD7E9, 0x4F0439), SELECT(gsc_obj_resolve_stub_mp, gsc_obj_resolve_stub_zm));
 

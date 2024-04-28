@@ -155,7 +155,7 @@ namespace string
 	class component final : public component_interface
 	{
 	public:
-		void post_unpack() override
+		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
 			gsc::function::add_multiple(format_string, "va", "string::va",
 				"formatstring", "string::format", "sprintf");

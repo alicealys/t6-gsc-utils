@@ -15,6 +15,7 @@
 #include <utils/hook.hpp>
 #include <utils/string.hpp>
 #include <utils/compression.hpp>
+#include <utils/flags.hpp>
 
 namespace debug
 {
@@ -472,11 +473,24 @@ namespace debug
     class component final : public component_interface
     {
     public:
-        void post_unpack() override
+        void on_after_dvar_init([[maybe_unused]] plugin::plugin* plugin) override
         {
+            if (!utils::flags::has_flag("debug-utils"))
+            {
+                return;
+            }
+
             developer_script = game::Dvar_FindVar("developer_script");
-            scr_max_loop_time = game::Dvar_RegisterInt("scr_maxLoopTime", 2500, 0, 
+            scr_max_loop_time = game::Dvar_RegisterInt("scr_maxLoopTime", 2500, 0,
                 100000, 0, "Maximum loop time before a thread gets killed, 0: don't kill infinite loops");
+        }
+
+        void on_startup([[maybe_unused]] plugin::plugin* plugin) override
+        {
+            if (!utils::flags::has_flag("debug-utils"))
+            {
+                return;
+            }
 
             utils::hook::jump(SELECT(0x8F8A57, 0x8F77B7), utils::hook::assemble(vm_execute_error_stub));
             utils::hook::jump(SELECT(0x8F8918, 0x8F7678), utils::hook::assemble(vm_execute_jmp_stub));
@@ -656,7 +670,7 @@ namespace debug
                 alloc_child_variable_hook.create(0x8F19A0, alloc_child_variable_stub);
                 utils::hook::jump(0x8F1C90, utils::hook::assemble(free_child_variable_stub));
                 utils::hook::call(0x8F1A3F, exceeded_max_child_vars_error_stub);
-
+                
                 command::add("printallocations", [](command::params& params)
                 {
                     auto limit = 1;
@@ -664,7 +678,7 @@ namespace debug
                     {
                         limit = atoi(params.get(1));
                     }
-
+                
                     printf(get_child_var_allocations(limit).data());
                 });
             }

@@ -133,9 +133,4 @@ namespace game
 	WEAK symbol<client_s*> svs_clients{0x291C0C0, 0x28EC9C0};
 
 	WEAK symbol<game_hudelem_s> g_hudelems{0x21C5140, 0x2196D40};
-
-	namespace plutonium
-	{
-		WEAK symbol<int(const char* fmt, ...)> printf{0, 0};
-	}
 }

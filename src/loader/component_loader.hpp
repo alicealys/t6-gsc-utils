@@ -18,9 +18,9 @@ public:
 		static_assert(std::is_base_of<component_interface, T>::value, "component has invalid base class");
 
 	public:
-		installer()
+		installer(const std::string& name)
 		{
-			register_component(std::make_unique<T>());
+			register_component(name, std::make_unique<T>());
 		}
 	};
 
@@ -38,12 +38,12 @@ public:
 		return nullptr;
 	}
 
-	static void register_component(std::unique_ptr<component_interface>&& component);
+	static void register_component(const std::string& name, std::unique_ptr<component_interface>&& component);
 
-	static bool post_start();
-	static bool post_load();
-	static void post_unpack();
-	static void pre_destroy();
+	static void on_startup();
+	static void on_dvar_init();
+	static void on_after_dvar_init();
+	static void on_shutdown();
 	static void clean();
 
 	static void* load_import(const std::string& library, const std::string& function);
@@ -51,11 +51,11 @@ public:
 	static void trigger_premature_shutdown();
 
 private:
-	static std::vector<std::unique_ptr<component_interface>>& get_components();
+	static std::vector<std::pair<std::string, std::unique_ptr<component_interface>>>& get_components();
 };
 
-#define REGISTER_COMPONENT(name)                       \
+#define REGISTER_COMPONENT(name)                    \
 namespace                                           \
 {                                                   \
-	static component_loader::installer<name> __component; \
+	static component_loader::installer<name> __component(#name); \
 }

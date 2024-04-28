@@ -72,7 +72,7 @@ namespace network
 	class component final : public component_interface
 	{
 	public:
-		void post_unpack() override
+		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
 			if (!utils::flags::has_flag("experimental-utils"))
 			{
