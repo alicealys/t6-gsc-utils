@@ -26,3 +26,9 @@
 [submodule "deps/sqlpp11"]
 	path = deps/sqlpp11
 	url = https://github.com/rbock/sqlpp11.git
+[submodule "deps/libtommath"]
+	path = deps/libtommath
+	url = https://github.com/libtom/libtommath.git
+[submodule "deps/libtomcrypt"]
+	path = deps/libtomcrypt
+	url = https://github.com/libtom/libtomcrypt.git

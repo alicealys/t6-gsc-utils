@@ -10,6 +10,7 @@
 #define DLL_EXPORT extern "C" __declspec(dllexport)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <ws2tcpip.h>
 
 #include <cassert>
 #include <csetjmp>

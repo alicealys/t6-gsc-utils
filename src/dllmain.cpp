@@ -18,7 +18,12 @@ namespace
 		{
 			static auto dll = utils::binary_resource{LIBMYSQL_DLL, lib_name};
 			const auto path = dll.get_extracted_file();
-			return load_library_hook.invoke_pascal<HMODULE>(path.data(), file, flags);
+			const auto handle = load_library_hook.invoke_pascal<HMODULE>(path.data(), file, flags);
+
+			if (handle != nullptr)
+			{
+				return handle;
+			}
 		}
 
 		return load_library_hook.invoke_pascal<HMODULE>(lib_name, file, flags);

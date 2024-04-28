@@ -89,6 +89,8 @@ namespace utils::string
 	bool is_numeric(const std::string& text);
 
 	std::string dump_hex(const std::string& data, const std::string& separator = " ");
+	std::string bin_to_hex(const std::string& data);
+	std::string hex_to_bin(const std::string& data);
 
 	void strip(const char* in, char* out, int max);
 

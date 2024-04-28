@@ -12,7 +12,7 @@
 #include <utils/http.hpp>
 #include <utils/io.hpp>
 #include <utils/file_watcher.hpp>
-#include <curl/curl.h>
+#include <utils/flags.hpp>
 
 namespace io
 {
@@ -46,13 +46,6 @@ namespace io
 		{
 			const auto path = game::Dvar_FindVar("fs_homepath")->current.string;
 			std::filesystem::current_path(path);
-
-			scheduler::loop(poll_files, scheduler::server_packet_loop);
-
-			scripting::on_shutdown([]()
-			{
-				watched_files.clear();
-			});
 
 			gsc::function::add("fremove", [](const char* path)
 			{
@@ -149,19 +142,29 @@ namespace io
 			gsc::function::add_multiple(utils::io::copy_folder, "copydirectory", "io::copy_directory");
 			gsc::function::add_multiple(static_cast<std::string(*)(const std::string&)>(utils::io::read_file), "readfile", "io::read_file");
 
-			gsc::function::add("io::watch_file", [](const std::string& file)
+			if (utils::flags::has_flag("experimental-utils"))
 			{
-				scripting::object handle;
+				scheduler::loop(poll_files, scheduler::server_packet_loop);
 
-				auto watcher = std::make_unique<utils::io::file_watcher>(file);
-				watcher->init();
-				watched_file watched_file{};
-				watched_file.watcher = std::move(watcher);
-				watched_file.handle = handle;
-				watched_files.emplace_back(std::move(watched_file));
+				scripting::on_shutdown([]()
+				{
+					watched_files.clear();
+				});
 
-				return handle;
-			});
+				gsc::function::add("io::watch_file", [](const std::string& file)
+				{
+					scripting::object handle;
+
+					auto watcher = std::make_unique<utils::io::file_watcher>(file);
+					watcher->init();
+					watched_file watched_file{};
+					watched_file.watcher = std::move(watcher);
+					watched_file.handle = handle;
+					watched_files.emplace_back(std::move(watched_file));
+
+					return handle;
+				});
+			}
 		}
 	};
 }
