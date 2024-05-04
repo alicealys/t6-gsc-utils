@@ -30,7 +30,7 @@ namespace plugin
 		}
 	}
 
-	std::uint32_t PLUTONIUM_INTERNAL_CALLBACK plugin::plugin_version()
+	std::uint32_t plugin::plugin_version()
 	{
 		return 1;
 	}
@@ -40,12 +40,12 @@ namespace plugin
 		return "t6-gsc-utils";
 	}
 
-	bool PLUTONIUM_INTERNAL_CALLBACK  plugin::is_game_supported([[maybe_unused]] plutonium::sdk::game game)
+	bool  plugin::is_game_supported([[maybe_unused]] plutonium::sdk::game game)
 	{
 		return game == plutonium::sdk::game::t6;
 	}
 
-	void PLUTONIUM_INTERNAL_CALLBACK plugin::on_startup(plutonium::sdk::iinterface* interface_ptr, plutonium::sdk::game game)
+	void plugin::on_startup(plutonium::sdk::iinterface* interface_ptr, plutonium::sdk::game game)
 	{
 		this->interface_ = interface_ptr;
 		this->game_ = game;
@@ -56,7 +56,7 @@ namespace plugin
 		interface_ptr->callbacks()->on_after_dvar_init(&component_loader::on_after_dvar_init);
 	}
 
-	void PLUTONIUM_INTERNAL_CALLBACK plugin::on_shutdown()
+	void plugin::on_shutdown()
 	{
 		component_loader::on_shutdown();
 	}

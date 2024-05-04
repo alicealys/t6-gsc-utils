@@ -32,3 +32,6 @@
 [submodule "deps/libtomcrypt"]
 	path = deps/libtomcrypt
 	url = https://github.com/libtom/libtomcrypt.git
+[submodule "deps/plutonium-sdk"]
+	path = deps/plutonium-sdk
+	url = https://github.com/plutoniummod/plutonium-sdk.git
