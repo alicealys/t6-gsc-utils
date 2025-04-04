@@ -182,46 +182,6 @@ namespace debug
             printf("************************************\n");
         }
 
-        void print_call_error(const game::opcode opcode)
-        {
-            if (!developer_script->current.enabled)
-            {
-                return;
-            }
-
-            const auto error = reinterpret_cast<const char*>(SELECT(0x2E27C70, 0x2DF7F70));
-            const auto fs_pos = *reinterpret_cast<char**>(SELECT(0x2E23C08, 0x2DF3F08));
-
-            if (opcode == game::opcode::OP_CallBuiltin || opcode == game::opcode::OP_CallBuiltinMethod)
-            {
-                std::string name{};
-                for (auto i = 0; i < 4; i++)
-                {
-                    const auto ptr = *reinterpret_cast<void**>(fs_pos + i);
-                    name = opcode == game::opcode::OP_CallBuiltinMethod
-                        ? gsc::find_builtin_method_name(ptr) 
-                        : gsc::find_builtin_name(ptr);
-
-                    if (!name.empty())
-                    {
-                        break;
-                    }
-                }
-
-                const auto type = opcode == game::opcode::OP_CallBuiltinMethod 
-                    ? "method" 
-                    : "function";
-
-                print_error("in call to builtin %s \"%s\": %s", type, name.data(), error);
-            }
-            else
-            {
-                const auto opcode_name = get_opcode_name(opcode);
-
-                print_error("while processing instruction %s: %s", opcode_name.data(), error);
-            }
-        }
-
         utils::hook::detour alloc_child_variable_hook;
         const char* allocations[0x10000];
 
