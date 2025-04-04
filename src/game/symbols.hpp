@@ -82,6 +82,7 @@ namespace game
 	WEAK symbol<void(scriptInstance_t inst, const char* error, bool force_terminal)> Scr_Error{0x403AE0, 0x5E81C0};
 	WEAK symbol<void(scriptInstance_t inst, unsigned int paramIndex, const char* error)> Scr_ParamError{0x415A30, 0x617CA0};
 	WEAK symbol<void(scriptInstance_t inst, const char* error)> Scr_ObjectError{0x561660, 0x6B67E0};
+	WEAK symbol<void(scriptInstance_t inst, const char* error)> Scr_TerminalError{0x698C50, 0x410440};
 
 	WEAK symbol<gentity_s*(scr_entref_t entref)> GetPlayerEntity{0x48B760, 0x4BF6F0};
 
