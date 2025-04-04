@@ -266,7 +266,7 @@ namespace debug
             }
         }
 
-        void exceeded_max_child_vars_error_stub(int inst, const char* err)
+        void exceeded_max_child_vars_error_stub(game::scriptInstance_t inst, const char* err)
         {
             const std::string name = utils::string::va("minidumps/child-var-allocations-%s.zip", 
                 utils::string::get_timestamp().data());
