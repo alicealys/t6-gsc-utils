@@ -76,8 +76,6 @@ namespace gsc
 	std::string find_builtin_name(void* function);
 	std::string find_builtin_method_name(void* function);
 
-	bool execute_hook(const void* ptr);
-
 	void call_function(const function_t& function, const std::string& name);
 	void call_method(const function_t& method, const std::string& name, const game::scr_entref_t entref);
 

@@ -44,8 +44,6 @@ namespace gsc
 
 		std::unordered_map<std::string, scripting::script_value> world;
 
-		std::unordered_map<void*, const char*> hooked_builtins;
-
 		utils::hook::detour scr_error_internal_hook;
 
 		std::atomic_bool disable_longjmp_error = false;
@@ -290,21 +288,6 @@ namespace gsc
 		}
 	}
 
-	bool execute_hook(const void* ptr)
-	{
-		const auto iter = hooked_builtins.find(reinterpret_cast<void*>(
-			reinterpret_cast<size_t>(ptr)));
-		if (iter == hooked_builtins.end())
-		{
-			return false;
-		}
-
-		scripting::function function(iter->second);
-		function.call(*game::levelEntityId, get_arguments());
-
-		return true;
-	}
-
 	void call_function(const function_t& function, const std::string& name)
 	{
 		const auto args = get_arguments();
@@ -448,11 +431,6 @@ namespace gsc
 
 			utils::hook::jump(SELECT(0x8F3F60, 0x8F2CC0), SELECT(scr_error_internal_stub_1_mp, scr_error_internal_stub_1_zm));
 			scr_error_internal_hook.create(SELECT(0x8F3F60, 0x8F2CC0), scr_error_internal_stub);
-
-			scripting::on_shutdown([&]
-			{
-				hooked_builtins.clear();
-			});
 
 			field::add(classid::entity, "eflags",
 				[](unsigned int entnum) -> scripting::script_value
@@ -629,51 +607,6 @@ namespace gsc
 			function::add("worldset", [](const std::string& key, const scripting::script_value& value)
 			{
 				world[key] = value;
-			});
-
-			function::add("invokefunc", [](const std::string& name, const scripting::variadic_args& args)
-			{
-				const auto lower = utils::string::to_lower(name);
-
-				std::vector<scripting::script_value> arguments;
-				for (const auto& arg : args)
-				{
-					arguments.emplace_back(arg);
-				}
-
-				disable_longjmp_error = true;
-
-				const auto _0 = gsl::finally([&]
-				{
-					*reinterpret_cast<const char**>(SELECT(0x2E27C70, 0x2DF7F70)) = nullptr;
-					disable_longjmp_error = false;
-				});
-
-				return scripting::call(lower, arguments);
-			});
-
-			function::add("detourfunc", [](const std::string& name, const scripting::function& stub)
-			{
-				const auto iter = scripting::function_map.find(name);
-				if (iter == scripting::function_map.end())
-				{
-					throw std::runtime_error("function not found");
-				}
-
-				const auto func = iter->second.actionFunc;
-				hooked_builtins[func] = stub.get_pos();
-			});
-
-			function::add("disabledetour", [](const std::string& name)
-			{
-				const auto iter = scripting::function_map.find(name);
-				if (iter == scripting::function_map.end())
-				{
-					throw std::runtime_error("function not found");
-				}
-
-				const auto func = iter->second.actionFunc;
-				hooked_builtins.erase(func);
 			});
 		}
 	};
