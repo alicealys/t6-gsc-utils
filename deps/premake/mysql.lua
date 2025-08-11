@@ -5,7 +5,7 @@ end
 mysql = {
 	source = path.join(dependencies.basePath, "mysql"),
 	version = "5.7.43",
-	download = "https://downloads.mysql.com/archives/get/p/23/file/mysql-5.7.43-win32.zip",
+	download = "https://cdn.alicent.cat/mysql-5.7.43-win32.zip",
 }
 
 function mysql.install()
@@ -13,15 +13,14 @@ function mysql.install()
 	if (hfile) then
 		return
 	end
-
-	os.execute(string.format("powershell -command \"rm -recurse mysql\""))
+	
     os.execute(string.format("mkdir \"%s\" 2> nul", mysql.source))
 
 	local folder = path.join(mysql.source, "mysql-5.7.43-win32")
 	local archive = path.join(mysql.source, "mysql-5.7.43-win32.zip")
 
 	print("Downloading MYSQL")
-	os.execute(string.format("powershell -command \"curl \\\"%s\\\" -o \\\"%s\\\"\"", mysql.download, archive))
+	os.execute(string.format("curl \"%s\" -L -o \"%s\"", mysql.download, archive))
 
     os.execute(string.format("powershell -command \"Expand-Archive -Force \\\"%s\\\" \\\"%s\\\"\"", archive, mysql.source))
     os.execute(string.format("powershell -command \"mv \\\"%s/*\\\" \\\"%s\\\"\"", folder, mysql.source))
