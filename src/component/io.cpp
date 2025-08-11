@@ -50,54 +50,6 @@ namespace io
 
 		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
-			gsc::function::add("fremove", [](const char* path)
-			{
-				return std::remove(path);
-			});
-
-			gsc::function::add("fopen", [](const char* path, const char* mode)
-			{
-				FILE* handle = nullptr;
-				if (fopen_s(&handle, path, mode) != 0)
-				{
-					throw std::runtime_error("Invalid handle");
-				}
-
-				if (!handle)
-				{
-					printf("fopen: Invalid path\n");
-				}
-
-				return handle;
-			});
-
-			gsc::function::add("fclose", [](FILE* handle)
-			{
-				return fclose(handle);
-			});
-
-			gsc::function::add("fwrite", [](FILE* handle, const char* text)
-			{
-				return fprintf(handle, "%s", text);
-			});
-
-			gsc::function::add("fread", [](FILE* handle)
-			{
-				fseek(handle, 0, SEEK_END);
-				const auto length = ftell(handle);
-
-				fseek(handle, 0, SEEK_SET);
-				char* buffer = (char*)calloc(length, sizeof(char));
-
-				fread(buffer, sizeof(char), length, handle);
-
-				const std::string result = buffer;
-
-				free(buffer);
-
-				return result;
-			});
-
 			gsc::function::add("hashstring", [](const char* str)
 			{
 				return game::BG_StringHashValue(str);
