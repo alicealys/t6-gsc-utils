@@ -383,8 +383,6 @@ namespace debug
             }
 
             developer_script = game::Dvar_FindVar("developer_script");
-            scr_max_loop_time = game::Dvar_RegisterInt("scr_maxLoopTime", 2500, 0,
-                100000, 0, "Maximum loop time before a thread gets killed, 0: don't kill infinite loops");
         }
 
         void on_startup([[maybe_unused]] plugin::plugin* plugin) override
