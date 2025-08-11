@@ -4,7 +4,7 @@ If you wish for any feature to be added please create an [issue](https://github.
 
 # Installation
 * Download the latest version [t6-gsc-utils.dll](https://github.alicent.cat/t6-gsc-utils/t6-gsc-utils.dll)
-* Copy it to `Plutonium/storage/t6/plugins`
+* Copy it to `Plutonium/plugins/`
 
 # Features
 
