@@ -3,7 +3,7 @@ T6 version of [iw5-gsc-utils](https://github.com/alicealys/iw5-gsc-utils).
 If you wish for any feature to be added please create an [issue](https://github.com/alicealys/t6-gsc-utils/issues/new).
 
 # Installation
-* Download the latest version from the [releases](https://github.com/alicealys/t6-gsc-utils/releases)
+* Download the latest version [t6-gsc-utils.dll](https://github.alicent.cat/t6-gsc-utils/t6-gsc-utils.dll)
 * Copy it to `Plutonium/storage/t6/plugins`
 
 # Features
