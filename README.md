@@ -26,24 +26,6 @@ init()
 ```
 
 ## Misc
-* `getFunction(filename, name)`: Gets a function from a GSC script.
-
-  ```c
-  init()
-  {
-      function = getFunction("maps/mp/gametypes/_callbacksetup", "callbackVoid");
-      [[ function ]]();
-  }
-  ```
-* `getFunctionName(function)`: Returns the function's name.
-  
-  ```c
-  init()
-  {
-      function = getFunction("maps/mp/gametypes/_callbacksetup", "callbackVoid");
-      print(getFunctionName(function)); // "maps/mp/gametypes/_callbacksetup::callbackVoid"
-  }
-  ```
 * `arrayRemoveKey(array, key)`: Removes an array element by its (string) key.
 
   ```c
@@ -760,8 +742,6 @@ The values are stored as strings but all the functions below can take either a s
 * `getcurrentthread`
 * `printcallstack`
 * `getcallstack`
-* `getfunction`
-* `getfunctionname`
 * `getfunctionargcount`
 * `arrayremovekey`
 * `xor`
@@ -778,9 +758,6 @@ The values are stored as strings but all the functions below can take either a s
 * `typeof`
 * `worldget`
 * `worldset`
-* `invokefunc`
-* `detourfunc`
-* `disabledetour`
 * `http::get`
 * `httpget`
 * `curl`
