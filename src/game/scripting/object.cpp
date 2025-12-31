@@ -103,9 +103,11 @@ namespace scripting
 			const auto var = game::scr_VarGlob->childVariableValue[current];
 			const auto string_id = static_cast<std::uint8_t>(var.name_lo) + (var.k.keys.name_hi << 8);
 
-			if (string_id < 0x34BC)
+			// pluto has this table relocated
+			static const auto max_string_id = *reinterpret_cast<int*>(SELECT(0x6927A1 + 2, 0x51A9A1 + 2));
+			if (string_id < max_string_id)
 			{
-				static const auto address = SELECT(0x2DACC28, 0x2D7CF28);
+				static const auto address = *reinterpret_cast<unsigned int*>(SELECT(0x635D7E + 3, 0x5466C5 + 3));
 				const auto string = reinterpret_cast<const char**>(address)[string_id];
 				if (string != nullptr && callback(string))
 				{
