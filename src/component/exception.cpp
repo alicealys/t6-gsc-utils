@@ -4,7 +4,6 @@
 
 #include "scheduler.hpp"
 
-#include "debug.hpp"
 #include "gsc.hpp"
 #include "json.hpp"
 #include "scripting.hpp"
@@ -92,21 +91,6 @@ namespace exception
             return info;
         }
 
-        std::string generate_gsc_dump()
-        {
-            std::string info{};
-            const auto line = [&info](const std::string& text)
-            {
-                info.append(text);
-                info.append("\r\n");
-            };
-
-            line("Call stack trace:");
-            line(debug::get_call_stack(true));
-
-            return info;
-        }
-
         void write_minidump(const LPEXCEPTION_POINTERS exceptioninfo)
         {
             const std::string crash_name = utils::string::va("minidumps/plutonium-t6-crash-%s.zip",
@@ -115,8 +99,6 @@ namespace exception
             utils::compression::zip::archive zip_file{};
             zip_file.add("crash.dmp", create_minidump(exceptioninfo));
             zip_file.add("info.txt", generate_crash_info(exceptioninfo));
-            zip_file.add("gsc_vm_dump.txt", generate_gsc_dump());
-            zip_file.add("child_var_alloactions.txt", debug::get_child_var_allocations(1));
             zip_file.write(crash_name, "Plutonium T6 Crash Dump");
         }
 

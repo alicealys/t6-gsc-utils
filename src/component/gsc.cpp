@@ -6,7 +6,6 @@
 
 #include "gsc.hpp"
 #include "json.hpp"
-#include "debug.hpp"
 
 #include "scheduler.hpp"
 #include "scripting.hpp"
@@ -139,7 +138,6 @@ namespace gsc
 			{
 				printf("******* script runtime error *******\n");
 				printf("while getting field \"%s\": %s\n", field.name.data(), e.what());
-				printf(debug::get_call_stack().data());
 				printf("************************************\n");
 			}
 		}
@@ -170,7 +168,6 @@ namespace gsc
 			{
 				printf("******* script runtime error *******\n");
 				printf("while setting field \"%s\": %s\n", field.name.data(), e.what());
-				printf(debug::get_call_stack().data());
 				printf("************************************\n");
 			}
 
@@ -301,7 +298,6 @@ namespace gsc
 		{
 			printf("******* script runtime error *******\n");
 			printf("in call to builtin function \"%s\": %s\n", name.data(), e.what());
-			printf(debug::get_call_stack().data());
 			printf("************************************\n");
 		}
 	}
@@ -329,7 +325,6 @@ namespace gsc
 		{
 			printf("******* script runtime error *******\n");
 			printf("in call to builtin method \"%s\": %s\n", name.data(), e.what());
-			printf(debug::get_call_stack().data());
 			printf("************************************\n");
 		}
 	}
