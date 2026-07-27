@@ -160,13 +160,13 @@ namespace notifies
 			{
 				std::unordered_set<unsigned int> notifies;
 
-				const auto entity = args[0].get_raw();
+				const auto& entity = args[0].get_raw();
 				if (entity.type != game::SCRIPT_OBJECT)
 				{
 					throw std::runtime_error("argument 1 must be a script object");
 				}
 
-				const auto entity_target = args[1].get_raw();
+				const auto& entity_target = args[1].get_raw();
 				if (entity_target.type != game::SCRIPT_OBJECT)
 				{
 					throw std::runtime_error("argument 1 must be a script object");

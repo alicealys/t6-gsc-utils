@@ -25,12 +25,6 @@ namespace cryptography
 	public:
 		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
-			if (!utils::flags::has_flag("experimental-utils"))
-			{
-				printf("doesnt have experimental utils enabled\n");
-				return;
-			}
-
 			scripting::on_shutdown([]
 			{
 				keys.clear();

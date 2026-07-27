@@ -68,7 +68,11 @@ namespace command
 
 		for (int i = index; i < this->size(); i++)
 		{
-			if (i > index) result.append(" ");
+			if (i > index)
+			{
+				result.append(" ");
+			}
+
 			result.append(this->get(i));
 		}
 
@@ -114,12 +118,14 @@ namespace command
 
 	std::vector<std::string> params_sv::get_all() const
 	{
-		std::vector<std::string> params_;
+		std::vector<std::string> params;
+
 		for (auto i = 0; i < this->size(); i++)
 		{
-			params_.emplace_back(this->get(i));
+			params.emplace_back(this->get(i));
 		}
-		return params_;
+
+		return params;
 	}
 
 	void add_raw(const char* name, void (*callback)())

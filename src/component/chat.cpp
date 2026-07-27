@@ -208,7 +208,8 @@ namespace chat
 	public:
 		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
-			g_say_hook.create(SELECT(0x6A7A40, 0x493DF0), g_say_stub);
+			const auto plutonium_g_say_stub = utils::hook::extract<std::size_t>(SELECT(0x6A7A40, 0x493DF0) + 1);
+			g_say_hook.create(plutonium_g_say_stub, g_say_stub);
 			sv_get_user_info_hook.create(SELECT(0x68BB90, 0x4C10F0), sv_get_user_info_stub);
 			client_connect_hook.create(SELECT(0x5EF5A0, 0x41BE10), client_connect_stub);
 

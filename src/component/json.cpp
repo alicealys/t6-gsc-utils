@@ -15,11 +15,16 @@ namespace json
 {
 	namespace
 	{
-		std::unordered_set<unsigned int> dumped_objects;
+		constexpr const auto max_str_len = 0x5000u;
 
-		nlohmann::json gsc_to_json(const scripting::script_value& value, bool print_id);
+		struct dump_context_t
+		{
+			std::unordered_set<std::uint32_t> visited_objects;
+		};
 
-		nlohmann::json array_to_json(const scripting::array& array, bool print_id)
+		nlohmann::json gsc_to_json(const scripting::script_value& value, bool print_id, dump_context_t& ctx);
+
+		nlohmann::json array_to_json(const scripting::array& array, bool print_id, dump_context_t& ctx)
 		{
 			if (array.size() == 0)
 			{
@@ -44,27 +49,27 @@ namespace json
 				if (!string_indexed && is_int)
 				{
 					const auto index = key.as<int>();
-					obj[index] = gsc_to_json(array[index], print_id);
+					obj[index] = gsc_to_json(array[index], print_id, ctx);
 				}
 				else if (string_indexed && is_string)
 				{
 					const auto key_str = key.as<std::string>();
-					obj.emplace(key_str, gsc_to_json(array[key_str], print_id));
+					obj.emplace(key_str, gsc_to_json(array[key_str], print_id, ctx));
 				}
 			}
 
 			return obj;
 		}
 
-		nlohmann::json object_to_json(const scripting::object& object, bool print_id)
+		nlohmann::json object_to_json(const scripting::object& object, bool print_id, dump_context_t& ctx)
 		{
 			const auto id = object.get_entity_id();
-			if (dumped_objects.find(id) != dumped_objects.end())
+			if (ctx.visited_objects.find(id) != ctx.visited_objects.end())
 			{
 				return utils::string::va("[struct reference %i]", id);
 			}
 
-			dumped_objects.insert(id);
+			ctx.visited_objects.insert(id);
 			auto obj = nlohmann::json::object();
 
 			if (print_id)
@@ -80,7 +85,7 @@ namespace json
 					continue;
 				}
 
-				obj.emplace(key, gsc_to_json(object[key], print_id));
+				obj.emplace(key, gsc_to_json(object[key], print_id, ctx));
 			}
 
 			return obj;
@@ -95,7 +100,7 @@ namespace json
 			return obj;
 		}
 
-		nlohmann::json gsc_to_json(const scripting::script_value& value, bool print_id)
+		nlohmann::json gsc_to_json(const scripting::script_value& value, bool print_id, dump_context_t& ctx)
 		{
 			const auto& variable = value.get_raw();
 
@@ -121,17 +126,17 @@ namespace json
 
 			if (value.is<scripting::object>())
 			{
-				return object_to_json(variable.u.uintValue, print_id);
+				return object_to_json(variable.u.uintValue, print_id, ctx);
 			}
 
 			if (value.is<scripting::array>())
 			{
-				return array_to_json(variable.u.uintValue, print_id);
+				return array_to_json(variable.u.uintValue, print_id, ctx);
 			}
 
 			if (value.is<scripting::entity>())
 			{
-				return object_to_json(variable.u.uintValue, print_id);
+				return object_to_json(variable.u.uintValue, print_id, ctx);
 			}
 
 			if (value.is<scripting::function>())
@@ -205,8 +210,8 @@ namespace json
 
 	std::string gsc_to_string(const scripting::script_value& value)
 	{
-		dumped_objects = {};
-		return gsc_to_json(value, false).dump();
+		dump_context_t ctx;
+		return gsc_to_json(value, false, ctx).dump();
 	}
 
 	class component final : public component_interface
@@ -253,8 +258,17 @@ namespace json
 					print_id = args[1].as<bool>();
 				}
 
-				dumped_objects = {};
-				return gsc_to_json(value, print_id).dump(indent).substr(0, 0x5000);
+				dump_context_t ctx;
+				const auto json = gsc_to_json(value, print_id, ctx);
+				auto dump = json.dump(indent);
+
+				if (dump.size() > max_str_len)
+				{
+					printf("^3WARNING: json dump longer than %i bytes, truncating!", max_str_len);
+					dump.resize(max_str_len);
+				}
+
+				return dump;
 			}, "jsonserialize", "json::serialize");
 
 			gsc::function::add_multiple([](const std::string& file, const scripting::script_value& value, const scripting::variadic_args& va)
@@ -279,8 +293,11 @@ namespace json
 					print_id = va[1].as<bool>();
 				}
 
-				dumped_objects = {};
-				return utils::io::write_file(file_name, gsc_to_json(value, print_id).dump(indent));
+				dump_context_t ctx;
+				const auto json = gsc_to_json(value, print_id, ctx);
+				const auto dump = json.dump(indent);
+
+				return utils::io::write_file(file_name, dump);
 			}, "jsondump", "json::dump");
 
 			gsc::function::add_multiple([](const scripting::variadic_args& args)

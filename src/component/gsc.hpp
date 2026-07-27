@@ -18,7 +18,7 @@ namespace gsc
 
 	// auto = []{} forces template reevaluation
 
-	template <class... Args, std::size_t... I, auto = []{}>
+	template <class... Args, std::size_t... I, auto = [] {} >
 	auto wrap_function(const std::function<void(Args...)>& f, std::index_sequence<I...>)
 	{
 		return [f]([[maybe_unused]] const scripting::function_arguments& args)
@@ -28,7 +28,7 @@ namespace gsc
 		};
 	}
 
-	template <class... Args, std::size_t... I, auto = []{}>
+	template <class... Args, std::size_t... I, auto = [] {} >
 	auto wrap_function(const std::function<scripting::script_value(Args...)>& f, std::index_sequence<I...>)
 	{
 		return [f]([[maybe_unused]] const scripting::function_arguments& args)
@@ -37,7 +37,7 @@ namespace gsc
 		};
 	}
 
-	template <typename R, class... Args, std::size_t... I, auto = []{}>
+	template <typename R, class... Args, std::size_t... I, auto = [] {} >
 	auto wrap_function(const std::function<R(Args...)>& f, std::index_sequence<I...>)
 	{
 		return [f]([[maybe_unused]] const scripting::function_arguments& args)
@@ -46,25 +46,35 @@ namespace gsc
 		};
 	}
 
-	template <typename R, class... Args, auto = []{}>
+	template <typename R, class... Args, auto = [] {} >
 	auto wrap_function(const std::function<R(Args...)>& f)
 	{
 		return wrap_function(f, std::index_sequence_for<Args...>{});
 	}
 
-	template <class F, auto = []{}>
+	template <class F, auto = [] {} >
 	auto wrap_function(F f)
 	{
 		return wrap_function(std::function(f));
 	}
 
-	enum classid
+	enum class_id_t
 	{
-		entity,
-		hudelem,
-		pathnode,
-		node,
-		count
+		class_entity,
+		class_hudelem,
+		class_pathnode,
+		class_node,
+		class_count
+	};
+
+	using field_getter_t = std::function<scripting::script_value(unsigned int entnum)>;
+	using field_setter_t = std::function<void(unsigned int entnum, const scripting::script_value&)>;
+
+	struct entity_field_t
+	{
+		std::string name;
+		field_getter_t getter;
+		field_setter_t setter;
 	};
 
 	void return_value(const scripting::script_value& value);
@@ -81,7 +91,7 @@ namespace gsc
 
 	namespace function
 	{
-		template <typename F, auto = []{}>
+		template <typename F, auto = [] {} >
 		void add_internal(const std::string& name, F function)
 		{
 			static auto called = false;
@@ -102,13 +112,13 @@ namespace gsc
 			};
 		}
 
-		template <typename F, auto = []{}>
+		template <typename F, auto = [] {} >
 		void add(const std::string& name, F f)
 		{
 			add_internal(name, wrap_function(f));
 		}
 
-		template <typename ...Args, typename F, auto = []{}>
+		template <typename ...Args, typename F, auto = [] {} >
 		void add_multiple(F f, Args&& ...names)
 		{
 			(add(names, f), ...);
@@ -117,7 +127,7 @@ namespace gsc
 
 	namespace method
 	{
-		template <typename F, auto = []{}>
+		template <typename F, auto = [] {} >
 		void add_internal(const std::string& name, F function)
 		{
 			static auto called = false;
@@ -138,17 +148,22 @@ namespace gsc
 			};
 		}
 
-		template <typename F, auto = []{}>
+		template <typename F, auto = [] {} >
 		void add(const std::string& name, F f)
 		{
 			add_internal(name, wrap_function(f));
 		}
 
-		template <typename ...Args, typename F, auto = []{}>
+		template <typename ...Args, typename F, auto = [] {} >
 		void add_multiple(F f, Args&& ...names)
 		{
 			(add(names, f), ...);
 		}
+	}
+
+	namespace field
+	{
+		void add(const class_id_t classnum, const std::string& name, const field_getter_t getter, const field_setter_t& setter);
 	}
 }
 #else

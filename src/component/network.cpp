@@ -32,11 +32,10 @@ namespace network
 				std::string data;
 				data.reserve(0x1000);
 
-				char buffer[0x1000]{};
-
 				auto result = 0;
 				do
 				{
+					char buffer[0x1000]{};
 					result = recv(inst.socket, buffer, sizeof(buffer), 0);
 					if (result != -1 && result != 0)
 					{
