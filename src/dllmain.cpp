@@ -10,21 +10,47 @@
 #include <utils/hook.hpp>
 #include <utils/binary_resource.hpp>
 #include <utils/nt.hpp>
+#include <utils/cryptography.hpp>
+#include <utils/io.hpp>
 
 namespace
 {
 	utils::hook::detour load_library_hook;
+
+	std::string extract_resource(const std::string& name, const int resource)
+	{
+		const auto data = utils::nt::load_resource(resource);
+		const auto path = std::filesystem::current_path() / "tmp" / name;
+		const auto path_str = path.generic_string();
+
+		if (!utils::io::write_file(path_str, data))
+		{
+			const auto current = utils::io::read_file(path_str);
+			const auto hash_current = utils::cryptography::md5::compute(current);
+			const auto hash_target = utils::cryptography::md5::compute(data);
+			if (hash_target != hash_current)
+			{
+				throw std::runtime_error("failed to extract libmysql.dll!");
+			}
+		}
+
+		return path_str;
+	}
+
 	HMODULE __stdcall load_library_stub(LPCSTR lib_name, HANDLE file, DWORD flags)
 	{
 		if (lib_name == "libmysql.dll"s)
 		{
-			static auto dll = utils::binary_resource{LIBMYSQL_DLL, lib_name};
-			const auto path = dll.get_extracted_file();
+			const auto path = extract_resource(lib_name, LIBMYSQL_DLL);
 			const auto handle = load_library_hook.invoke_pascal<HMODULE>(path.data(), file, flags);
 
 			if (handle != nullptr)
 			{
 				return handle;
+			}
+			else
+			{
+				throw std::runtime_error(std::format("failed to load libmysql.dll: {}", GetLastError()));
 			}
 		}
 

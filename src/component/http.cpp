@@ -9,200 +9,223 @@
 #include "scripting.hpp"
 
 #include <utils/http.hpp>
+#include <utils/concurrency.hpp>
 #include <curl/curl.h>
 
 namespace http
 {
 	namespace
 	{
-		std::unordered_map<uint64_t, bool> active_requests{};
-		uint64_t request_id{};
+		constexpr const auto max_result_size = 0x5000u;
 
-		scripting::script_value http_post(const std::string& url, const std::string& data, const scripting::array& headers_array)
+		struct http_request_params_t
 		{
+			std::string method;
+			std::string url;
+			std::string fields;
 			utils::http::headers headers;
-			for (const auto& [key, value] : headers_array)
-			{
-				if (!key.is<std::string>() || !value.is<std::string>())
-				{
-					continue;
-				}
+		};
 
-				const auto key_str = key.as<std::string>();
-				headers[key_str] = value.as<std::string>();
+		struct http_request_t
+		{
+			http_request_params_t params;
+			scripting::object handle;
+			std::optional<utils::http::result> result;
+			std::atomic_bool completed;
+		};
+
+		std::vector<std::shared_ptr<http_request_t>> requests;
+
+		void notify_request_result(std::shared_ptr<http_request_t>& request)
+		{
+			const auto handle_id = request->handle.get_entity_id();
+
+			if (!request->result.has_value())
+			{
+				scripting::notify(handle_id, "done", {{}, false, "unknown error"});
+				return;
 			}
 
-			const scripting::object object{};
-			const auto object_id = object.get_entity_id();
+			auto& result = request->result.value();
+			const auto error = curl_easy_strerror(result.code);
 
-			scheduler::once([object_id, url, data, headers]()
+			if (result.code != CURLE_OK)
 			{
-				const auto result = utils::http::post_data(url, data, headers);
-				scheduler::once([object_id, result]()
-				{
-					const auto value = result.has_value() ? result.value().substr(0, 0x5000) : ""s;
-					scripting::notify(object_id, "done", {value});
-				});
-			}, scheduler::pipeline::async);
+				scripting::notify(handle_id, "done", {{}, false, error});
+				return;
+			}
 
-			return object;
+			if (result.buffer.size() >= max_result_size)
+			{
+				printf("^3WARNING: http result size bigger than %i bytes (%i), truncating!", max_result_size,
+					static_cast<int>(result.buffer.size()));
+				result.buffer.resize(max_result_size);
+			}
+
+			scripting::notify(handle_id, "done", {result.buffer, true});
+		}
+
+		void check_requests()
+		{
+			for (auto i = requests.begin(); i != requests.end(); )
+			{
+				auto& request = *i;
+				if (!request->completed)
+				{
+					++i;
+					continue;
+				}
+				else
+				{
+					notify_request_result(request);
+					i = requests.erase(i);
+				}
+			}
+		}
+
+		scripting::object create_request(const http_request_params_t& params)
+		{
+			const auto request = std::make_shared<http_request_t>();
+			requests.emplace_back(request);
+
+			request->params = params;
+			scheduler::thread_pool.push([request]
+			{
+				request->result = utils::http::get_data(
+					request->params.url,
+					request->params.fields,
+					request->params.headers,
+					request->params.method);
+				request->completed = true;
+			});
+
+			return request->handle;
+		}
+
+		template <typename T>
+		void push_request(T&& r)
+		{
+			const auto request = std::make_shared<http_request_t>(std::forward<T>(r));
+			requests.emplace_back(request);
+		}
+
+		void wait_and_clear_requests()
+		{
+			for (auto& task : requests)
+			{
+				while (!task->completed)
+				{
+					std::this_thread::sleep_for(10ms);
+				}
+			}
+
+			requests.clear();
+		}
+
+		void parse_request_options(http_request_params_t& params, const scripting::array& options)
+		{
+			const auto fields = options["parameters"];
+			const auto body = options["body"];
+			const auto headers = options["headers"];
+			const auto method = options["method"];
+
+			if (method.is<std::string>())
+			{
+				params.method = method.as<std::string>();
+			}
+
+			if (fields.is<scripting::array>())
+			{
+				const auto fields_ = fields.as<scripting::array>();
+				const auto keys = fields_.get_keys();
+
+				for (const auto& key : keys)
+				{
+					if (!key.is<std::string>())
+					{
+						continue;
+					}
+
+					const auto key_ = key.as<std::string>();
+					const auto value = fields_[key].to_string();
+					params.fields += key_ + "=" + value + "&";
+				}
+
+			}
+			else if (body.is<std::string>())
+			{
+				params.fields = body.as<std::string>();
+			}
+
+			if (headers.is<scripting::array>())
+			{
+				const auto headers_arr = headers.as<scripting::array>();
+				const auto keys = headers_arr.get_keys();
+
+				for (const auto& key : keys)
+				{
+					if (!key.is<std::string>())
+					{
+						continue;
+					}
+
+					const auto key_str = key.as<std::string>();
+					const auto value = headers_arr[key].to_string();
+
+					params.headers[key_str] = value;
+				}
+			}
 		}
 	}
 
 	class component final : public component_interface
 	{
 	public:
+		void on_shutdown([[maybe_unused]] plugin::plugin* plugin) override
+		{
+			scripting::on_shutdown(wait_and_clear_requests);
+		}
+
 		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
-			scripting::on_shutdown([]()
-			{
-				active_requests.clear();
-			});
+			scheduler::loop(check_requests, scheduler::server);
+			scripting::on_shutdown(wait_and_clear_requests);
 
 			gsc::function::add_multiple([](const std::string& url)
 			{
-				const auto id = request_id++;
-				active_requests[id] = true;
-
-				const auto object = scripting::object{};
-				const auto object_id = object.get_entity_id();
-
-				scheduler::once([id, object_id, url]()
-				{
-					const auto data = utils::http::get_data_result(url);
-					scheduler::once([id, object_id, data]()
-					{
-						if (active_requests.find(id) == active_requests.end())
-						{
-							return;
-						}
-
-						if (!data.has_value())
-						{
-							scripting::notify(object_id, "done", {{}, false, "Unknown error"});
-							return;
-						}
-
-						const auto& result = data.value();
-						const auto error = curl_easy_strerror(result.code);
-
-						if (result.code != CURLE_OK)
-						{
-							scripting::notify(object_id, "done", {{}, false, error});
-							return;
-						}
-
-						if (result.buffer.size() >= 0x5000)
-						{
-							printf("^3WARNING: http result size bigger than 20480 bytes (%i), truncating!", static_cast<int>(result.buffer.size()));
-						}
-
-						scripting::notify(object_id, "done", {result.buffer.substr(0, 0x5000), true});
-					}, scheduler::pipeline::server);
-				}, scheduler::pipeline::async);
-
-				return object;
+				http_request_params_t params{};
+				params.url = url;
+				return create_request(params);
 			}, "http::get", "httpget", "curl");
 
 			gsc::function::add("http::request", [](const std::string& url, const scripting::variadic_args& va)
 			{
-				const auto id = request_id++;
-				active_requests[id] = true;
-
-				const auto object = scripting::object{};
-				const auto object_id = object.get_entity_id();
-
-				std::string fields_string{};
-				std::unordered_map<std::string, std::string> headers_map{};
+				http_request_params_t params{};
+				params.url = url;
 
 				if (va.size() > 0)
 				{
 					const auto options = va[0].as<scripting::array>();
-
-					const auto fields = options["parameters"];
-					const auto body = options["body"];
-					const auto headers = options["headers"];
-
-					if (fields.is<scripting::array>())
-					{
-						const auto fields_arr = fields.as<scripting::array>();
-
-						for (const auto& [key, value] : fields_arr)
-						{
-							if (!key.is<std::string>())
-							{
-								continue;
-							}
-
-							const auto key_str = key.as<std::string>();
-							const auto value_str = value.to_string();
-							fields_string += std::format("{}={}", key_str, value_str);
-						}
-
-					}
-
-					if (body.is<std::string>())
-					{
-						fields_string = body.as<std::string>();
-					}
-
-					if (headers.is<scripting::array>())
-					{
-						const auto headers_arr = headers.as<scripting::array>();
-
-						for (const auto& [key, value] : headers_arr)
-						{
-							if (!key.is<std::string>())
-							{
-								continue;
-							}
-
-							const auto key_str = key.as<std::string>();
-							const auto value_str = value.to_string();
-
-							headers_map[key_str] = value_str;
-						}
-					}
+					parse_request_options(params, options);
 				}
 
-				scheduler::once([id, object_id, url, fields_string, headers_map]()
-				{
-					const auto data = utils::http::get_data_result(url, fields_string, headers_map);
-					scheduler::once([data, object_id, id]
-					{
-						if (active_requests.find(id) == active_requests.end())
-						{
-							return;
-						}
-
-						if (!data.has_value())
-						{
-							scripting::notify(object_id, "done", {{}, false, "Unknown error"});
-							return;
-						}
-
-						const auto& result = data.value();
-						const auto error = curl_easy_strerror(result.code);
-
-						if (result.code != CURLE_OK)
-						{
-							scripting::notify(object_id, "done", {{}, false, error});
-							return;
-						}
-
-						if (result.buffer.size() >= 0x5000)
-						{
-							printf("^3WARNING: http result size bigger than 20480 bytes (%i), truncating!", static_cast<int>(result.buffer.size()));
-						}
-
-						scripting::notify(object_id, "done", {result.buffer.substr(0, 0x5000), true});
-					}, scheduler::pipeline::server);
-				}, scheduler::pipeline::async);
-
-				return object;
+				return create_request(params);
 			});
 
-			gsc::function::add("httppost", http_post);
+			gsc::function::add_multiple([](const std::string& url, const scripting::variadic_args& va)
+			{
+				http_request_params_t params{};
+				params.url = url;
+				params.method = "POST";
+
+				if (va.size() > 0)
+				{
+					const auto options = va[0].as<scripting::array>();
+					parse_request_options(params, options);
+				}
+
+				return create_request(params);
+			}, "httppost", "http::post");
 		}
 	};
 }
