@@ -9,6 +9,8 @@
 
 namespace scheduler
 {
+	utils::thread_pool thread_pool;
+
 	namespace
 	{
 		struct task
@@ -151,6 +153,9 @@ namespace scheduler
 	public:
 		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
+			thread_pool.initialize(8);
+			thread_pool.start();
+
 			thread = std::thread([]()
 			{
 				while (!killed)
@@ -166,6 +171,7 @@ namespace scheduler
 
 		void on_shutdown([[maybe_unused]] plugin::plugin* plugin) override
 		{
+			thread_pool.stop();
 			killed = true;
 
 			if (thread.joinable())

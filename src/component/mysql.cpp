@@ -22,15 +22,13 @@ namespace mysql
 
 		struct task_t
 		{
-			std::thread thread;
-			bool done;
-			bool canceled;
-			std::unique_ptr<scripting::object> handle;
-			mysql_result_t result;
+			scripting::object handle;
+			mysql_result_t result{};
+			std::atomic_bool completed;
 		};
 
-		uint64_t task_index{};
-		std::unordered_map<uint64_t, task_t> tasks;
+		std::vector<std::shared_ptr<task_t>> tasks;
+		std::array<connection, max_connections> connection_pool;
 
 		scripting::script_value field_to_value(const MYSQL_FIELD* field, const std::string& row)
 		{
@@ -210,34 +208,135 @@ namespace mysql
 		template <typename F>
 		scripting::object create_mysql_query(F&& cb)
 		{
-			auto task = &tasks[task_index++];
+			auto task = std::make_shared<task_t>();
+			tasks.emplace_back(task);
 
-			task->done = false;
-			task->canceled = false;
-			task->handle = std::make_unique<scripting::object>();
-
-			task->thread = std::thread([=]()
+			scheduler::thread_pool.push([=]
 			{
 				try
 				{
 					mysql::access([&](database_t& db)
 					{
 						task->result = cb(db);
-						task->done = true;
+						task->completed = true;
 					});
 				}
 				catch (const std::exception& e)
 				{
 					printf("%s\n", e.what());
-					task->done = true;
+					task->completed = true;
 				}
 			});
 
-			return *task->handle.get();
+			return task->handle;
+		}
+
+		void wait_and_clear_tasks()
+		{
+			for (auto& task : tasks)
+			{
+				while (!task->completed)
+				{
+					std::this_thread::sleep_for(10ms);
+				}
+			}
+
+			tasks.clear();
+		}
+
+		void notify_task_result(std::shared_ptr<task_t>& task)
+		{
+			const auto result = task->result.result
+				? generate_result(task->result.result)
+				: generate_result(task->result.stmt);
+
+			const auto rows = static_cast<std::size_t>(task->result.affected_rows);
+			scripting::notify(task->handle.get_entity_id(), "done", {result, rows, task->result.error});
+
+			if (task->result.result != nullptr)
+			{
+				mysql_free_result(task->result.result);
+				task->result.result = nullptr;
+			}
+
+			if (task->result.stmt != nullptr)
+			{
+				mysql_stmt_close(task->result.stmt);
+				task->result.stmt = nullptr;
+			}
+		}
+
+		void check_tasks()
+		{
+			for (auto i = tasks.begin(); i != tasks.end(); )
+			{
+				auto& task = *i;
+				if (!task->completed)
+				{
+					++i;
+					continue;
+				}
+				else
+				{
+					notify_task_result(task);
+					i = tasks.erase(i);
+				}
+			}
+		}
+
+		template <typename T>
+		void bind_statement_args(MYSQL_BIND* binds, std::size_t& bind_count, const T& args)
+		{
+			bind_count = args.size();
+			binds = utils::memory::allocate_array<MYSQL_BIND>(bind_count);
+
+			for (auto i = 0u; i < args.size(); i++)
+			{
+				const auto& arg = args[i];
+				const auto& raw_value = arg.get_raw();
+
+				switch (raw_value.type)
+				{
+				case game::SCRIPT_FLOAT:
+				{
+					binds[i].buffer = utils::memory::allocate<float>();
+					binds[i].buffer_type = MYSQL_TYPE_FLOAT;
+					*reinterpret_cast<float*>(binds[i].buffer) = raw_value.u.floatValue;
+					break;
+				}
+				case game::SCRIPT_INTEGER:
+				{
+					binds[i].buffer = utils::memory::allocate<int>();
+					binds[i].buffer_type = MYSQL_TYPE_LONG;
+					*reinterpret_cast<int*>(binds[i].buffer) = raw_value.u.intValue;
+					break;
+				}
+				case game::SCRIPT_STRING:
+				{
+					const auto str = arg.as<std::string>();
+					const auto str_copy = utils::memory::duplicate_string(str);
+					binds[i].buffer = str_copy;
+					binds[i].buffer_length = str.size();
+					binds[i].buffer_type = MYSQL_TYPE_STRING;
+					break;
+				}
+				default:
+				{
+					binds[i].buffer_type = MYSQL_TYPE_NULL;
+					break;
+				}
+				}
+			}
+		}
+
+		void cleanup_connections()
+		{
+			for (auto& connection : connection_pool)
+			{
+				connection.cleanup();
+			}
 		}
 	}
-
-	std::array<connection_t, max_connections> connection_pool;
 
 	utils::concurrency::container<sql::connection_config>& get_config()
 	{
@@ -260,23 +359,70 @@ namespace mysql
 		return config;
 	}
 
-	void cleanup_connections()
+	void connection::check()
 	{
-		for (auto& connection : connection_pool)
+		const auto now = std::chrono::high_resolution_clock::now();
+		const auto diff = now - this->start_;
+
+		if (this->db.get() == nullptr || !this->db->ping_server() || diff >= connection_timeout)
 		{
-			std::unique_lock<database_mutex_t> lock(connection.mutex, std::try_to_lock);
+			get_config().access([&](sql::connection_config& cfg)
+			{
+				this->db = std::make_unique<sql::connection>(cfg);
+				this->start_ = now;
+			});
+		}
+
+		this->last_access_ = now;
+	}
+
+	void connection::cleanup()
+	{
+		std::unique_lock<database_mutex_t> lock(this->mutex, std::try_to_lock);
+		if (!lock.owns_lock())
+		{
+			return;
+		}
+
+		const auto now = std::chrono::high_resolution_clock::now();
+		const auto diff = now - this->last_access_;
+		if (diff >= connection_timeout)
+		{
+			this->db.reset();
+		}
+	}
+
+	connection* get_connection(std::unique_lock<database_mutex_t>& lock)
+	{
+		static thread_local connection* last_connection{};
+		if (last_connection != nullptr)
+		{
+			lock = std::unique_lock(last_connection->mutex, std::try_to_lock);
+			if (lock.owns_lock())
+			{
+				return last_connection;
+			}
+		}
+
+		for (auto i = 0u; i < connection_pool.size(); i++)
+		{
+			auto connection = &connection_pool[i];
+			if (connection == last_connection)
+			{
+				continue;
+			}
+
+			lock = std::unique_lock(connection->mutex, std::try_to_lock);
 			if (!lock.owns_lock())
 			{
 				continue;
 			}
 
-			const auto now = std::chrono::high_resolution_clock::now();
-			const auto diff = now - connection.last_access;
-			if (diff >= connection_timeout)
-			{
-				connection.db.reset();
-			}
+			last_connection = connection;
+			return connection;
 		}
+
+		return nullptr;
 	}
 
 	class component final : public component_interface
@@ -284,74 +430,14 @@ namespace mysql
 	public:
 		void on_shutdown([[maybe_unused]] plugin::plugin* plugin) override
 		{
-			for (auto i = tasks.begin(); i != tasks.end(); ++i)
-			{
-				i->second.canceled = true;
-
-				if (i->second.thread.joinable())
-				{
-					i->second.thread.join();
-				}
-			}
+			wait_and_clear_tasks();
 		}
 
 		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
-			scripting::on_shutdown([]()
-			{
-				for (auto i = tasks.begin(); i != tasks.end(); ++i)
-				{
-					i->second.canceled = true;
-					i->second.handle.reset();
-				}
-			});
-
-			scheduler::loop([]
-			{
-				cleanup_connections();
-			}, scheduler::async, 1s);
-
-			scheduler::loop([]
-			{
-				for (auto i = tasks.begin(); i != tasks.end(); )
-				{
-					if (!i->second.done)
-					{
-						++i;
-						continue;
-					}
-
-					if (i->second.thread.joinable())
-					{
-						i->second.thread.join();
-					}
-
-					if (!i->second.canceled)
-					{
-						const auto result = i->second.result.result
-							? generate_result(i->second.result.result)
-							: generate_result(i->second.result.stmt);
-
-						const auto rows = static_cast<size_t>(i->second.result.affected_rows);
-
-						scripting::notify(i->second.handle->get_entity_id(), "done", {result, rows, i->second.result.error});
-
-						if (i->second.result.result)
-						{
-							mysql_free_result(i->second.result.result);
-							i->second.result.result = nullptr;
-						}
-
-						if (i->second.result.stmt)
-						{
-							mysql_stmt_close(i->second.result.stmt);
-							i->second.result.stmt = nullptr;
-						}
-					}
-
-					i = tasks.erase(i);
-				}
-			}, scheduler::server_packet_loop);
+			scripting::on_shutdown(wait_and_clear_tasks);
+			scheduler::loop(cleanup_connections, scheduler::async, 60s);
+			scheduler::loop(check_tasks, scheduler::server);
 
 			gsc::function::add("mysql::set_config", [](const scripting::object& config)
 			{
@@ -407,57 +493,13 @@ namespace mysql
 
 				try
 				{
-					const auto bind_args = [&]<typename T>(const T& args)
-					{
-						bind_count = args.size();
-						binds = utils::memory::allocate_array<MYSQL_BIND>(bind_count);
-
-						for (auto i = 0u; i < args.size(); i++)
-						{
-							const auto& arg = args[i];
-							const auto& raw_value = arg.get_raw();
-
-							switch (raw_value.type)
-							{
-							case game::SCRIPT_FLOAT:
-							{
-								binds[i].buffer = utils::memory::allocate<float>();
-								binds[i].buffer_type = MYSQL_TYPE_FLOAT;
-								*reinterpret_cast<float*>(binds[i].buffer) = raw_value.u.floatValue;
-								break;
-							}
-							case game::SCRIPT_INTEGER:
-							{
-								binds[i].buffer = utils::memory::allocate<int>();
-								binds[i].buffer_type = MYSQL_TYPE_LONG;
-								*reinterpret_cast<int*>(binds[i].buffer) = raw_value.u.intValue;
-								break;
-							}
-							case game::SCRIPT_STRING:
-							{
-								const auto str = arg.as<std::string>();
-								const auto str_copy = utils::memory::duplicate_string(str);
-								binds[i].buffer = str_copy;
-								binds[i].buffer_length = str.size();
-								binds[i].buffer_type = MYSQL_TYPE_STRING;
-								break;
-							}
-							default:
-							{
-								binds[i].buffer_type = MYSQL_TYPE_NULL;
-								break;
-							}
-							}
-						}
-					};
-
 					if (values.size() > 0 && values[0].is<scripting::array>())
 					{
-						bind_args(values[0].as<scripting::array>());
+						bind_statement_args(binds, bind_count, values[0].as<scripting::array>());
 					}
 					else
 					{
-						bind_args(values);
+						bind_statement_args(binds, bind_count, values);
 					}
 				}
 				catch (const std::exception& e)
@@ -478,7 +520,7 @@ namespace mysql
 					const auto handle = db->get_handle();
 					const auto stmt = mysql_stmt_init(handle);
 
-					if (mysql_stmt_prepare(stmt, query.data(), query.size()) != 0 || 
+					if (mysql_stmt_prepare(stmt, query.data(), query.size()) != 0 ||
 						mysql_stmt_bind_param(stmt, binds) != 0 ||
 						mysql_stmt_execute(stmt) != 0)
 					{
