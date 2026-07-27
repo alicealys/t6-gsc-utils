@@ -13,48 +13,25 @@ namespace logfile
 {
 	namespace
 	{
-		utils::hook::detour printf_hook;
 		std::string filename;
 		std::mutex mutex;
 
 		bool is_logging_enabled()
 		{
-			static std::optional<bool> flag;
-
-			if (!flag.has_value())
-			{
-				flag.emplace(utils::flags::has_flag("log"));
-			}
-
-			return flag.value();
-		}
-
-		std::string load_path()
-		{
-			const auto fs_basegame = game::Dvar_FindVar("fs_homepath");
-			if (fs_basegame == nullptr)
-			{
-				return "";
-			}
-
-			return fs_basegame->current.string;
-		}
-
-		std::string get_path()
-		{
-			static const auto path = load_path();
-			return path;
+			static const auto is_enabled = utils::flags::has_flag("log");
+			return is_enabled;
 		}
 	}
 
 	void log_hook(const std::string& buffer)
 	{
-		std::lock_guard _(mutex);
-
-		if (is_logging_enabled())
+		if (!is_logging_enabled())
 		{
-			utils::io::write_file(filename, buffer, true);
+			return;
 		}
+
+		std::lock_guard _(mutex);
+		utils::io::write_file(filename, buffer, true);
 	}
 
 	class component final : public component_interface
@@ -62,9 +39,6 @@ namespace logfile
 	public:
 		void on_after_dvar_init([[maybe_unused]] plugin::plugin* plugin) override
 		{
-			const auto path = get_path();
-			std::filesystem::current_path(path);
-
 			utils::io::create_directory("logs");
 			filename = utils::string::va("logs/console-%s.log",
 				utils::string::get_timestamp().data());

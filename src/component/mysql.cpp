@@ -521,7 +521,7 @@ namespace mysql
 					const auto stmt = mysql_stmt_init(handle);
 
 					if (mysql_stmt_prepare(stmt, query.data(), query.size()) != 0 ||
-						mysql_stmt_bind_param(stmt, binds) != 0 ||
+						(binds != nullptr && mysql_stmt_bind_param(stmt, binds) != 0) ||
 						mysql_stmt_execute(stmt) != 0)
 					{
 						result.error = mysql_stmt_error(stmt);

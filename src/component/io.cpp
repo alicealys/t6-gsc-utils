@@ -44,8 +44,14 @@ namespace io
 	public:
 		void on_after_dvar_init([[maybe_unused]] plugin::plugin* plugin) override
 		{
-			const auto path = game::Dvar_FindVar("fs_homepath")->current.string;
-			std::filesystem::current_path(path);
+			const auto fs_homepath = game::Dvar_FindVar("fs_homepath");
+			if (fs_homepath == nullptr)
+			{
+				return;
+			}
+
+			std::filesystem::current_path(fs_homepath->current.string);
+			printf("working directory: %s", fs_homepath->current.string);
 		}
 
 		void on_startup([[maybe_unused]] plugin::plugin* plugin) override

@@ -3,15 +3,28 @@
 
 #include "gsc.hpp"
 
-#include <utils/string.hpp>
-
-namespace script_extension
+namespace clients
 {
-	namespace
+	class component final : public component_interface
 	{
-		void add_gsc_funcs()
+	public:
+		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
 		{
-			gsc::method::add("noclip", [](const scripting::entity& entity) 
+			gsc::function::add("dropallbots", []
+			{
+				const auto* dvar = game::Dvar_FindVar("com_maxclients");
+				const auto client_count = game::Dvar_GetInt(dvar);
+
+				for (auto i = 0; i < client_count; ++i)
+				{
+					if (game::SV_IsTestClient(i))
+					{
+						game::SV_GameDropClient(i, "GAME_DROPPEDFORINACTIVITY");
+					}
+				}
+			});
+
+			gsc::method::add("noclip", [](const scripting::entity& entity)
 			{
 				const auto entref = entity.get_entity_reference();
 				const auto* ent = game::GetPlayerEntity(entref);
@@ -101,16 +114,7 @@ namespace script_extension
 					(ent->flags & game::entityFlag::FL_NOTARGET) ? "GAME_NOTARGETON" : "GAME_NOTARGETOFF"));
 			});
 		}
-	}
-
-	class component final : public component_interface
-	{
-	public:
-		void on_startup([[maybe_unused]] plugin::plugin* plugin) override
-		{
-			add_gsc_funcs();
-		}		
 	};
 }
 
-REGISTER_COMPONENT(script_extension::component)
+REGISTER_COMPONENT(clients::component)

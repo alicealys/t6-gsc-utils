@@ -3,8 +3,6 @@
 
 #include "game/game.hpp"
 
-#include "component/signatures.hpp"
-
 #include "plugin.hpp"
 
 #include <utils/hook.hpp>

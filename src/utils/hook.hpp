@@ -140,6 +140,12 @@ namespace utils::hook
 	}
 
 	template <typename T>
+	T extract(const size_t address)
+	{
+		return extract<T>(reinterpret_cast<void*>(address));
+	}
+
+	template <typename T>
 	static void set(void* place, T value)
 	{
 		DWORD old_protect;
