@@ -223,7 +223,7 @@ namespace mysql
 				}
 				catch (const std::exception& e)
 				{
-					printf("%s\n", e.what());
+					printf("^1MySQL ERROR: %s\n", e.what());
 					task->completed = true;
 				}
 			});
@@ -285,10 +285,10 @@ namespace mysql
 		}
 
 		template <typename T>
-		void bind_statement_args(MYSQL_BIND* binds, std::size_t& bind_count, const T& args)
+		MYSQL_BIND* bind_statement_args(const T& args, std::size_t& bind_count)
 		{
 			bind_count = args.size();
-			binds = utils::memory::allocate_array<MYSQL_BIND>(bind_count);
+			const auto binds = utils::memory::allocate_array<MYSQL_BIND>(bind_count);
 
 			for (auto i = 0u; i < args.size(); i++)
 			{
@@ -327,6 +327,8 @@ namespace mysql
 				}
 				}
 			}
+
+			return binds;
 		}
 
 		void cleanup_connections()
@@ -495,11 +497,11 @@ namespace mysql
 				{
 					if (values.size() > 0 && values[0].is<scripting::array>())
 					{
-						bind_statement_args(binds, bind_count, values[0].as<scripting::array>());
+						binds = bind_statement_args(values[0].as<scripting::array>(), bind_count);
 					}
 					else
 					{
-						bind_statement_args(binds, bind_count, values);
+						binds = bind_statement_args(values, bind_count);
 					}
 				}
 				catch (const std::exception& e)
@@ -510,10 +512,7 @@ namespace mysql
 
 				return create_mysql_query([=](database_t& db)
 				{
-					const auto _0 = gsl::finally([&]
-					{
-						free_binds();
-					});
+					const auto _0 = gsl::finally(free_binds);
 
 					mysql_result_t result{};
 
