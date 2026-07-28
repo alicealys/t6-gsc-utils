@@ -338,6 +338,21 @@ namespace mysql
 				connection.cleanup();
 			}
 		}
+
+		void free_statement_binds(MYSQL_BIND* binds, const std::size_t bind_count)
+		{
+			if (binds == nullptr)
+			{
+				return;
+			}
+
+			for (auto i = 0u; i < bind_count; i++)
+			{
+				utils::memory::free(binds[i].buffer);
+			}
+
+			utils::memory::free(binds);
+		}
 	}
 
 	utils::concurrency::container<sql::connection_config>& get_config()
@@ -476,22 +491,7 @@ namespace mysql
 			gsc::function::add("mysql::prepared_statement", [](const std::string& query, const scripting::variadic_args& values)
 			{
 				MYSQL_BIND* binds = nullptr;
-				size_t bind_count = 0;
-
-				const auto free_binds = [=]
-				{
-					if (binds == nullptr)
-					{
-						return;
-					}
-
-					for (auto i = 0u; i < bind_count; i++)
-					{
-						utils::memory::free(binds[i].buffer);
-					}
-
-					utils::memory::free(binds);
-				};
+				auto bind_count = 0u;
 
 				try
 				{
@@ -503,35 +503,40 @@ namespace mysql
 					{
 						binds = bind_statement_args(values, bind_count);
 					}
+
+					const auto handle = create_mysql_query([binds, bind_count, query](database_t& db)
+					{
+						const auto _0 = gsl::finally([=]
+						{
+							free_statement_binds(binds, bind_count);
+						});
+
+						mysql_result_t result{};
+
+						const auto handle = db->get_handle();
+						const auto stmt = mysql_stmt_init(handle);
+
+						if (mysql_stmt_prepare(stmt, query.data(), query.size()) != 0 ||
+							(binds != nullptr && mysql_stmt_bind_param(stmt, binds) != 0) ||
+							mysql_stmt_execute(stmt) != 0)
+						{
+							result.error = mysql_stmt_error(stmt);
+							return result;
+						}
+
+						result.stmt = stmt;
+						result.affected_rows = mysql_stmt_affected_rows(stmt);
+
+						return result;
+					});
+
+					return handle;
 				}
 				catch (const std::exception& e)
 				{
-					free_binds();
+					free_statement_binds(binds, bind_count);
 					throw e;
 				}
-
-				return create_mysql_query([=](database_t& db)
-				{
-					const auto _0 = gsl::finally(free_binds);
-
-					mysql_result_t result{};
-
-					const auto handle = db->get_handle();
-					const auto stmt = mysql_stmt_init(handle);
-
-					if (mysql_stmt_prepare(stmt, query.data(), query.size()) != 0 ||
-						(binds != nullptr && mysql_stmt_bind_param(stmt, binds) != 0) ||
-						mysql_stmt_execute(stmt) != 0)
-					{
-						result.error = mysql_stmt_error(stmt);
-						return result;
-					}
-
-					result.stmt = stmt;
-					result.affected_rows = mysql_stmt_affected_rows(stmt);
-
-					return result;
-				});
 			});
 		}
 	};
