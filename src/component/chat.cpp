@@ -35,7 +35,7 @@ namespace chat
 		utils::hook::detour client_connect_hook;
 		utils::hook::detour g_say_hook;
 
-		std::unordered_map<int, userinfo_map> userinfo_overrides;
+		std::array<userinfo_map, 18> userinfo_overrides;
 		std::unordered_map<std::string, chat_command_t> chat_commands;
 		std::vector<chat_callback_t> chat_callbacks;
 
@@ -61,10 +61,9 @@ namespace chat
 			strncpy_s(buffer, 1024, userinfo.data(), _TRUNCATE);
 		}
 
-		const char* client_connect_stub(int client, unsigned int script_pers_id)
+		void clear_client_overrides(unsigned int client)
 		{
 			userinfo_overrides[client].clear();
-			return client_connect_hook.invoke<const char*>(client, script_pers_id);
 		}
 
 		bool handle_chat_command(game::gentity_s* ent, const std::string& text)
@@ -211,14 +210,20 @@ namespace chat
 			const auto plutonium_g_say_stub = utils::hook::extract<std::size_t>(SELECT(0x6A7A40, 0x493DF0) + 1);
 			g_say_hook.create(plutonium_g_say_stub, g_say_stub);
 			sv_get_user_info_hook.create(SELECT(0x68BB90, 0x4C10F0), sv_get_user_info_stub);
-			client_connect_hook.create(SELECT(0x5EF5A0, 0x41BE10), client_connect_stub);
+
+			plugin->get_interface()->callbacks()->on_player_connect(clear_client_overrides);
+			plugin->get_interface()->callbacks()->on_player_disconnect(clear_client_overrides);
 
 			utils::hook::call(SELECT(0x4ED764, 0x427E84), client_clean_name_stub);
 			utils::hook::call(SELECT(0x4ED79F, 0x427EBF), client_clean_name_stub);
 
 			scripting::on_shutdown([]()
 			{
-				userinfo_overrides.clear();
+				for (auto& entry : userinfo_overrides)
+				{
+					entry.clear();
+				}
+
 				chat_callbacks.clear();
 				chat_commands.clear();
 			});
